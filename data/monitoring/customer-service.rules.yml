@@ -1,0 +1,31 @@
+# .NET 客服 Prometheus 告警样例，默认未部署；指标接口始终启用且需要正式客服身份。
+# 采集目标使用 /api/customer-service/agents/metrics/prometheus?topOrgId=...&assistantConfigId=...。
+# 正式 Bearer 凭据通过采集器 Secret 文件提供，禁止写入此文件；组织/助手作为固定目标标签。
+groups:
+  - name: customer-service
+    interval: 30s # 采样周期，默认建议 30 秒，合法值由 Prometheus 决定。
+    rules:
+      - alert: CustomerServiceDeadLetter
+        expr: cs_handoff_backlog{kind=~"notification_dead|reply_dead|system_dead|outbox_dead"} > 0
+        for: 2m # 死信持续两分钟后要求人工恢复，不能直接修改业务表。
+        labels:
+          severity: critical
+        annotations:
+          summary: "智能客服存在待恢复死信"
+          description: "核验外部依赖后，从原工单或正式重试接口恢复；SENT 仅表示网关受理。"
+      - alert: CustomerServiceWaitingOverFiveMinutes
+        expr: cs_handoff_backlog{kind="waiting_over_5m"} > 0
+        for: 5m # 已等待超过五分钟并再次持续五分钟，避免瞬时抖动。
+        labels:
+          severity: warning
+        annotations:
+          summary: "智能客服待接单积压"
+          description: "检查营业日历、组成员和容量；指标读取不补算等待流程，不自动结束接待。"
+      - alert: CustomerServiceWorkerStalled
+        expr: cs_handoff_backlog{kind=~"outbox_over_5m|system_over_5m"} > 0
+        for: 5m # 外发关闭时 EVENT 保留本地审计；只有已启用该通道的目标才部署此规则。
+        labels:
+          severity: warning
+        annotations:
+          summary: "智能客服可靠任务持续积压"
+          description: "确认通道是否启用，检查数据库、Worker 和幂等网关；保留首次事件键及审计。"

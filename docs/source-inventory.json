@@ -1,0 +1,1588 @@
+{
+  "sourceRoot": "D:\\WorkCode\\2_Backend\\byt-cloud-agent",
+  "sourceCommit": "0fd12a25f646e8e8db34ce9fe2ff4768cfcaaacc",
+  "sourceStatus": "",
+  "instruction": "摘要用于来源审计，不能将 Java 原有验收结果当作 .NET 新项目验证结果。",
+  "entries": [
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupAccountDetailsRequest.java",
+      "sha256": "1f9b07f7a486df62721ba1c7f898ee96f6f8b3b5eb5afef3a92a0f2d6b9d8667",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupAccountDto.java",
+      "sha256": "1f2424adb1b686320b569d3288a5bd376984f97caeb55f0677fd96aa04d055a0",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupDto.java",
+      "sha256": "acdeca806e1dd78991ee80c42740ea78bb623c373cc4a215e6d05d3682c4219f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupListRequest.java",
+      "sha256": "17a2a47ca97a961fda77ca33b7ce06806f3f0ef7eece2d2c34f0b93000e63a73",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupPageRequestFields.java",
+      "sha256": "e7f89a41cb26f2789681273c1eb14d867d9dc98376d060d8c010006eec6182f9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-api/src/main/java/com/byt/cloud/agent/api/dto/customerservice/AccountGroupPageResponse.java",
+      "sha256": "8e3612755e398ca7227b9d22a8baf0b9580abb6afbfd72ed39d6911fa5bd2290",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-core/src/main/java/com/byt/cloud/agent/core/agent/resolution/AiResolutionSignalPolicy.java",
+      "sha256": "b3a78a375e5e54f87c4fc2c59bac5eaa785359fd21a673cbd4aad6b48bc5e09f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-core/src/main/java/com/byt/cloud/agent/core/agent/resolution/AiResolutionSignalService.java",
+      "sha256": "fe7e6af8c29fc045c3970886ca6a8cb09bac44d36883df94768c501a56b2df2e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-core/src/main/java/com/byt/cloud/agent/core/agent/resolution/AiSurveyHandoffHistoryGate.java",
+      "sha256": "30c2b12cdc645eb884cdbf1e497c5e36bb0115e7428d12a33ba86c00eff5ef3c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-core/src/test/java/com/byt/cloud/agent/core/agent/resolution/AiResolutionSpringConstructorWiringTest.java",
+      "sha256": "4829346a5cd09dec4c4ba6bfd4ed2fba109c32c40da1b6eaa4d893162b27b8dd",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-core/src/test/java/com/byt/cloud/agent/core/agent/resolution/AiSurveyHandoffHistoryGateTest.java",
+      "sha256": "d3b319715cf95f026fa1cea1913b58116e668c0c9f805b034e139c9118ab2347",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/repository/AiResolutionCandidateRepository.java",
+      "sha256": "8e6ac0633faad2e0366ff721581f8824f0ad3e5ed42f1bb6215c84d9556c22bd",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/repository/AiResolutionEvidenceRepository.java",
+      "sha256": "22e07ad54c76f8becf5c7d237d8859bb2efafcc7cca5dd3d150b6deabc35f5c1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/repository/AiResolutionSignalRepository.java",
+      "sha256": "f56de073c0a09dda43a776d34363c4f416c6a2e46512ca115b5ebd6547dd7d0d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/repository/AiResolutionSurveyRepository.java",
+      "sha256": "c847b53d9a2f336ddbd09e35285e4d4bcb9921ca354b573de830a1ac7426ec11",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/repository/CustomerServiceConversationExportQuery.java",
+      "sha256": "9212dd5fe58e11e05bd30e7984e316b7a758e724c61c51298041df8655d3f016",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionCandidate.java",
+      "sha256": "06c3276ab3e76bb2af06f69b049ed190d7283d7526e4a795c5b87c2907602105",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionCandidateConflictException.java",
+      "sha256": "5fe30bcab799b95a33853cb58ce84c185e8905758dbf242da95009d58af4998e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionEvidence.java",
+      "sha256": "341a43f2810bd5f2dfa8640b55a3c01383376d6920e580f0ef012f9482e9f903",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionProposalResult.java",
+      "sha256": "fc15bd465a50ab16aeb87322892fef86fa0a8c08c2b0c93b1cfd549740bbc0de",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionSignal.java",
+      "sha256": "d89f981c4589dbc0ce54a6682a6b0cce86248ab6ddfd4af0f38ac6044cd556a6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/agent/resolution/AiResolutionSurvey.java",
+      "sha256": "729fb5e208048ecc19b95d5e5108aeef20dbb11d104531c89da699e04bd5da77",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountCandidate.java",
+      "sha256": "04451f626d712fab6b95681bf5bec95243645f129cc52102a99cb68166b90507",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountCandidatePage.java",
+      "sha256": "45a301b1bc92daa61ba8718d2ce4539533ba3ff0c7bcdaff268efaa9bee7a4de",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountDirectoryQuery.java",
+      "sha256": "abbbc6b50d0fc4ad54cc7114d5e8be3a60a7e72ce1447a9502d186d907ad4fa1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountDirectoryStatus.java",
+      "sha256": "78c05a5b26f2bb3dbe4c72ca2b3351a4d306e75800629d07f8eec3e4b619bd8a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountGroup.java",
+      "sha256": "d18e321021f3f79af4f0a4969163f7b261f7cfa6927df0c7c950cb61680f843f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountGroupPage.java",
+      "sha256": "31aa4c4773f6159723585738792e2f22c6ec476b2d37cb19e237ab4c60b6eb1c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAccountGroupQuery.java",
+      "sha256": "39cb84815a9308e4e92d288dfe297ba25e0dc687eeb456e9dd235e08b69b82a1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceAvailability.java",
+      "sha256": "7a1995992345fccd984b8a6ba7b8298961f992e3dc9df0ce9c853218fbbba3a3",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceErrorCode.java",
+      "sha256": "89a9f4a2d724010076881fe0fb93065aed5a577b7e7db2a88b0a3162fa5a0f5c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceFollowupForm.java",
+      "sha256": "167d04986d8bd02614d54ba781c123cacdc9890ef24dd2612a7e11c8fac82d72",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceFollowupResponse.java",
+      "sha256": "0fb21f6b6bbf57f14b474b33dacc7cc13b81458eccc59a1155f47fc3d7c6d1f7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffCancellationStatus.java",
+      "sha256": "878be526f337ea8ad75b103d82a7620970646a5b375ffb246d2f9bf6feb3f561",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffDirectRequestCommand.java",
+      "sha256": "0f2d6aa288ee467dd8288879bcae320852eb226ac82ecdf2ae631d4a51498c79",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffDirectRequestResult.java",
+      "sha256": "61562be1d5a00a36f54784f574e95dab391be35a209ba5ff0c6a29672bae8389",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffEpisodeQuery.java",
+      "sha256": "987f65c9254e8a0e4f07c22572006617201068a1d0f932481d92975ad46be5ea",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffEpisodeStatus.java",
+      "sha256": "812bbdc00059c4e7870ad00b4b760f4a7eb85ec02d92525be936eabacbec2a1c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffEpisodeView.java",
+      "sha256": "f08b48e5742eeeeb45b5f729102141e5ee7c7652b4e10d698a23ed6ed10ed0bb",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffHint.java",
+      "sha256": "7e004fe8c887b20d0fea6ff9c98e1c96fe8e81bd7f2f7992a5eca0a610be82bf",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffHistorySnapshot.java",
+      "sha256": "a8d586bbf971e38bdbf19772b4f3b42eb008a9e416d319a0eeb380ca33805cfa",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffOutboxMessage.java",
+      "sha256": "bfd4e8a8064ea5ea626ad2a96928d0f57365600ac9e6ea9051794574efa4e5b5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffProposal.java",
+      "sha256": "53c89dda33074e8d5577ee4df4382ed70d3cb470e365e9a1d4fef43981e65190",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffProposalDecisionCommand.java",
+      "sha256": "0bfb987e7b2dd25420f9ab77057def8a98e4a752d089786896ace45e453166ae",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffProposalDecisionResult.java",
+      "sha256": "2d97c983bcaf0e06c6bc3e345d751a2bf18cb4c3549600d318258ab8a236000f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffProposalResult.java",
+      "sha256": "37e8c541ace3919dd4036e686a4292b7be866bd450aaf674131ae521029b557c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffReasonCode.java",
+      "sha256": "8e45f95bb013bb52633cea6d0908a15e4c915de5b6d23d7451a8968af62433c7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffRecommendation.java",
+      "sha256": "bb04e5fff41b2a8064313b55c49f5b8ac461a1a87ace5dfee53919bc4be04f9f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceHandoffTriggerSource.java",
+      "sha256": "3027cea50929e258e5ca6b93d7723c9883cefebb8854debf8c03dcb93c433c5d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceRealtimeSubscription.java",
+      "sha256": "263961fdedf16a04348088dfd7b3e484af56af7226c451e70efe6ce8c8705d3f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceReception.java",
+      "sha256": "0d0adf72969b9ff74044626894738a8b3c833a6cca4cb3aa3fdc355acec8d115",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceRouting.java",
+      "sha256": "708130e361d8ef609985428b70a613ea2b109cb92dc7b7d830dd42f6ba359da8",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceSchedule.java",
+      "sha256": "f6db85833ae68c89e5aa4ae095e7cd36c09c2d79837e5d8806ea8d45680e3e2d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/model/CustomerServiceWaiting.java",
+      "sha256": "651aa6939677761de7a4a8828467dc90bad1b6951bda9b3693ea254a6995d6d2",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/AccountDirectoryPort.java",
+      "sha256": "e4c007f188ac049502b5de13ebe0e47dd3123499497969920bf9d06186ffb440",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/AccountGroupDirectoryPort.java",
+      "sha256": "c8ec22f3111cf030a3799dc79642ba52d7149caf565a8eea2205a20308f0c04b",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceAvailabilityRepository.java",
+      "sha256": "1a4cc863a9dbcae4dc5c813c387a41ba3c62630fb850313fe7421eb164c3dc8f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceFollowupFormRepository.java",
+      "sha256": "e4305845e53d23c33250ca05db9c6dd682940960233b8e365501644360d5942a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceFollowupResponseRepository.java",
+      "sha256": "8605007364d6a6d17c5c896ebcf481f7b7b822769bc023f3facdd61b566a200a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceHandoffEpisodeRepository.java",
+      "sha256": "043cc7efccb7738308fe7f889d23b54d0157a1ff5fb467476bb092433d3ba7be",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceHandoffEventPublisherPort.java",
+      "sha256": "4b2f3258653d10ac75063d3851f8399702549812095284204e4c0233e9e0cee9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceHandoffHistoryQuery.java",
+      "sha256": "2dabdf983ceeab9af39b26066bd3b59d5655e797fb969f695a8daf78924863df",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceHandoffOutboxRepository.java",
+      "sha256": "c4f2709bf176c77d973328068cff26bd01b6539ca5861dc765e65641a6fbefb7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceHandoffProposalRepository.java",
+      "sha256": "52b517cbb638ba33b870a34b2759818e89428c1d92f13ff62c098571c3c44e69",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceMetricsQuery.java",
+      "sha256": "b305f85d5ba1e977882e17f9a65934ab65031b88deb93b96bf1c3ff97d3eaad2",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceNotificationPort.java",
+      "sha256": "7b2ab9b526e4caf656b24097409c6594e86373b9ffae763b410ddbb5c0b5d43c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceNotificationTestPort.java",
+      "sha256": "21a3bbd99c8d13e67389d50d2de3315bd416ddee2fe0d594317069f09f65f7f7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceReceptionRepository.java",
+      "sha256": "e4821ab2aebb92314e930b0d2169b247d097f854400cde2f72d6512c06fa6fed",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceRoutingRepository.java",
+      "sha256": "0e7cd0d9fe14f1ce56c1e645b31089b33e53579608f59d8539c675f68fdaa523",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceScheduleRepository.java",
+      "sha256": "bb832ed7d2d26409c666859eb958eb0030c055826dd480c2fcf06a92408a7c2d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceSystemHandoffPort.java",
+      "sha256": "93ca41b760d414013fdbdad2b892edbbdb2b6a22cbdaf725abda97cfe50adc14",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceSystemHandoffRepository.java",
+      "sha256": "fef5275c98eb1bc216ee2223636a01666191e4cb9c98d8a91384a07b6121fb1c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-domain/src/main/java/com/byt/cloud/agent/domain/customerservice/repository/CustomerServiceWaitingRepository.java",
+      "sha256": "13556b78e758e3ba4c5f3449f4e8c2ea3e19b9b7e72bab4f7055387068e7f539",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionCandidateRepositoryImpl.java",
+      "sha256": "49f45606971b6671c0f80cb770098255a1deade79bc4cde1ad032e1e6a71481d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionEvidenceRepositoryImpl.java",
+      "sha256": "8f54cabb6344af4b5fbac1f4d31a554e3cd1fb9f7594e5b0374efc9c15be5c9a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionSignalRepositoryImpl.java",
+      "sha256": "89d70f275d6ad12892b32a0a3ae0d4b9d48c214f1dc76400ec59e821537787b6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionSurveyRepositoryImpl.java",
+      "sha256": "6248488e793fa292a16a769ffff4879e5bd09949f6e9416b6649308ed754128c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/CustomerServiceConversationExportQueryImpl.java",
+      "sha256": "2745532e62012c061d2bcf156ab786c4c558465bfef15a0b06ec16fc2a586d90",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/entity/AiResolutionCandidateEntity.java",
+      "sha256": "36de1eb0642d47bafac34d6e95c02295865b0c5afc1567a693ee21b29afa1add",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/entity/AiResolutionEvidenceRow.java",
+      "sha256": "d399843cec31f971b3578242324db696cbc79991681399c43e26a32f60f93706",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/entity/AiResolutionSignalEntity.java",
+      "sha256": "c26411007232eeb73cfd81dd37eea30c50b4bd67c23a8806a228d7a0ac2d4b69",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/entity/AiResolutionSurveyEntity.java",
+      "sha256": "6a27a34a62a7874e65e805529342dfadf9fe889f10588eea0c1c3f9638ab86b6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/entity/AiResolutionSurveyOutboxEntity.java",
+      "sha256": "239ee37e50e207bbb843e3fa3b3828769af6b3e9b8cb93097ccf2a5382b02a77",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/mapper/AiResolutionCandidateMapper.java",
+      "sha256": "01b0ff06057c9fa68c516beb8364f43ab7268b25eeb3a523d0b93c3b48bb5fb5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/mapper/AiResolutionEvidenceMapper.java",
+      "sha256": "910e978a01a6c7aa463063e91bdb4bc3268dc4752532381a24abab313a53659e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/mapper/AiResolutionSignalMapper.java",
+      "sha256": "7b55d222e8dbb1484a9e2403f25744587d600b94f6ceac2d56b92df48731d2e7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/mapper/AiResolutionSurveyMapper.java",
+      "sha256": "d9e7719f875b64d9644773a414b39d7bcc99af8576bcd651d0948f1fd1a9ddb5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/agent/resolution/mapper/AiResolutionSurveyOutboxMapper.java",
+      "sha256": "a6add5cbacaf28c0cef48edc274e8d9d3b6f1c99891297e30945df68708b99ea",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceAvailabilityRepositoryImpl.java",
+      "sha256": "b1a65b36e43652608e111aba8376fa3f9c31db51841ff4f7b06749a059be212a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceFollowupFormRepositoryImpl.java",
+      "sha256": "23c7bd8c72dfd7ede063afd890d8bcdb4f7f0201851d01b1a6fd76d6078a98e4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceFollowupResponseRepositoryImpl.java",
+      "sha256": "cd951078a1bf90f508ea318bec5fc7c3f1ded1bb4a42315925ac6fb3f86e226d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffEpisodeRepositoryImpl.java",
+      "sha256": "f2bc1ba5893f0d31a2d9a3a35e839714f534a4ff65b2a019ca51c0b2ffc1b4a5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffHistoryQueryImpl.java",
+      "sha256": "d623f95583ac51819b231fa8accbd90f0826dc011bdcd8c4d5921a52cfa90341",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffOutboxRepositoryImpl.java",
+      "sha256": "f6c4184901ed558b878daeb66dccc6427220b46208060fa040030755101b4101",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffProposalRepositoryImpl.java",
+      "sha256": "3fbea1ec8bc4e6e2e9c5841d0cb6a17ae289e319c1e254d1a8ac53551033517f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffRabbitEventPublisher.java",
+      "sha256": "040862731bf9ec51972d0703b192726459a74f08540c7d4724b298b7f74f8a3a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffRabbitOutboxConfiguration.java",
+      "sha256": "3d2f71c9141a2df38e06915e8cd39cd2e0a7898c3bc8a36757cd3baa55664771",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceMetricsQueryImpl.java",
+      "sha256": "1b98ca19fd674b900b2ed271a20eaaf5e4b13934a1fadb74debd4ccd8cbbf99a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceNotificationHttpAdapter.java",
+      "sha256": "8cd9c4f1bfac0d358d1cea02117e0403c57e23d4c04ff95c7cab98ad2e580998",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceNotificationSandbox.java",
+      "sha256": "9492b5b0046b876fdca717c62f711b5d993c67c04531233d535038e7a272becb",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceReceptionRepositoryImpl.java",
+      "sha256": "82dbc21f7b7359d7a039d539efbc3b15e3fa5d7844c38bb27f1784188e8a4df5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceRoutingRepositoryImpl.java",
+      "sha256": "b452086edd79d02f35c96adc6dabd2c9e2e0cbe576637e640dc244ca733f29c9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceScheduleRepositoryImpl.java",
+      "sha256": "29a97d4cfe7a981635e4d8bd50399e397e46362b03d9713aefc26e9059a82139",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceSystemHandoffRepositoryImpl.java",
+      "sha256": "6e77e1d0ad021bc3ae4b6a0010134e3960b881e253389dfbd21f7d3e95a98ad7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceWaitingRepositoryImpl.java",
+      "sha256": "dbf57a14c4b5cd1e783ff995ad6628cbbbf6181bf2b10d0e701055a4f861496b",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceWeComRobotClient.java",
+      "sha256": "4ab7d7569cbcbc49e2b363c0666e518d94f5eafa9f6b15d90a6cbe731933bdaf",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/UserCenterAccountDirectoryAdapter.java",
+      "sha256": "ff5959a22adbe5464772b4a99729881c98bd625eb206f6ffb6b27d777abc81a4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceAvailabilityEntity.java",
+      "sha256": "f306e79f2b5574fd11689923cefda89626ccd99f754f016c9a10cd1813b57c0e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceFollowupDeliveryEntity.java",
+      "sha256": "a2bd907eb87f8442361d51c150dfa94939a105d31a9892ad553e7f079253b442",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceFollowupFormEntity.java",
+      "sha256": "3236b615222766c1d706f6863d85fd2438852eac2235bf5201d883b3c8aa2c53",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceFollowupResponseEntity.java",
+      "sha256": "d1c3d196114217ba1db4a119451e464c50600a4fe329d9b2d0f18f9f894b1252",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffCancellationEntity.java",
+      "sha256": "7ad3b057ae1bb586e2bdab7267fba9b3b2323e708090ad0a42c57c55301ac56b",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffClaimEntity.java",
+      "sha256": "482ed00a0693bfee61b9ac07ae6b603c519dfaa49b17480bee8d047bbf709ade",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffDirectCommandEntity.java",
+      "sha256": "7949e50150e21951f74c9047a785b8e3544deba62b72a43e654cad770dde7b3b",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffEpisodeEntity.java",
+      "sha256": "229e6950de95c74b4624531de60cf8b4cf8eea3f28d6b5fc69601f7d089ad490",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffEpisodeRow.java",
+      "sha256": "51c1286c3af5848b8f0cae66de2f04fcf41cef38cbc0f1792631fb26b4f3c362",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffOutboxEntity.java",
+      "sha256": "0a47a6953faa21a3ea4016c656c45bc5bf88074898f01177306a5ac5946048d6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffProposalCommandEntity.java",
+      "sha256": "4d287d2cebd4b45e35e1254b5bb053154bd4acab502dbaaf68c5bb8cc028de80",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffProposalEntity.java",
+      "sha256": "af558c8a04f92b4d5a7480a6e387bcd463cfcaeea01bb0aef3f7c395fd3f5a9a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceHandoffRouteEntity.java",
+      "sha256": "1d49e3cb1ee9f3ce1314b7bc120d7ed677c51538e1c7466012f41aee9553a4e2",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceMetricsRow.java",
+      "sha256": "92f35b0bba9cc53905387f93ddd0ba3201850b027227f319ea0d8c9e9749bb38",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionCommandEntity.java",
+      "sha256": "9498e70193b796b9597431e3ad580667e581f84538877aee6609b02a8b26ec25",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionConfigurationEntity.java",
+      "sha256": "1c84d536886fd1a2d8582a13295445166463c49ae452eb82686b503be454aed9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionGroupEntity.java",
+      "sha256": "8221c1b9278a71a94edd363acdcd836fe434c1e94f1ea726a334939a354630d6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionMemberEntity.java",
+      "sha256": "904dc7ed1e65aaac1d82fc7dd37d0475c18d68f1ed2cf1ec483b341982123bdb",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionRouteEntity.java",
+      "sha256": "501b23971a8db07db059d5e3b982a7d71b520feadeb9fc0a6222ad5e40dadbe6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionRow.java",
+      "sha256": "95c664992f4f857ff32e6a63054d0c0936ce06364e4d41800952fa4e41adcafd",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceReceptionTransferEntity.java",
+      "sha256": "3d3a884726e073d97fa1aa94a04a11a8b8c9a2dacf810a7a6502f53fbb9cc830",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceRoutingRow.java",
+      "sha256": "6e334d36aebf40635bee962615b2f22c61d228ae6b9bd1e63ff10dffa41520f6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceScheduleEntity.java",
+      "sha256": "b174ed3f97117da8c8cc4545018e114e4538814aa9f5fc6ddb6f8ef1d2f22f78",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceSystemHandoffEntity.java",
+      "sha256": "2c99e5ed28db98630af5fd03168a4975089cdbc3018ce0168ac8cede8a130a93",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceWaitingEntity.java",
+      "sha256": "265683aca0181f5aff40bd7d5ef39ce8efa7eecc6abaaac648b0cc921c1af75b",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/entity/CustomerServiceWaitingRow.java",
+      "sha256": "96a6c1cd67800fb42b95d4d9ee95facb05b49cdf9fa7e0a34fe17d054a0b6aab",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceAvailabilityMapper.java",
+      "sha256": "edd14dcaa494cd795868b97902c41ce620806955b3ba0a0039db59aa470ecaba",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceFollowupDeliveryMapper.java",
+      "sha256": "57f93af545212e4df8aaac2696132997bd0df6eb7809a0db08266651ab37d8c7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceFollowupFormMapper.java",
+      "sha256": "15e502309164451924c269c7711a58614d0be751646fe96d299d893bcce68f1a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceFollowupResponseMapper.java",
+      "sha256": "7a5b8c5eb4df7b6d212080d558c10b3bc2140938b706911e96ea87c44611375e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffCancellationMapper.java",
+      "sha256": "578427b4f808e4a1157225b300f13bb46a5a5fca6dbf453fe4a66827a22d0943",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffClaimMapper.java",
+      "sha256": "3d1ef9d7a72931f4e1b7861a2fb281250d08956e5162d9b677736fc3bf599378",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffDirectCommandMapper.java",
+      "sha256": "1e432959600a9fdc2b5a2f5062026bbd893d3af2c0faeff59877035397527698",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffEpisodeMapper.java",
+      "sha256": "57d28e3ea47537cbc66777d9e87873d00cd0281b55fafa9be2f8c633dadb837f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffOutboxMapper.java",
+      "sha256": "2334d9ac191ecd3df281b761304f9f1329ebf66e2acc556cc8e6cac8ffad9a15",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffProposalCommandMapper.java",
+      "sha256": "88cf8b358fd1c38dba5c9fcf8be60fcc1a48911e37e031ceb3fc8d1a5537df01",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffProposalMapper.java",
+      "sha256": "51305eea78841194789aa932a3b36bcad508f250e659e77e3e2067c8499d2318",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceHandoffRouteMapper.java",
+      "sha256": "9defeb3801a005194b6f37bd8ca751888f2945dd2b427e8e97500d4df1861574",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceMetricsMapper.java",
+      "sha256": "ad19d416ef79e707759eec2e588a450687aa8b957a51c51b7c9f5260a25de6fd",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionCommandMapper.java",
+      "sha256": "31ecb78814b0e0ae38ad50490d68cd6b6367598ea77e7663ef0399ae3fb19b35",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionConfigurationMapper.java",
+      "sha256": "320498ad6caf6cce8ed549b5f0b391dd002c26e959388909c40042170e43de3c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionGroupMapper.java",
+      "sha256": "1798caf45626e91bc7876787a156773a46b57b96a46339f33146806010015201",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionMapper.java",
+      "sha256": "f41f3667f84ba1c8fc2bc31747192637c6772a2895cdcccb6de19aeed74276d8",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionMemberMapper.java",
+      "sha256": "099708e769ea7e64e053f104821da7901aabdf4f996f050da9f5b034ba797124",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionRouteMapper.java",
+      "sha256": "740bd472facc18fde0e949eec0869824ac1db6b870c352319fbc695a6de291ec",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceReceptionTransferMapper.java",
+      "sha256": "3302de10d6b723a7ff1375312f95328d7117199c7a79d45b0226268a5569cbd9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceRoutingMapper.java",
+      "sha256": "39e3cbd2b924775a97e92b72d0361b361a491f1b62aca99a9ca7fcaab0c4f7e1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceScheduleMapper.java",
+      "sha256": "cacfcb0a0b38e1fa5e8e532006b5a3157258d7428f45bf20da8e3353b826a337",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceSystemHandoffMapper.java",
+      "sha256": "2ec1e2fb69b84f36de4c2362bc7742c260e6d516e4b7e975c032973b49b21c29",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/main/java/com/byt/cloud/agent/infrastructure/customerservice/mapper/CustomerServiceWaitingMapper.java",
+      "sha256": "b45d1a1419bd9e36b9255f63a2acb96abab5a435f76070f2bf81bfe88484800d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionCandidateMigrationContractTest.java",
+      "sha256": "328437c9e801e82f21c879071bf1a0889fa6e6e51c7e09a7a1c18d79b883d998",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionSignalRepositoryJdbcTest.java",
+      "sha256": "238023cbfd19a6971ce51cf10db2355239bc54a0498a4e5f29aad67106e568c7",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionSurveyMigrationContractTest.java",
+      "sha256": "3bfea9beeec89f01b1f87700438af6756adc63f2bda0642044f7199008924a4d",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/agent/resolution/AiResolutionSurveyRepositoryJdbcTest.java",
+      "sha256": "3c7360ff24fa16cfe04fe33364f2bdd72cb97b4a2fe5ccdd5c71563f8557b4d6",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceFollowupMigrationContractTest.java",
+      "sha256": "7b5fc7fc740df147648a1a466ca923d2f597035ba4a6ee4d352fec5ec6a46212",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffHistoryQueryJdbcTest.java",
+      "sha256": "28718b4cf453b8ffa547c795df4264f44d0ea60ac2a9ec955a75a5ee11c043b9",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffProposalMigrationContractTest.java",
+      "sha256": "ebe6fe5fa851fd0a3eadb7617ff47ee8c13f412c09e97a467cea3a1b91903aac",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceHandoffRabbitEventPublisherTest.java",
+      "sha256": "a976c9f3d0c6cbd1a9e83ebd0bb34b5ed3160351093f0e276c38490cfb68a0fd",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceMergedMigrationContractTest.java",
+      "sha256": "a68b0c568d6ed9947d60041a13d8291a80bd34949dcdf14b4ed53d1001c4a4b6",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceNotificationHttpAdapterTest.java",
+      "sha256": "01c548d3236803b31853cee4b82c7028ad9c5dd559468c120f24a5f8029bf90a",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceOrmMySqlTest.java",
+      "sha256": "cd11de34e035ce54362015dbeb9e1e83f7551dcdec43ab9ef109d5bbb4863bd6",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceOrmWiringTest.java",
+      "sha256": "cb8ec19f1d48ce567347123aada70bb6ce800b7c99da7bf01f4a1dde37e604f5",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceOwnerBoundaryMigrationContractTest.java",
+      "sha256": "986d616d601b636d63953b8419ffdb2b7e890708391aeaa05793a46752f498d9",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/CustomerServiceWeComRobotClientTest.java",
+      "sha256": "3b06730037a93cf5cf586e3cdd7ddcd5c76a45f229557cafd690c3f332cc5cd2",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/UserCenterAccountDirectoryAdapterTest.java",
+      "sha256": "ec5574c0011d28253184baa190b3faa56ebd4f803edd28dee46021e6cacd7a01",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-infrastructure/src/test/java/com/byt/cloud/agent/infrastructure/customerservice/UserCenterAccountDirectoryFeignContractTest.java",
+      "sha256": "46414fb9438f9148a07d041b699a11beda8403097e4a8662f9141390293763a2",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceAccountIdentity.java",
+      "sha256": "5a2de41004b4864c082255bc3d7713f24dc0c7fc5b105c6e9fac0f78a1f0ef0a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceAgentAccessService.java",
+      "sha256": "0a997f7b50368a56b947690b7f790ea83f6a7100ff03aab29f919177e213c919",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceAvailabilityService.java",
+      "sha256": "5f87d62802cd3365117dbe613ba7dd34c666ebfc1d92112b2e5194add2d4c94f",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceCalendar.java",
+      "sha256": "dc864482812a4fa68d69aaf76e6632d6583e3ba319c2251ad651f811a6ec51ff",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceDirectHandoffRequestService.java",
+      "sha256": "e76ee23f3dc82457e695d542344eb24d8717f2492fefaaa4cae75f89c112fb59",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceExplicitHandoffIntent.java",
+      "sha256": "80d76a3b8126b33594717c805238c9f6aa6db05ddec021af91933197528a4f01",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupFormService.java",
+      "sha256": "56ba65a91353b45b7062173f3498f4daaef90238d8cc62ceb3f8c6f3920253bc",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupResponseService.java",
+      "sha256": "9646825206352d3ea5a5df144d4ee7191e8fc82dbd2481aeb2fb1a0a35e70241",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupResponseWorker.java",
+      "sha256": "9f651b8f2af5711ca7f8dad92a8360911c0b375aa9dc6874cbaae770b3be1ac0",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffEpisodeService.java",
+      "sha256": "4631befcd10a66b4b02bc11c71eec564aa689f81b95559bafe4a04bcca17d537",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffOutboxWorker.java",
+      "sha256": "5c0af4f93319fadf189e06b531d4882578628e0f47e9f565f763932701b5aebf",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffProposalProperties.java",
+      "sha256": "e04eabd77ab3f52381a44211482c383ebdc09f0c61dc45cefa54cef7d5af7775",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffProposalService.java",
+      "sha256": "5da408f51351c9826aa33a2183af89c4abedd39d3bc32558c2d821300a39e1d4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffRecommendationPolicy.java",
+      "sha256": "123885b3852510b8b1e033c62d974c6bef99e8037baac2fc2a061d2541cf72d1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffRoutingService.java",
+      "sha256": "bfb4f4f9ea46c6d1156f654044cc6e5000a91df87b026839ec9f8fb345d261c6",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceMetricsService.java",
+      "sha256": "5506375067b11e32d29c663ca8bddfeb2843b92232d417a5686578be16fcb9d9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceNotificationWorker.java",
+      "sha256": "1b62f2c9531ca9e869a73125e81fa848271200ef31cf95d1dab384ef59fb21cf",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceRealtimeQuery.java",
+      "sha256": "cddaede95a9981932dc144ef6ec3757d41881c0989dea2920670579af346d13d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceReceptionMessagingService.java",
+      "sha256": "f4505b544d028f31f48e20e1a3ce81255bff9ab58138c493967db609405aed4a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceReceptionProperties.java",
+      "sha256": "2228d8a113b07f735e973014476da93f20784712201405662d50640decdc31bd",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceReceptionService.java",
+      "sha256": "f0ccc229dadd260256a7f16cd6a2d754b772c6b75a1afd9dae5f712d3cf68d69",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceRoutingConfigurationService.java",
+      "sha256": "2d044e5be2abe77a77e5b6fc3e07076e515de67e1c8d3ff4c6931dab7636f2bc",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceScheduleService.java",
+      "sha256": "9352a10ed45409c645824652acef185143a084ba98258017ba918a2cceb8cf16",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceSemanticClassifier.java",
+      "sha256": "4f02ec55d0151efac35358fb90dfe970fd5c4f3bdc828d406b81d1f392ed1310",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceSystemHandoffService.java",
+      "sha256": "4f463a19cda4e804699916b3ea9182829cf1fb4bbd8c639f48a9cc0778db9697",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceWaitingService.java",
+      "sha256": "635867b96d0ac8d3577b58c917bff49eecaab8b400c1c52dbff3394e7cc836f4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/event/tool/AiResolutionRecommendationTool.java",
+      "sha256": "9b4da9767d8d033f14f864edf8ab1072be395554a12cd971527b1a896d5d9526",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/event/tool/CustomerServiceDirectHandoffTool.java",
+      "sha256": "8d2dac1b9b7b7842d875bcbba44185adc48894a824c45ab30ea84dde9e3c9ff1",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/business/event/tool/CustomerServiceHandoffRecommendationTool.java",
+      "sha256": "c3b98f12f67be2f0627597ba359001ff2861cb8753b9b92f1def87793a275226",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/conversation/CustomerServiceConversationExportService.java",
+      "sha256": "cb3fca29526aeb99d01c1789c1c29a421d897fba8b519209900cfb3684e80a15",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/conversation/CustomerServiceConversationHistoryQuery.java",
+      "sha256": "5ecb05ecffc4dde1832b1ae12fd9903dd354783c75dc7beb31daaa81c71470ee",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/conversation/CustomerServiceVisitorSubscriptionAccess.java",
+      "sha256": "ca104c32a15c5170f53010a368be6a302f911cf526f5070eb36704f25d9eddf0",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionCandidateService.java",
+      "sha256": "d8787fb7c50034211ceacb19a129402f2273f66ad85fedc3be0ac34f3247201d",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/main/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionProposalPolicy.java",
+      "sha256": "6b6db9cdc030f68d3286823f19a205d2b969e6501068298036160ad88661c55e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceAgentAccessServiceTest.java",
+      "sha256": "f54f9d7abb9d6e8612d47fac9c09fc5c177e129dc89d67ded5f49f3540a1cf7d",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceCalendarTest.java",
+      "sha256": "6a48f00e52f81eebda4f2d46a29376f6b18875f3b01743753f4e8ddc0ef56443",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceExplicitHandoffIntentTest.java",
+      "sha256": "f48aa9e86f5046affadebd3c763b4229a93f6366185f78f4e3af6efc553845c5",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupFormServiceTest.java",
+      "sha256": "d13b42adda4636546006776c1e74cc5cad05f786c2d4757b7b5c704ae70e47af",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupResponseJdbcTest.java",
+      "sha256": "27c3e87d2314e56dbfecf20c5bc64e670f85522b31c5416cae630d4b592a7c90",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceFollowupResponseWorkerTest.java",
+      "sha256": "9df35b061a60e59057464529c38116ac17885822ed5329f5912fe1d22d2cf3d4",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffOutboxWorkerJdbcTest.java",
+      "sha256": "91add653a4f660ac0b1017539a5925ae506fc90771245439ce9685238aac0964",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffProposalJdbcTest.java",
+      "sha256": "ee5b0833b1b7156ed5b28aaf9aa64632ce612a2647f5016e24209dbcc88bc61e",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceHandoffRecommendationPolicyTest.java",
+      "sha256": "6c8cdef3bb713e4f581c32cdbc857780ff0d1f5be14af798ccf80b852f109155",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceMetricsJdbcTest.java",
+      "sha256": "3d8983ff867f1f51b08fc360846ded627da873f5a4e2f38581bb68ef1eb89804",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceNotificationWorkerTest.java",
+      "sha256": "1cf61ce4b361c06fc9b93a9909fe25f76e30dcb00e5d23dc95c96d78e10030f7",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceRealtimeQueryTest.java",
+      "sha256": "5877c7ab5a266d075bde19eb79ad3a6df445d90ad252f9756ff476a17a2193a4",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceReceptionJdbcTest.java",
+      "sha256": "c30d5e94968d872f1029bfcf89caa597c3ff28cba8069c3eba76ac065dc3cc7c",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceRoutingJdbcTest.java",
+      "sha256": "c1ae2413c632cd78cb0f0150f3e3e0b15d7f296826459c333e06aeea3ccf3c09",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceScheduleServiceTest.java",
+      "sha256": "661758ace7b6de987b3e51cfca33bc00391755be55f57fbbab85c7c2d36ced5c",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceSemanticClassifierTest.java",
+      "sha256": "35adbd738ecb31564d1d4ec67886caa396aa0d59ab52131cfa98ffeec4577256",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceSystemHandoffJdbcTest.java",
+      "sha256": "949ed9080ea7a58e5610e72f2cec65c78fcc4a345b029b87cab3075052d6d28a",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/customerservice/CustomerServiceWaitingJdbcTest.java",
+      "sha256": "ff1e3dd5c91c394910482f26c61a3857e1cfb1fac55584bc3cdc1ac449d08745",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/business/event/tool/CustomerServiceHandoffToolsTest.java",
+      "sha256": "662d15edec6d1f032178874c22435096512badb1061dbf0c1c73e308777f76cd",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/CustomerServiceConversationExportServiceTest.java",
+      "sha256": "6a32065d1ac4536108415c34864e630b9004ffc442f9150238c0ae160ffde6b7",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/CustomerServiceVisitorSubscriptionAccessTest.java",
+      "sha256": "d3988c491a911eef003bd4b74b187c9b62bd013db0eeb0380ee8fc00efc3c31f",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionCandidateJdbcTest.java",
+      "sha256": "b617fea8970c7a863146ea36270ca7d31fde0e3407c8161c443c0065589cdb25",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionProposalPolicyTest.java",
+      "sha256": "692d64bdf3fcc9932ea9b9fb926cc8f8cd7d711ca586b724a4645e8a791244c4",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionSignalPolicyTest.java",
+      "sha256": "6a933c2dbe7786516273e57da1571991a8a4abc1e730337b8a0ce8ba52c20b13",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionSignalServiceTest.java",
+      "sha256": "3be6101b5146e5f4b7f171bb9b58b3acea76c0883cfd9266a989b6c2b7280887",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/conversation/resolution/AiResolutionToolContractTest.java",
+      "sha256": "b248eae792f9a5aaf0b3e351b86635b68a4b5c33692d52cb59c106c505df5807",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-service/src/test/java/com/byt/cloud/agent/service/testsupport/CustomerServiceRoutingFixture.java",
+      "sha256": "67fbefefb70220148fc70acf08f99eefae71e75acb10802c83a8a5443ed3b55b",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/config/CustomerServiceRealtimeWebSocketConfig.java",
+      "sha256": "c888c7eaaca098cff21c4e4c9afe34f005db584fbcecca9dc82443462a6909fd",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/AiResolutionSurveyController.java",
+      "sha256": "06228a2343d7ae879c18ef4cc34ace2bd62e68e11db3763102a77ed6a9f61088",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceAgentOperationsController.java",
+      "sha256": "bd9f4b951d2393cab1307c9e3970839a411361e8f1ad03a16be149310876b3e9",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceConversationHandoffController.java",
+      "sha256": "91567270d1e4adb544bf4be286cdf6739f45b04382b64e6d3e816d676d77e4ce",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceExportController.java",
+      "sha256": "ee6023acdf611b035033d25d2ac2bd58d288530dfed38436ac98474cdcb3872e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceFollowupController.java",
+      "sha256": "69b063333c878dccf2fb18a05c24dc6470eadb7253f9eac296c565dd2dad3193",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceFollowupFormController.java",
+      "sha256": "141c34dc0ac1b5f7aee83e51e4136d674132befed77ef1d374831860fc1cd544",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceFormalAccountDirectoryController.java",
+      "sha256": "32e162d0baea151f10a6414cb1b869b8eb2ee95baed02d6ee0084d0365e57a57",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceFormalGroupDirectoryController.java",
+      "sha256": "28669d633a94897601b8c146c44bdc330e44571587fd020697707941314d118c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceHandoffProposalController.java",
+      "sha256": "602fffd9c65226d1974d2fc73ff3436a737eb92cd42e7facfc0b83d8163032a3",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceReceptionController.java",
+      "sha256": "4fd37a6de6aa11af65a8ed3102945f9290a47e36b2ee05d63830a793eff33d63",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceRoutingConfigurationController.java",
+      "sha256": "3e63bb588da713dd8a4a7c06c0b2f88726001f9acb8f5e68096e61b7cfe50ef4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceScheduleController.java",
+      "sha256": "e4effe88ee2275ff613ff283106bd21c7259118e221f243cdec9c35af097d268",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/controller/CustomerServiceTestConfigurationController.java",
+      "sha256": "bee1d63b8bd89783023b18312c74745e5f7656af9da4f9b38d053893391e577e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceAgentManagementAuthorizationAdapter.java",
+      "sha256": "9c27f8d80949df11959e82fef0b1d4e61faa3cf2a7f5720a4fa9bd4bf213dd04",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceAgentManagementMockAuthorizationAdapter.java",
+      "sha256": "c32750f6c8372213953232d16d0ebe74318ef6e50c1c74b43dd0bc2a05089b00",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceAuthenticatedHandoffProposalAuthorizationAdapter.java",
+      "sha256": "f180607165f1319309b3649cd135a8b2561042fcd7d1c40538c430236ba49f98",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceHandoffAuthorizationAdapter.java",
+      "sha256": "535adbf9f475e6f02c360daceee15b1948b277e3160909c30ccf284cd5cbe387",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceHandoffProposalAuthorizationAdapter.java",
+      "sha256": "163969fb426f34ae111b360ac89ce4a1dbbcdcd52264b636ae92b7a2e5e8163a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceHttpResponses.java",
+      "sha256": "f30acbdb37ca77c49aaa5133b65be79d015bd41cd2e628f2ddac57400c7c6a1c",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceRealtimeWebSocketHandler.java",
+      "sha256": "c6acf51c418db4970bc21e78c4b8bd94bd173d6e18a553e15332176db51ac6eb",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceReceptionExceptionAdvice.java",
+      "sha256": "426721c0607f395c2412d9cd198a30a1b375b23fafb55e9f3292f614c1c6ec8a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceReceptionRequests.java",
+      "sha256": "94864cdfd0d5b26b5d98bde7819be8f82f11629633b415fb2d734cf918d26d19",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceRequestAccess.java",
+      "sha256": "e1dd8c82790b57b5ed107e8ce5397b0574ebcb85957aab17e3dfb57ae357a8d5",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/java/com/byt/cloud/agent/web/customerservice/CustomerServiceTestConfigurationAdvice.java",
+      "sha256": "686bc096519b797e6b58ae7b12b39f0f3f877d723c7a39a74a65ab385a4bffae",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/agent.html",
+      "sha256": "1a35c33b3793eb7fbd38b3b99e24eabec56dfcb1ab1dfb065348ffd4b10b3799",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/customer-service.css",
+      "sha256": "f27892657d9b861dbfa9ff6fd3eea027c17c6a6b0545b4cbcc7ee8ec483ef6a0",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/debug.html",
+      "sha256": "75aee57d5e66ad06598180bc36ac5e193491eaf31f7086659fda9268fe24654e",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/navigation.js",
+      "sha256": "9f4a11b9af2ce67006c7d077471c5d2d118bc82d24f593cdf9879e64c18ebbe4",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/routing.css",
+      "sha256": "8bdd4b1f51ca056b1d2515f9af2f313134ec538dd8dcbc072f66d2428c5f6362",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/routing.html",
+      "sha256": "ad2e744d47589c97d08d8ffa5ad8dbb696ce3415b49f6e3f4573314fafcef63a",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/routing.js",
+      "sha256": "fb34f9c1a1c19165c7e753db02b0e4bd1a245bf2878505fa6ff4a2d9fb072ac7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/schedule-export.js",
+      "sha256": "b8f858651580b7c55febc5a341f16bf1c1dd59c1c1fbd8caf3b9b3e914264fa7",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/customer-service/visitor.html",
+      "sha256": "065aaf42ea60da2166486c3294c480306efac243bbac163b42de9266c79594fc",
+      "purpose": "业务迁移参考"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/test/css/formal-customer-service-workbench.css",
+      "sha256": "1d1bec6e021572531fd756c19b7804fe2be3d71e30acc3f7f613de067a089988",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/main/resources/static/test/js/formal-customer-service-workbench.js",
+      "sha256": "7b5cdc759c350e22fe51d7ab168a7c1c960b11dea15d6ee615fcafe05a805d42",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/AiResolutionSurveyControllerTest.java",
+      "sha256": "afe1ab2738895c12dc8ce94063a74ec9e2bd9c053d2f9d644d9457d6caecd8cb",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceConfigurationUserCenterContractTest.java",
+      "sha256": "a03f1593566d68af6f0e0b87ec04100e4f00b45f46713bcaafc45201e3155978",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceContractDocumentTest.java",
+      "sha256": "be167ee5d6d40572c34ef60d836825cb234483a3913d670c662f51136e59eb3b",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceConversationHandoffControllerTest.java",
+      "sha256": "f6feee8acbd38c16a836462b9a219be0d1d8c5b8e65da4f2038cda875c6a423b",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceFormalAccountDirectoryControllerTest.java",
+      "sha256": "3066378664cec0df36ad626497692d4f683232892f4053cc7b8c6603507afe45",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceFormalGroupDirectoryControllerTest.java",
+      "sha256": "59a52c0f7c9f38513fb7b70d762459ba71d24236a7bdc2e7c983470b7f4de0fc",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceHandoffProposalControllerTest.java",
+      "sha256": "150cdc41ebe325e1f8ee056eedf39e9d532a73d6078a3162bde02f36c46d8c2d",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceReceptionControllerTest.java",
+      "sha256": "bfa05537ca07a632d5b9ff1ea56fea04de0504157bf37f9372e1504f5063b1eb",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceReceptionFlowTest.java",
+      "sha256": "5774cfe2009fabc1370347175f0c39b35efd02e4a1bc1cc6053ec2983afec509",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceRequirementsApiTest.java",
+      "sha256": "81e9e5fced926007b48f67b8fdd601ee0dedc6ad079d975252b95d7eaeca3fbe",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceRoutingConfigurationControllerTest.java",
+      "sha256": "e5763315c9374eaa401655d35ea8a67d351661ec4fdccd334278f6c8d6cb5b48",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/controller/CustomerServiceTestConfigurationControllerTest.java",
+      "sha256": "1a0437b880bba48c951b2f20d66c5f24698d548dcfe72f51f7b56bdd5c959d0c",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/customerservice/CustomerServiceAuthenticatedHandoffProposalAuthorizationAdapterTest.java",
+      "sha256": "ca8dedc642c5a8960866227b6bcc66ed7f2f619b8529dbc5e79d32443bc23190",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/customerservice/CustomerServiceDefaultWiringTest.java",
+      "sha256": "04551a884a582d0b8aa27e5292aa9bd89b8c4772463633935919ba84b2fb63ce",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/customerservice/CustomerServiceHttpResponsesTest.java",
+      "sha256": "fc437be9651f4729119dd4df228d80a02c66df32c3d39a4803c07de528cd39f1",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/customerservice/CustomerServiceRealtimeWebSocketHandlerTest.java",
+      "sha256": "abb5db5840a499bfcba08fa5d8c7898524b8392dc30c975a136db1efbbe99faa",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "byt-cloud-agent-web/src/test/java/com/byt/cloud/agent/web/customerservice/CustomerServiceRequestAccessTest.java",
+      "sha256": "eccbd3555699a18878eb1e305e4b7aa04be801f78b82c81e03bc24bed22e4718",
+      "purpose": "回归依据"
+    },
+    {
+      "source": "specs/013-human-customer-service/ai-resolution-candidate.md",
+      "sha256": "de414ed0f16094d0372213a98e7957b510d7a06928927715d14d9c713eddf168",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/availability-system-metrics.md",
+      "sha256": "82dc16136c580550d831a6771579b78ca6c1f594fd72725be77d4ea4775b95ea",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/api-contract.md",
+      "sha256": "448a230452d58a30e4ef84f38dedc27fc0d85162fda9eb800066e6e1606d19f4",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/design.md",
+      "sha256": "04500b5b3146544e674c70bcbcb806eba13be4ddf727b571414debe8a5743de4",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/e2e-report-2026-11-05.md",
+      "sha256": "1aa19fd1886abbfb2fa9af8e9fc241b6bbdd32f409dbef4ff2d2671ae92087a9",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/full-analysis-2026-11-06.md",
+      "sha256": "b4f7692c4847aba85b146b33dd9a17d3804411011b47ef97858a23ba8b0b308d",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/local-debug.md",
+      "sha256": "8d0840a02f79be58ae0c075cf780109f593eb5aa27de10b4d2525d4ed2ff8de2",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/proposal.md",
+      "sha256": "ccdd6c27b4dab7b8104c768c375c64e140974947eb91226d83d11471c45bce6f",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/spec.delta.md",
+      "sha256": "22ffa20864e58d207c81143b71ac3b460ac4e85fbf90b54920cc16d2d5dc3015",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/tasks.md",
+      "sha256": "52f771a0070fa445c60cd318ff9f07de400efd92d66c738f344cbd2a6f0078b7",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/changes/add-human-handoff-workbench/technical-plan.md",
+      "sha256": "13372e8f78a16a105621e5de5b80524482220e7c53200d34f1ed150df203b9f8",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/configuration.md",
+      "sha256": "7bdf995eed6adb75ad2794cb5a548c4f4a5c48b028bc5007b9fdf58056d12d65",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/database-20261111.md",
+      "sha256": "32625da694552e50cc374cf60a1a87d5510b7b3530bb2cd00c9656fb5442bff0",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/design-simplification-review-20261111.md",
+      "sha256": "1cd16aab1f455ff766067a106119402263959b6f8d1064298a6c586e6fcf22a3",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/followup-response.md",
+      "sha256": "9421ddcdefe02bf7da163aeb8a5267dcf822fe4df25bf033bd915d474435edef",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/frontend-api.md",
+      "sha256": "d76e1ec6a3f9dae13f0f1d743f752708bbd458145438eebd5aa24026d5d8458f",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/handoff-api.md",
+      "sha256": "a24c77322abdf641c90a1f8bb14c57d16cd43daf70ac8b6bb9a94c97d1293f0a",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/implementation-history.md",
+      "sha256": "f02c806792f05cd74f2e79e5e2ef94d865432b43fa49db736832d3a3aa364875",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/local-test-workbench.md",
+      "sha256": "07e48bb555d4b96204d917d707565f8fa255ca7fea0a62584ca4b992c647c50a",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/persistence.md",
+      "sha256": "7a9524eb148e0cdc7bc4cec7af23d3e5def269e184e75a7854ea6544abd5373a",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/plan.md",
+      "sha256": "d848376e0abbe6fd44f63cb2d5c1a73cda4367edb7f923d6c4762095239747d9",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/reception-api.md",
+      "sha256": "d8429036a88fdd37df93f5d2ec25dd67640968f6929f45e082bc49a3894d9c09",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/reception.md",
+      "sha256": "9db2a9bca4bbc3f95b100b0dbb79f8f1b4f32906c5783ca2b73ac9151324d3ac",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/requirements-e2e-20261111.md",
+      "sha256": "67383aa99b8420e210e8b992f7213dcaac856c140ec9f6dc71b3b6ec4cbfb1b6",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/routing-realtime.md",
+      "sha256": "4c5596bbf592ee83647d0b43bc698620cf6b904fde16faed305b33456c33bf2a",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/spec.md",
+      "sha256": "36b9665a06d7338ceb3e1acb93020b9777123037c880d00223db97e5a1c738f5",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/structure-review.md",
+      "sha256": "3c61b5d7276966dc102d7716846a1db3ec8dc40d5e08ce53be68797dbe0d9d8c",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/survey-waiting-realtime.md",
+      "sha256": "0cbac0e27f02e576163ab32d08fcd08efb5185e0ad929257c32d0a11c073fb73",
+      "purpose": "迁移规范"
+    },
+    {
+      "source": "specs/013-human-customer-service/tasks.md",
+      "sha256": "3564855087c2e02255cd4e1d8e5eeaaae4d804b8eee6e235482541d3c0c6ed96",
+      "purpose": "迁移规范"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+.business-shell {
+    max-width: 1380px;
+}
+.agent-layout {
+    grid-template-columns: minmax(260px, 0.65fr) minmax(0, 1.5fr);
+}
+.business-shell [hidden] {
+    display: none !important;
+}
+.business-shell .result-box {
+    min-height: 0;
+}
+.business-shell .reply-panel {
+    background: #fff;
+}
+.business-shell .chat-message {
+    overflow-wrap: anywhere;
+}
+.business-shell .proposal-list button {
+    overflow-wrap: anywhere;
+    text-align: left;
+}
+.business-shell #agent-messages {
+    margin-top: 0;
+    height: 44vh;
+    min-height: 280px;
+}
+.business-shell .card-heading .button-row {
+    margin-top: 0;
+}
+.business-shell .hint {
+    line-height: 1.7;
+}
+@media (max-width: 1100px) {
+    .agent-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.business-shell .card-heading {
+    flex-wrap: wrap;
+}
+.business-shell .card-heading h2 {
+    flex-shrink: 0;
+}
+.business-shell .chat-composer > button {
+    min-width: 100px;
+}

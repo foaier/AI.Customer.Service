@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>客服业务分组与助手路由</title>
+        <script src="../auth/js/auth-loader.js"></script>
+        <link rel="stylesheet" href="../test/css/formal-customer-service-workbench.css" />
+        <link rel="stylesheet" href="../test/css/customer-service-configuration.css" />
+        <link rel="stylesheet" href="routing.css" />
+    </head>
+    <body>
+        <main class="page-shell config-shell">
+            <header class="page-header">
+                <div>
+                    <a id="debug-home" href="debug.html">← 客服调试中心</a>
+                    <h1>客服业务分组与助手路由</h1>
+                    <p class="subtitle">根据本次咨询语义选择接待组。成员关联和助手映射保存在本项目，重启后保留。</p>
+                </div>
+                <button id="login" class="secondary" type="button">登录 / 重新登录</button>
+            </header>
+            <section class="panel">
+                <h2>配置范围</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="org">组织 ID</label><input id="org" autocomplete="off" /><button
+                            id="load"
+                            class="secondary"
+                            type="button"
+                        >
+                            加载分组配置</button
+                        ><button id="load-assistants" class="secondary" type="button">读取助手列表</button>
+                    </div>
+                    <div>
+                        <label for="assistant-list">选择要配置的 AI 助手</label
+                        ><select id="assistant-list">
+                            <option value="">请先读取助手列表</option></select
+                        ><label for="assistant">助手 ID</label><input id="assistant" autocomplete="off" />
+                    </div>
+                </div>
+                <p id="status" role="status" aria-live="polite">登录后加载组织配置。</p>
+            </section>
+            <section class="panel">
+                <h2>用户中心客服组</h2>
+                <p class="hint">候选账号来自当前组织已有的用户中心分组。这里仅读取成员，不修改用户中心分组或账号。</p>
+                <div class="directory-toolbar">
+                    <label for="directory-keyword">搜索客服组</label
+                    ><input id="directory-keyword" type="search" maxlength="128" /><button
+                        id="search-directory-groups"
+                        class="secondary"
+                        type="button"
+                    >
+                        搜索分组</button
+                    ><button id="more-directory-groups" class="secondary" type="button" hidden>加载更多分组</button>
+                </div>
+                <p id="directory-status" class="hint" role="status" aria-live="polite">
+                    加载组织配置后读取用户中心分组。
+                </p>
+            </section>
+            <form id="routing-form">
+                <fieldset id="routing-fields" disabled>
+                    <h2>默认业务分组与客服成员</h2>
+                    <p class="hint">
+                        选择用户中心分组并加载其中账号，再将客服加入展商、观众、媒体或其他业务组。同一账号可加入多个业务组；保存时会再次核验组织启用状态。
+                    </p>
+                    <div id="groups" class="config-grid"></div>
+                    <section class="panel routing-section">
+                        <h2>当前助手的接待组</h2>
+                        <p class="hint">
+                            为每类咨询指定接待组，也可全部指向同一个组。只影响新申请，已有申请保持原分组。
+                        </p>
+                        <div id="routes" class="form-grid"></div>
+                        <p id="route-status" class="hint"></p>
+                    </section>
+                    <div class="config-actions">
+                        <button id="save" class="primary" type="submit">保存分组与当前助手映射</button
+                        ><button id="reload" class="secondary" type="button">重新加载已保存配置</button>
+                    </div>
+                </fieldset>
+            </form>
+            <section class="panel">
+                <h2>客服工作时间</h2>
+                <p>保存到当前组织，重启保留；已申请的等待截止时间保持原值。</p>
+                <label for="calendar-version">日历版本</label><input id="calendar-version" maxlength="64" />
+                <label for="calendar-zone">时区</label><input id="calendar-zone" value="Asia/Shanghai" />
+                <label for="calendar-opens">上班时间</label><input id="calendar-opens" type="time" />
+                <label for="calendar-closes">下班时间</label><input id="calendar-closes" type="time" />
+                <label for="calendar-overrides">日期覆盖（JSON，日期对应true营业或false休息）</label
+                ><textarea id="calendar-overrides" rows="3">{}</textarea>
+                <button id="calendar-load" type="button" class="secondary">读取工作时间</button>
+                <button id="calendar-save" type="button" class="primary">保存工作时间</button>
+                <p id="calendar-status" role="status"></p>
+            </section>
+            <section class="panel">
+                <h2>聊天与AI满意度记录</h2>
+                <label for="export-page">导出页码（每页20会话）</label
+                ><input id="export-page" type="number" min="1" value="1" />
+                <button id="export-conversations" type="button" class="secondary">下载本页聊天与评价JSON</button>
+                <p id="export-status" role="status"></p>
+            </section>
+            <section class="panel">
+                <h2>上下文语义路由预览</h2>
+                <label for="preview-context">最近咨询上下文</label
+                ><textarea
+                    id="preview-context"
+                    rows="5"
+                    maxlength="16000"
+                    placeholder="访客：我想申请采访证件。&#10;AI：请问需要了解办理流程吗？&#10;访客：对，这个事情想找人工。"
+                ></textarea
+                ><button id="preview" class="secondary" type="button">测试已保存的助手路由</button>
+                <p id="preview-result" role="status" class="result-box">只预览咨询类别和目标组，不创建人工申请。</p>
+            </section>
+        </main>
+        <script src="../auth/js/auth.js"></script>
+        <script src="routing.js"></script>
+        <script src="schedule-export.js"></script>
+    </body>
+</html>

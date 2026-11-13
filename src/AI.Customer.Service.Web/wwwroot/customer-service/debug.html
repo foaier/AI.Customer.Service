@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>AI 与人工客服调试中心</title>
+        <script src="../auth/js/auth-loader.js"></script>
+        <link rel="stylesheet" href="../test/css/formal-customer-service-workbench.css" />
+        <link rel="stylesheet" href="../test/css/customer-service-configuration.css" />
+        <link rel="stylesheet" href="routing.css" />
+    </head>
+    <body>
+        <main class="page-shell config-shell">
+            <header class="page-header">
+                <div>
+                    <a href="../index.html">← 应用中心</a>
+                    <h1>AI 与人工客服调试中心</h1>
+                    <p class="subtitle">选定同一助手，依次配置接待组、发起咨询并在客服工作台接单。</p>
+                </div>
+                <button id="login" class="secondary" type="button">登录 / 重新登录</button>
+            </header>
+            <section class="panel">
+                <h2>当前调试助手</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="org">组织 ID</label
+                        ><input id="org" autocomplete="off" placeholder="登录账号所属组织" /><button
+                            id="load-assistants"
+                            class="secondary"
+                            type="button"
+                        >
+                            读取本组织助手
+                        </button>
+                    </div>
+                    <div>
+                        <label for="assistant-list">选择助手</label
+                        ><select id="assistant-list">
+                            <option value="">请先读取助手列表</option></select
+                        ><label for="assistant">助手 ID</label
+                        ><input id="assistant" autocomplete="off" placeholder="也可直接填写助手 ID" />
+                    </div>
+                </div>
+                <p id="status" role="status" aria-live="polite">填写助手 ID 后，各入口会沿用该助手。</p>
+            </section>
+            <nav class="config-grid" aria-label="客服调试入口">
+                <a class="panel entry" data-entry="visitor.html" href="visitor.html"
+                    ><h2>访客 AI 聊天</h2>
+                    <p>咨询、申请人工、查看接待进度和提交满意度。</p>
+                    <span>开始咨询 →</span></a
+                >
+                <a class="panel entry" data-entry="agent.html" href="agent.html"
+                    ><h2>客服工作台</h2>
+                    <p>登录后可在容量内接单、回复及处理邮件跟进；显示在线后可接收同事改派。</p>
+                    <span>查看待接单 →</span></a
+                >
+                <a class="panel entry" data-entry="routing.html" href="routing.html"
+                    ><h2>客服分组与助手路由</h2>
+                    <p>维护展商、观众、媒体、其他四类业务组和成员，指定助手由哪些组接待。</p>
+                    <span>配置接待 →</span></a
+                >
+            </nav>
+        </main>
+        <script src="../auth/js/auth.js"></script>
+        <script src="routing.js"></script>
+    </body>
+</html>

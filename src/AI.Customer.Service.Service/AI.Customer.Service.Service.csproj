@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../AI.Customer.Service.Common/AI.Customer.Service.Common.csproj" />
+    <ProjectReference Include="../AI.Customer.Service.Api/AI.Customer.Service.Api.csproj" />
+    <ProjectReference Include="../AI.Customer.Service.Domain/AI.Customer.Service.Domain.csproj" />
+    <ProjectReference Include="../AI.Customer.Service.Core/AI.Customer.Service.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.10" />
+  </ItemGroup>
+</Project>

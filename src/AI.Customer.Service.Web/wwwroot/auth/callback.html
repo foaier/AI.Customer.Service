@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta http-equiv="Cache-Control" content="no-store" />
+        <title>统一登录回调</title>
+        <script src="/auth/js/oidc-byt.min.js"></script>
+    </head>
+    <body>
+        <p>正在完成登录…</p>
+        <script>
+            // 原 OIDC SDK 校验 state 并恢复登录前页面，不向 URL 加客服凭据。
+            oidcByt.oidcAuthCallback();
+        </script>
+    </body>
+</html>

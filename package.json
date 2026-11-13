@@ -1,0 +1,27 @@
+{
+  "name": "ai.customer.service",
+  "version": "1.0.0",
+  "description": "AI.Customer.Service 静态页面验证和格式化工具",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:browser": "node tests/browser/run.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/foaier/AI.Customer.Service.git"
+  },
+  "license": "MIT",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/foaier/AI.Customer.Service/issues"
+  },
+  "homepage": "https://github.com/foaier/AI.Customer.Service#readme",
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@prettier/plugin-xml": "3.4.2",
+    "prettier": "3.6.2",
+    "sql-formatter": "15.6.10"
+  },
+  "private": true
+}

@@ -1,0 +1,98 @@
+/* 沿用联调台组件，仅补配置表单、日期行和小屏布局。 */
+.config-shell {
+    max-width: 1240px;
+}
+.config-shell h1 {
+    margin-top: 16px;
+}
+.config-shell a {
+    color: #1e40af;
+}
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.config-grid section {
+    min-width: 0;
+}
+.config-shell fieldset {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    margin: 0;
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.config-shell h3 {
+    margin: 20px 0 10px;
+    font-size: 15px;
+}
+.override-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.override-row label {
+    margin-top: 0;
+}
+.config-shell input,
+.config-shell select {
+    min-width: 0;
+}
+.config-shell button {
+    min-height: 42px;
+}
+#preview-calendar {
+    margin-top: 14px;
+}
+.config-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 20px 0;
+}
+.attempt-list {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
+}
+.attempt {
+    border-top: 1px solid #dbe3ef;
+    padding: 12px 0;
+}
+.attempt strong {
+    display: block;
+    font-size: 13px;
+}
+.attempt p {
+    white-space: pre-wrap;
+    font-size: 12px;
+    margin: 6px 0;
+}
+.attempt summary {
+    cursor: pointer;
+    padding: 8px 0;
+}
+.config-shell [data-error="true"] {
+    color: #b91c1c;
+}
+@media (max-width: 760px) {
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+    .override-row {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .override-row button {
+        grid-column: 1 / -1;
+    }
+    .config-actions {
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,8 @@
+.git
+**/bin
+**/obj
+**/data/runtime
+**/appsettings.Local.json
+node_modules
+artifacts
+.tools
