@@ -1,0 +1,13 @@
+{
+  "printWidth": 120,
+  "tabWidth": 4,
+  "endOfLine": "lf",
+  "plugins": ["@prettier/plugin-xml"],
+  "overrides": [
+    { "files": ["*.json", "*.yml", "*.yaml"], "options": { "tabWidth": 2 } },
+    {
+      "files": ["*.csproj", "*.props", "NuGet.Config"],
+      "options": { "parser": "xml", "tabWidth": 2, "xmlWhitespaceSensitivity": "ignore" }
+    }
+  ]
+}

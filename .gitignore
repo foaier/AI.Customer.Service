@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+TestResults/
+**/data/runtime/
+artifacts/
+appsettings.Local.json
+*.user
+*.log
+node_modules/
+.tools/

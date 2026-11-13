@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="Cache-Control" content="no-store" />
+        <title>统一登录续期</title>
+        <script src="/auth/js/oidc-byt.min.js"></script>
+    </head>
+    <body>
+        <script>
+            // 只由现有 OIDC SDK 处理登录续期，不输出访问令牌。
+            oidcByt.oidcAuthSilent();
+        </script>
+    </body>
+</html>

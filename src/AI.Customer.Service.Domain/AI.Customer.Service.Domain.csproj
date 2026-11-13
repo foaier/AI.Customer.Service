@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../AI.Customer.Service.Common/AI.Customer.Service.Common.csproj" />
+  </ItemGroup>
+</Project>

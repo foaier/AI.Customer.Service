@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>客服工作台</title>
+        <script src="../auth/js/auth-loader.js"></script>
+        <link rel="stylesheet" href="../test/css/formal-customer-service-workbench.css" />
+        <link rel="stylesheet" href="customer-service.css" />
+    </head>
+    <body data-customer-service-role="agent">
+        <main class="page-shell business-shell">
+            <header class="page-header">
+                <div>
+                    <h1>客服工作台</h1>
+                    <p class="subtitle">处理在线咨询与邮件跟进。</p>
+                </div>
+                <div class="auth-controls">
+                    <span id="runtime-state" class="badge neutral" role="status">正在连接服务…</span
+                    ><span id="auth-state" class="auth-state" role="status">正在检查登录…</span
+                    ><button id="login-auth" type="button" class="secondary">登录</button>
+                </div>
+            </header>
+            <nav class="button-row" aria-label="客服调试导航">
+                <a data-cs-navigation href="debug.html">调试中心</a
+                ><a data-cs-navigation href="routing.html">客服分组与助手路由</a
+                ><a data-cs-navigation href="agent.html">客服工作台</a
+                ><a data-cs-navigation href="visitor.html">访客聊天</a>
+            </nav>
+            <input id="assistant-config-id" type="hidden" />
+            <div class="workspace-grid agent-layout">
+                <aside class="control-column">
+                    <section class="panel">
+                        <h2>我的在线状态</h2>
+                        <p id="agent-availability-status" class="hint" role="status">正在读取状态…</p>
+                        <div class="button-row">
+                            <button id="agent-online" type="button" class="secondary">显示在线</button
+                            ><button id="agent-away" type="button" class="secondary">暂离</button
+                            ><button id="agent-offline" type="button" class="secondary">下线</button>
+                        </div>
+                        <p class="hint">登录并关联接待组后即可直接接单；设为在线后，同事可将接待改派给你。</p>
+                    </section>
+                    <section class="panel">
+                        <h2>在线接待</h2>
+                        <button id="agent-queue" type="button" class="primary">刷新待接单与我的接待</button>
+                        <div id="agent-queue-list" class="proposal-list"></div>
+                    </section>
+                    <section class="panel">
+                        <h2>后续跟进</h2>
+                        <button id="agent-followups" type="button" class="secondary">刷新跟进工单</button>
+                        <div id="agent-followup-list" class="proposal-list"></div>
+                        <div id="agent-followup-status" class="hint" role="status"></div>
+                        <button id="agent-retry-notifications" type="button" class="secondary">重试失败建单通知</button>
+                    </section>
+                    <section class="panel">
+                        <h2>系统转接异常</h2>
+                        <button id="agent-system-failures" type="button" class="secondary">查看待恢复转接</button>
+                        <div id="agent-system-list" class="proposal-list"></div>
+                        <p id="agent-system-status" class="hint" role="status">仅显示需要人工恢复的系统转接。</p>
+                    </section>
+                </aside>
+                <div class="control-column">
+                    <section id="agent-reception-panel" class="chat-card">
+                        <div class="card-heading">
+                            <h2>当前接待</h2>
+                            <div class="button-row">
+                                <button id="agent-claim" type="button" class="primary" disabled>接单</button
+                                ><button id="agent-resolve" type="button" class="secondary" disabled>结束接待</button>
+                            </div>
+                        </div>
+                        <input id="agent-conversation-id" type="hidden" />
+                        <p id="agent-result" class="result-box" role="status">请从左侧选择接待。</p>
+                        <div id="agent-messages" class="chat-messages" role="log" aria-live="polite"></div>
+                        <div class="chat-composer">
+                            <p id="agent-receipt" class="hint" role="status"></p>
+                            <label for="agent-input">回复访客</label
+                            ><textarea id="agent-input" rows="3" maxlength="4000"></textarea
+                            ><button id="agent-send" type="button" class="primary" disabled>发送回复</button>
+                        </div>
+                    </section>
+                    <section id="reply-panel" hidden class="panel reply-panel" aria-label="工单最终回复">
+                        <h2>访客留言</h2>
+                        <p id="followup-form-status" class="hint" role="status"></p>
+                        <button id="claim-followup-form" type="button" class="primary">认领留言</button>
+                        <pre id="followup-form-detail" class="result-box"></pre>
+                        <h2>邮件回复与结案</h2>
+                        <p id="followup-reply-status" class="hint" role="status">
+                            选择后续跟进工单后可提交最终邮件回复。
+                        </p>
+                        <button type="button" id="followup-reply-load" class="secondary">刷新回复状态</button>
+                        <label for="followup-reply-subject">邮件主题</label
+                        ><input id="followup-reply-subject" maxlength="200" disabled />
+                        <label for="followup-reply-content">最终回复正文</label
+                        ><textarea id="followup-reply-content" rows="6" maxlength="10000" disabled></textarea>
+                        <p class="hint">提交后将发送至访客已确认的邮箱，最终回复内容无法修改。网关受理后可结案。</p>
+                        <button type="button" id="followup-reply-submit" class="primary" disabled>
+                            提交最终邮件回复
+                        </button>
+                        <div class="button-row">
+                            <button type="button" id="followup-reply-retry" class="secondary" disabled>
+                                重试失败回复</button
+                            ><button type="button" id="followup-reply-close" class="secondary" disabled>
+                                确认结案
+                            </button>
+                        </div>
+                    </section>
+                    <section id="agent-transfer-panel" class="panel" hidden>
+                        <h2>改派接待</h2>
+                        <p class="hint">选择同组客服，对方在线且有接待空位时才可改派。成功后由对方继续本次接待。</p>
+                        <button id="agent-transfer-candidates" type="button" class="secondary">加载同组客服</button
+                        ><label for="agent-transfer-target">接手客服</label
+                        ><select id="agent-transfer-target">
+                            <option value="">请先加载同组客服</option></select
+                        ><button id="agent-transfer" type="button" class="secondary" disabled>确认改派</button>
+                    </section>
+                </div>
+            </div>
+        </main>
+        <script src="../auth/js/auth.js"></script>
+        <script src="../test/js/formal-customer-service-workbench.js"></script>
+        <script src="navigation.js"></script>
+    </body>
+</html>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>在线咨询</title>
+        <script src="../auth/js/auth-loader.js"></script>
+        <link rel="stylesheet" href="../test/css/formal-customer-service-workbench.css" />
+        <link rel="stylesheet" href="customer-service.css" />
+    </head>
+    <body data-customer-service-role="visitor">
+        <main class="page-shell business-shell">
+            <header class="page-header">
+                <div>
+                    <h1>在线咨询</h1>
+                    <p class="subtitle">随时咨询，也可选择人工帮助。</p>
+                </div>
+                <div class="auth-controls">
+                    <span id="runtime-state" class="badge neutral" role="status">正在连接服务…</span
+                    ><span id="auth-state" class="auth-state" role="status">正在检查登录…</span
+                    ><button id="login-auth" type="button" class="secondary">登录</button>
+                </div>
+            </header>
+            <nav class="button-row" aria-label="客服调试导航">
+                <a data-cs-navigation href="debug.html">调试中心</a
+                ><a data-cs-navigation href="routing.html">客服分组与助手路由</a
+                ><a data-cs-navigation href="agent.html">客服工作台</a
+                ><a data-cs-navigation href="visitor.html">访客聊天</a>
+            </nav>
+            <input id="assistant-config-id" type="hidden" />
+            <div class="workspace-grid">
+                <section class="chat-card" aria-label="咨询对话">
+                    <div class="card-heading">
+                        <h2>咨询对话</h2>
+                        <button id="new-session" type="button" class="secondary">新的咨询</button>
+                    </div>
+                    <span id="conversation-id" hidden></span><input id="restore-conversation-id" type="hidden" />
+                    <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
+                        <p class="empty-chat">您好，请描述您遇到的问题。</p>
+                    </div>
+                    <form id="chat-form" class="chat-composer">
+                        <p id="visitor-receipt" class="hint" role="status"></p>
+                        <label for="user-input">咨询内容</label
+                        ><textarea id="user-input" rows="3" required placeholder="请输入您的问题…"></textarea>
+                        <div class="composer-footer">
+                            <span>人工接待时，消息会直接发送给客服。</span
+                            ><button id="send-message" type="submit" class="primary">发送消息</button>
+                        </div>
+                    </form>
+                </section>
+                <aside class="control-column">
+                    <section class="panel">
+                        <h2>需要更多帮助？</h2>
+                        <p class="hint">人工服务以当前组织设置的营业时间为准；非营业时间可提交留言。</p>
+                        <button id="request-handoff" type="button" class="primary">联系人工客服</button>
+                        <p id="handoff-result" class="result-box" role="status">您可以直接向 AI 咨询。</p>
+                        <button id="cancel-handoff" type="button" class="secondary" disabled>
+                            取消等待，继续咨询 AI
+                        </button>
+                        <div id="proposal-list" class="proposal-list"></div>
+                    </section>
+                    <section class="panel">
+                        <h2>等待与邮件跟进</h2>
+                        <p id="waiting-status" class="hint" role="status">申请人工后显示等待进度。</p>
+                        <button id="continue-waiting" type="button" class="secondary" disabled>继续等待</button
+                        ><label for="followup-email">联系邮箱</label
+                        ><input
+                            id="followup-email"
+                            type="email"
+                            autocomplete="email"
+                            maxlength="254"
+                            placeholder="用于后续回复"
+                        />
+                        <p class="hint">保存邮箱后继续在线等待；选择邮件跟进将取消在线等待。</p>
+                        <label for="followup-contact-name">称呼（选填）</label>
+                        <input id="followup-contact-name" maxlength="100" autocomplete="name" />
+                        <label for="followup-form-content">留言内容</label>
+                        <textarea
+                            id="followup-form-content"
+                            rows="4"
+                            maxlength="4000"
+                            placeholder="请描述需要客服上班后处理的问题"
+                        ></textarea>
+                        <button id="submit-followup-form" type="button" class="primary">提交留言，等待客服认领</button>
+                        <p id="followup-form-status" class="hint" role="status"></p>
+                        <div class="button-row">
+                            <button id="save-contact-email" type="button" class="secondary" disabled>
+                                保存邮箱并等待</button
+                            ><button id="email-followup" type="button" class="secondary" disabled>改为邮件跟进</button>
+                        </div>
+                    </section>
+                    <section id="survey-panel" class="panel" hidden>
+                        <h2>本次服务评价</h2>
+                        <p id="survey-status" class="hint" role="status"></p>
+                        <div id="survey-actions" class="button-row"></div>
+                    </section>
+                </aside>
+            </div>
+        </main>
+        <script src="../auth/js/auth.js"></script>
+        <script src="../test/js/formal-customer-service-workbench.js"></script>
+        <script src="navigation.js"></script>
+    </body>
+</html>

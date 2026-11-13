@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+node_modules/
+artifacts/
+.git/
+.tools/
+docs/java-baseline/
+data/sql/reference/
+data/sql/*/001_initial.sql
+src/AI.Customer.Service.Web/wwwroot/auth/js/oidc-byt.min.js
+LICENSE
+AI.Customer.Service.sln
