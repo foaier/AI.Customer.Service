@@ -31,6 +31,12 @@ export type Episode = {
     requestedAt: string;
     triggerSource?: string;
     reasonCode?: string;
+    autoCloseAt?: string | null;
+    resolutionReason?: "AGENT_MANUAL" | "VISITOR_INACTIVE_5M" | null;
+    unreadCount?: number | null;
+    lastVisitorSeq?: number | null;
+    readSeq?: number | null;
+    lastVisitorMessageAt?: string | null;
 };
 
 export type Proposal = {
@@ -70,7 +76,15 @@ export type AgentSnapshot = {
     reception?: Episode;
     timeline?: { messages: HumanMessage[]; receipt?: { deliveredSeq: number; readSeq: number } };
     queue?: Episode[];
-    followups?: unknown[];
+    followups?: Followup[];
+};
+
+export type InboxSummary = {
+    unreadMessageCount: number;
+    unreadConversationCount: number;
+    newFollowupCount: number;
+    pendingReceptionCount: number;
+    changeToken: string;
 };
 
 export type Waiting = {
@@ -89,4 +103,7 @@ export type Followup = {
     version: number;
     assignedTo?: string | null;
     submittedAt: string;
+    hasSubmittedForm?: boolean;
+    hasUnseen?: boolean;
+    formState?: "OPEN" | "CLAIMED" | null;
 };

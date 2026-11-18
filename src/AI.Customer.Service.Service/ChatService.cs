@@ -27,8 +27,11 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
     {
         if (ExplicitHandoffIntent.Matches(input))
         {
-            var result = await handoff.RequestAsync(actor, scope, Guard.Id("direct"), TriggerSource.VISITOR_DIRECT_REQUEST, ReasonCode.USER_REQUEST, ct);
-            yield return new("card", new { status = "handoff.requested", data = result });
+            yield return new("card", new
+            {
+                status = "handoff.email_required",
+                data = new { message = "请填写联系邮箱后提交人工申请" }
+            });
             yield break;
         }
         var turn = await runtime.BeginAsync(actor, scope, input, ct);

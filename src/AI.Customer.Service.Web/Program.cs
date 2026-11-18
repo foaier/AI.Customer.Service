@@ -93,6 +93,7 @@ builder.Services.AddScoped<MessagingService>();
 builder.Services.AddScoped<WaitingService>();
 builder.Services.AddScoped<AvailabilityService>();
 builder.Services.AddScoped<FollowupService>();
+builder.Services.AddScoped<InboxService>();
 builder.Services.AddScoped<SurveyService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<ReliableTaskProcessor>();
@@ -100,6 +101,7 @@ builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<MetricsService>();
 builder.Services.AddHostedService<ReliableTaskWorker>();
 builder.Services.AddHostedService<SurveyRecoveryWorker>();
+builder.Services.AddHostedService<AutoCloseWorker>();
 builder.Services.AddSingleton<RealtimeConnectionLimiter>();
 
 var app = builder.Build();

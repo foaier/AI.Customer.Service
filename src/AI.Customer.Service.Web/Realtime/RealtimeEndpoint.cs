@@ -17,15 +17,14 @@ using AuthenticationOptions = AI.Customer.Service.Web.Security.AuthenticationOpt
 
 namespace AI.Customer.Service.Web.Realtime;
 
-/// <summary>人工实时单一 WebSocket Adapter，首帧复用 JWT，持久序列恢复且按连接复核权限。</summary>
+/// <summary>人工实时单一 WebSocket Adapter，支持 URL 鉴权和旧首帧兼容，按连接复核权限。</summary>
 public static class RealtimeEndpoint
 {
-    /// <summary>固定订阅范围，令牌只出现在首帧，不能在 URL 或后续帧切换。</summary>
+    /// <summary>固定订阅范围；新客户端在 URL 鉴权，旧客户端可继续使用首帧。</summary>
     public static async Task HandleAsync(HttpContext context, RealtimeConnectionLimiter limiter, IServiceScopeFactory scopes,
         IOptionsMonitor<JwtBearerOptions> jwt, IOptions<AuthenticationOptions> authentication)
     {
-        if (!context.WebSockets.IsWebSocketRequest || context.Request.Query.Count != 0 ||
-            context.Request.Headers.Origin.Count > 0 && context.Request.Headers.Origin.ToString() != context.Request.Scheme + "://" + context.Request.Host)
+        if (!context.WebSockets.IsWebSocketRequest)
         {
             context.Response.StatusCode = 400;
             return;
@@ -42,7 +41,9 @@ public static class RealtimeEndpoint
             {
                 using var firstTimeout = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
                 firstTimeout.CancelAfter(TimeSpan.FromSeconds(5));
-                var first = await ReadFirstAsync(socket, firstTimeout.Token);
+                var first = context.Request.Query.Count > 0
+                    ? ReadQuery(context.Request.Query)
+                    : await ReadFirstAsync(socket, firstTimeout.Token);
                 var (principal, expires) = await AuthenticateAsync(first.Authorization, jwt.Get(JwtBearerDefaults.AuthenticationScheme), firstTimeout.Token);
                 var actor = RequestAccess.Resolve(principal, context.TraceIdentifier, authentication.Value);
                 var subscription = new Subscription(first.Agent, first.ConversationId, first.TopOrgId, first.AssistantConfigId);
@@ -55,6 +56,7 @@ public static class RealtimeEndpoint
                     throw BusinessException.Invalid("实时消息游标无效");
                 }
                 string? previous = null;
+                string? previousInboxToken = null;
                 using var stop = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
                 var receive = ReadUnexpectedAsync(socket, stop.Token);
                 try
@@ -91,6 +93,17 @@ public static class RealtimeEndpoint
                                 {
                                     cursor = Math.Max(cursor, message.GetProperty("seq").GetInt64());
                                 }
+                            }
+                        }
+                        if (subscription.Agent && string.IsNullOrWhiteSpace(subscription.ConversationId))
+                        {
+                            var summary = await scope.ServiceProvider.GetRequiredService<InboxService>()
+                                .SummaryAsync(actor, subscription.TopOrgId!, subscription.AssistantConfigId, stop.Token);
+                            if (summary.ChangeToken != previousInboxToken)
+                            {
+                                await SendAsync(socket, new { type = "inbox.notifications", data = summary }, stop.Token);
+                                previousInboxToken = summary.ChangeToken;
+                                sentAt = now;
                             }
                         }
                         else if ((now - sentAt).TotalSeconds >= 15)
@@ -156,6 +169,53 @@ public static class RealtimeEndpoint
         }
     }
 
+    /// <summary>验证浏览器握手 query；不接受客户端扩展认证身份或未定义参数。</summary>
+    private static FirstFrame ReadQuery(IQueryCollection query)
+    {
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "authorization", "agent", "conversationId", "topOrgId", "assistantConfigId", "afterSeq"
+        };
+        if (query.Keys.Any(key => !allowed.Contains(key)))
+        {
+            throw BusinessException.Invalid("实时连接包含未知参数");
+        }
+
+        var authorization = RequiredQuery(query, "authorization");
+        var agentText = RequiredQuery(query, "agent");
+        var afterSeqText = RequiredQuery(query, "afterSeq");
+        if (!bool.TryParse(agentText, out var agent) || !long.TryParse(afterSeqText, out var afterSeq) || afterSeq < 0)
+        {
+            throw BusinessException.Invalid("实时连接参数无效");
+        }
+
+        return new FirstFrame(
+            authorization,
+            agent,
+            OptionalQuery(query, "conversationId"),
+            OptionalQuery(query, "topOrgId"),
+            OptionalQuery(query, "assistantConfigId"),
+            afterSeq);
+    }
+
+    /// <summary>读取唯一的必填 query 值，拒绝空值和重复参数。</summary>
+    private static string RequiredQuery(IQueryCollection query, string key)
+    {
+        if (!query.TryGetValue(key, out var values) || values.Count != 1 || string.IsNullOrWhiteSpace(values[0]))
+        {
+            throw BusinessException.Invalid($"实时连接缺少有效参数 {key}");
+        }
+        return values[0]!;
+    }
+
+    /// <summary>读取可选订阅字段；空字符串与缺省字段统一为 null。</summary>
+    private static string? OptionalQuery(IQueryCollection query, string key)
+    {
+        if (!query.TryGetValue(key, out var values)) return null;
+        if (values.Count != 1) throw BusinessException.Invalid($"实时连接参数 {key} 无效");
+        return string.IsNullOrWhiteSpace(values[0]) ? null : values[0];
+    }
+
     /// <summary>使用与 HTTP 相同的签名、issuer、audience 和 lifetime 规则验证首帧 JWT。</summary>
     private static async Task<(ClaimsPrincipal Principal, DateTime Expires)> AuthenticateAsync(string authorization, JwtBearerOptions options, CancellationToken ct)
     {
@@ -209,12 +269,14 @@ public static class RealtimeEndpoint
         {
             await access.GroupsAsync(actor, sub.TopOrgId!, ct);
             var reception = provider.GetRequiredService<ReceptionService>();
+            var inbox = provider.GetRequiredService<InboxService>();
             var followups = provider.GetRequiredService<FollowupService>();
             if (string.IsNullOrWhiteSpace(sub.ConversationId))
             {
+                var queue = JsonSerializer.SerializeToElement(await inbox.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options);
                 return new
                 {
-                    queue = (await reception.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct)).Select(AgentEpisodeView),
+                    queue = queue.GetProperty("episodes"),
                     followups = JsonSerializer.SerializeToElement(await followups.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options).GetProperty("followups")
                 };
             }
@@ -234,7 +296,17 @@ public static class RealtimeEndpoint
         var latest = await handoff.LatestAsync(visitorScope, ct);
         return new
         {
-            episode = latest is null ? null : new { episodeId = latest.Id, latest.Status, latest.Version, latest.TriggerSource, latest.ReasonCode, latest.RequestedAt },
+            episode = latest is null ? null : new
+            {
+                episodeId = latest.Id,
+                latest.Status,
+                latest.Version,
+                latest.TriggerSource,
+                latest.ReasonCode,
+                latest.RequestedAt,
+                latest.AutoCloseAt,
+                latest.ResolutionReason
+            },
             waiting,
             survey = await provider.GetRequiredService<SurveyService>().GetAsync(visitorScope, ct),
             proposals = (await handoff.PendingAsync(visitorScope, ct)).Select(ChatService.ProposalView),
@@ -254,7 +326,9 @@ public static class RealtimeEndpoint
         value.GroupId,
         value.RequestedAt,
         value.TriggerSource,
-        value.ReasonCode
+        value.ReasonCode,
+        value.AutoCloseAt,
+        value.ResolutionReason
     };
 
     /// <summary>订阅建立后只允许 WebSocket 关闭，不接受二次认证或客户端切换范围。</summary>

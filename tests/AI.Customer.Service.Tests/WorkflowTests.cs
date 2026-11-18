@@ -83,6 +83,7 @@ public sealed partial class WorkflowTests
         var conversation = await db.Set<Conversation>().SingleAsync();
         Assert.AreEqual(2L, conversation.Epoch);
         Assert.AreEqual(TriggerSource.VISITOR_DIRECT_REQUEST, (await db.Set<Episode>().SingleAsync()).TriggerSource);
+        Assert.AreEqual("visitor@example.com", (await db.Set<Waiting>().SingleAsync()).Email);
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", tenantId = "tenant-b" }, HttpStatusCode.BadRequest);
     }
 
@@ -311,7 +312,7 @@ public sealed partial class WorkflowTests
         var answer = await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/survey/" + surveyId + "/answer",
             new { expectedVersion = 1, answer = "DISSATISFIED" });
         Assert.AreEqual(JsonValueKind.Null, (await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest")).GetProperty("episode").ValueKind);
-        var choice = new { expectedVersion = answer.GetProperty("version").GetInt64(), choice = "OPTED_IN" };
+        var choice = new { expectedVersion = answer.GetProperty("version").GetInt64(), choice = "OPTED_IN", email = "visitor@example.com" };
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/survey/" + surveyId + "/handoff-choice", choice);
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/survey/" + surveyId + "/handoff-choice", choice);
         await using var scope = application.Services.CreateAsyncScope();
@@ -335,7 +336,7 @@ public sealed partial class WorkflowTests
         application.Model.Tool = null;
         var proposal = pending[0];
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoff-proposals/" + proposal.GetProperty("proposalId").GetString() + "/decision",
-            new { requestId = "confirm", expectedProposalVersion = 1, decision = "CONFIRM" });
+            new { requestId = "confirm", expectedProposalVersion = 1, decision = "CONFIRM", email = "visitor@example.com" });
         await using var scope = application.Services.CreateAsyncScope();
         Assert.AreEqual(TriggerSource.AI_RECOMMENDATION_CONFIRMED, (await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().SingleAsync()).TriggerSource);
         var thanksSession = await SessionAsync(visitor);
@@ -405,6 +406,14 @@ public sealed partial class WorkflowTests
         Assert.AreEqual("snapshot", snapshot.RootElement.GetProperty("type").GetString());
         Assert.AreEqual("REQUESTED", snapshot.RootElement.GetProperty("data").GetProperty("episode").GetProperty("status").GetString());
         await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
+        var queryToken = Uri.EscapeDataString("Bearer " + Token("visitor"));
+        using var querySocket = await client.ConnectAsync(
+            new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={queryToken}&agent=false&conversationId={Uri.EscapeDataString(id)}&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"),
+            default);
+        var queryResult = await querySocket.ReceiveAsync(buffer.AsMemory(), timeout.Token);
+        using var querySnapshot = JsonDocument.Parse(buffer.AsMemory(0, queryResult.Count));
+        Assert.AreEqual("snapshot", querySnapshot.RootElement.GetProperty("type").GetString());
+        await querySocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
         using var invalid = await client.ConnectAsync(new Uri("ws://localhost/api/customer-service/realtime/ws"), default);
         await invalid.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, afterSeq = 0, tenantId = "fake" }), WebSocketMessageType.Text, true, default);
         var close = await invalid.ReceiveAsync(buffer.AsMemory(), timeout.Token);
@@ -427,7 +436,7 @@ public sealed partial class WorkflowTests
 
     /// <summary>稳定申请辅助入口，默认请求键仅在单会话内复用。</summary>
     private static Task<JsonElement> RequestAsync(HttpClient visitor, string id, string key = "handoff") =>
-        SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = key });
+        SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = key, email = "visitor@example.com" });
 
     /// <summary>访客完整客服资源路径。</summary>
     private static string VisitorPath(string id) => "/api/customer-service/conversations/" + id;

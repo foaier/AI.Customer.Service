@@ -79,8 +79,48 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     {
         var groups = await access.GroupsAsync(actor, org, ct);
         var values = await repository.QueueAsync(actor.TenantId, org, assistant, groups, ct);
-        return new { followups = values.Select(x => new { x.Scope, x.EpisodeId, x.TicketId, x.State, x.Version, x.AssignedTo, x.SubmittedAt }) };
+        var ids = values.Where(x => x.Origin == "FORM").Select(x => x.EpisodeId).ToArray();
+        var seen = await repository.SeenEpisodeIdsAsync(actor.TenantId, org, ids, actor.AccountId, ct);
+        var closed = await repository.ClosedEpisodeIdsAsync(actor.TenantId, org, ids, ct);
+        return new { followups = values.Select(x => new
+        {
+            x.Scope,
+            x.EpisodeId,
+            x.TicketId,
+            x.State,
+            x.Version,
+            x.AssignedTo,
+            x.SubmittedAt,
+            hasSubmittedForm = x.Origin == "FORM",
+            hasUnseen = x.Origin == "FORM" && (x.State == "OPEN" || x.AssignedTo == actor.AccountId) && !seen.Contains(x.EpisodeId) && !closed.Contains(x.EpisodeId),
+            formState = x.Origin == "FORM" ? x.State : null
+        }) };
     }
+
+    /// <summary>固定原周期确认留言已查看，重复请求保留首次服务端时间。</summary>
+    public Task<object> SeenAsync(Actor actor, Scope scope, string episodeId, FollowupReceiptCommand command, CancellationToken ct) =>
+        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        {
+            if (command.Kind != "SEEN") throw BusinessException.Invalid("留言回执类型必须为 SEEN");
+            var ticket = Guard.Text(command.TicketId, "工单号", 64);
+            if (ticket.Any(char.IsControl)) throw BusinessException.Invalid("工单号包含非法字符");
+            var episode = await reception.EpisodeAsync(scope, episodeId, ct) ?? throw BusinessException.Conflict("原留言周期不存在");
+            await access.RequireGroupAsync(actor, episode, ct);
+            var form = await repository.FindAsync(scope, episodeId, ct) ?? throw BusinessException.Conflict("原周期留言不存在");
+            if (form.Origin != "FORM" || form.TicketId != ticket) throw BusinessException.Conflict("工单号与原周期留言不一致");
+            if (form.State != "OPEN" && form.AssignedTo != actor.AccountId)
+                throw BusinessException.Forbidden("留言已由其他客服认领");
+            var receipt = await repository.ReceiptAsync(scope, episodeId, actor.AccountId, ct);
+            if (receipt is null)
+            {
+                receipt = ConversationRuntime.Bind<FollowupReceipt>(scope, form.PrincipalId, Guard.Id("seen"));
+                receipt.EpisodeId = episodeId;
+                receipt.SeenBy = actor.AccountId;
+                receipt.SeenAt = clock.GetUtcNow().UtcDateTime;
+                repository.AddReceipt(receipt);
+            }
+            return new { ticketId = form.TicketId, kind = "SEEN", seenAt = receipt.SeenAt };
+        }, ct);
 
     /// <summary>认领原留言工单，已有人认领时其它人不能读取正文。</summary>
     public Task<object> ClaimAsync(Actor actor, Scope scope, string episodeId, StateCommand command, CancellationToken ct) =>

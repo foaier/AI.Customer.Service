@@ -16,19 +16,22 @@ namespace AI.Customer.Service.Service;
 /// <param name="model">主题语义分类端口。</param>
 /// <param name="conversations">最小真实历史端口。</param>
 /// <param name="journal">幂等回执及可靠事件。</param>
+/// <param name="waitingService">同事务保存访客确认的联系方式。</param>
 /// <param name="clock">UTC 时钟。</param>
 /// <param name="options">建议有效期规则。</param>
 public sealed class HandoffService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, IChatModel model, IConversationRepository conversations, CommandJournal journal,
-    TimeProvider clock, IOptions<CustomerServiceOptions> options)
+    WaitingService waitingService, TimeProvider clock, IOptions<CustomerServiceOptions> options)
 {
     /// <summary>访客明确申请不经过建议二次确认；同键重放不重复切换回复权。</summary>
-    public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason, CancellationToken ct, string? failedTurnId = null)
+    public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
+        CancellationToken ct, string? failedTurnId = null, string? email = null)
     {
+        var contactEmail = source == TriggerSource.SYSTEM_POLICY ? null : Guard.Email(email);
         var classification = await PrepareAsync(scope, ct);
         return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
-            var input = new { requestId = request, source, reason };
+            var input = new { requestId = request, source, reason, email = contactEmail };
             var prior = await journal.ReplayAsync(scope, actor, "REQUEST", request, input, ct);
             if (prior is not null)
             {
@@ -43,7 +46,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
                     return new { skipped = true, reason = "SOURCE_SUPERSEDED" };
                 }
             }
-            var episode = await CreateInTransactionAsync(scope, conversation.PrincipalId, source, reason, classification, actor.TraceId, ct);
+            var episode = await CreateInTransactionAsync(scope, conversation.PrincipalId, source, reason, classification, actor.TraceId, ct, contactEmail);
             var result = new { requestId = request, episodeId = episode.Id, status = episode.Status, version = episode.Version, replayed = false };
             return journal.Save(scope, actor, conversation.PrincipalId, "REQUEST", request, input, result);
         }, ct);
@@ -67,6 +70,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         {
             throw BusinessException.Invalid("建议选择只能为 CONFIRM 或 DISMISS");
         }
+        var email = command.Decision == "CONFIRM" ? Guard.Email(command.Email) : null;
         var classification = await PrepareAsync(scope, ct);
         return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -90,7 +94,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
             if (command.Decision == "CONFIRM")
             {
                 episode = await CreateInTransactionAsync(scope, conversation.PrincipalId, TriggerSource.AI_RECOMMENDATION_CONFIRMED,
-                    proposal.ReasonCode, classification, actor.TraceId, ct);
+                    proposal.ReasonCode, classification, actor.TraceId, ct, email);
             }
             proposal.Status = command.Decision == "CONFIRM" ? ProposalStatus.CONFIRMED : ProposalStatus.DISMISSED;
             proposal.Version++;
@@ -142,7 +146,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
 
     /// <summary>共享事务内创建周期、冻结路由并原子取得回复权，供调查和系统任务编排复用。</summary>
     public async Task<Episode> CreateInTransactionAsync(Scope scope, string principal, TriggerSource source, ReasonCode reason,
-        Classification classification, string trace, CancellationToken ct)
+        Classification classification, string trace, CancellationToken ct, string? email = null)
     {
         var config = await configuration.RoutingAsync(scope.TenantId, scope.TopOrgId, ct);
         var route = config?.Routes.SingleOrDefault(r => r.AssistantConfigId == scope.AssistantConfigId);
@@ -161,6 +165,12 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         episode.TraceId = trace;
         await runtime.TakeHumanAsync(scope, episode.Id, ct);
         repository.Add(episode);
+        if (email is not null)
+        {
+            var waiting = await waitingService.RefreshInTransactionAsync(episode, trace, ct);
+            waiting.Email = email;
+            waiting.Version++;
+        }
         await journal.EnqueueAsync(scope, principal, episode.Id, "EVENT", "requested:" + episode.Id,
             new { type = "handoff.requested", episodeId = episode.Id, source, reason, turnId = (string?)null }, trace, ct);
         return episode;

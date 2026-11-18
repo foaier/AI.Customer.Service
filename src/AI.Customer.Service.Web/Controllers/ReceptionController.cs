@@ -9,14 +9,15 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <param name="request">正式身份解析。</param>
 /// <param name="reception">接待应用端口。</param>
 /// <param name="access">本地冻结组核验。</param>
-public sealed class ReceptionController(RequestAccess request, ReceptionService reception, AccessService access) : CustomerServiceControllerBase(request)
+/// <param name="inbox">收件箱提醒投影。</param>
+public sealed class ReceptionController(RequestAccess request, ReceptionService reception, AccessService access, InboxService inbox) : CustomerServiceControllerBase(request)
 {
     /// <summary>查询有资格组的待接单和本人接待。</summary>
     [HttpGet("agents/queue")]
     public async Task<object> Queue(string topOrgId, string assistantConfigId, CancellationToken ct)
     {
         await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(new { groupId = (string?)null, episodes = (await reception.QueueAsync(Actor, topOrgId, assistantConfigId, ct)).Select(ReceptionView) });
+        return Success(await inbox.QueueAsync(Actor, topOrgId, assistantConfigId, ct));
     }
 
     /// <summary>访客读取安全接待状态。</summary>

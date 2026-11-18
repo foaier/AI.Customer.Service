@@ -30,7 +30,9 @@ public abstract class CustomerServiceControllerBase(RequestAccess request) : Con
         episode.ReasonCode,
         episode.Status,
         episode.Version,
-        episode.RequestedAt
+        episode.RequestedAt,
+        episode.AutoCloseAt,
+        episode.ResolutionReason
     };
 
     /// <summary>正式客服组内摘要，正文由认领接口另行授权。</summary>
@@ -45,6 +47,8 @@ public abstract class CustomerServiceControllerBase(RequestAccess request) : Con
         episode.GroupId,
         episode.RequestedAt,
         episode.TriggerSource,
-        episode.ReasonCode
+        episode.ReasonCode,
+        episode.AutoCloseAt,
+        episode.ResolutionReason
     };
 }

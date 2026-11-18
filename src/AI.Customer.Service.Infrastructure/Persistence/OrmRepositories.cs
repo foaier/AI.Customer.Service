@@ -39,6 +39,40 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
     public Task<MessageReceipt?> ReceiptAsync(Scope scope, string actor, CancellationToken ct) =>
         InScope<MessageReceipt>(scope).SingleOrDefaultAsync(x => x.ActorId == actor, ct);
     /// <inheritdoc />
+    public async Task<List<InboxMessageStats>> InboxMessageStatsAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct)
+    {
+        var episodes = db.Set<Episode>().Where(e => e.TenantId == tenant && e.TopOrgId == org &&
+            (assistant == null || e.AssistantConfigId == assistant) && groups.Contains(e.GroupId) && e.AgentId == actor &&
+            (e.Status == EpisodeStatus.CLAIMED || e.Status == EpisodeStatus.ACTIVE));
+        var owned = await episodes.ToListAsync(ct);
+        if (owned.Count == 0) return [];
+        var episodeIds = owned.Select(x => x.Id).ToArray();
+        var conversationIds = owned.Select(x => x.ConversationId).Distinct().ToArray();
+        var messages = db.Set<HumanMessage>().Where(m => m.TenantId == tenant && m.TopOrgId == org &&
+            episodeIds.Contains(m.EpisodeId) && m.SenderRole == "VISITOR");
+        var latest = await messages.GroupBy(m => m.EpisodeId).Select(g => new
+        {
+            EpisodeId = g.Key,
+            LastVisitorSeq = g.Max(m => m.Seq),
+            LastVisitorMessageAt = g.Max(m => m.CreatedAt)
+        }).ToListAsync(ct);
+        var unread = await messages.Where(m => m.Seq > (db.Set<MessageReceipt>().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+                r.ConversationId == m.ConversationId && r.ActorId == actor).Select(r => (long?)r.ReadSeq).FirstOrDefault() ?? 0))
+            .GroupBy(m => m.EpisodeId).Select(g => new { EpisodeId = g.Key, Count = g.Count() }).ToListAsync(ct);
+        var receipts = await db.Set<MessageReceipt>().AsNoTracking().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+            r.ActorId == actor && conversationIds.Contains(r.ConversationId)).Select(r => new { r.ConversationId, r.ReadSeq }).ToListAsync(ct);
+        var lastById = latest.ToDictionary(x => x.EpisodeId, StringComparer.Ordinal);
+        var unreadById = unread.ToDictionary(x => x.EpisodeId, x => x.Count, StringComparer.Ordinal);
+        var readByConversation = receipts.ToDictionary(x => x.ConversationId, x => x.ReadSeq, StringComparer.Ordinal);
+        return owned.Select(episode =>
+        {
+            lastById.TryGetValue(episode.Id, out var last);
+            unreadById.TryGetValue(episode.Id, out var count);
+            readByConversation.TryGetValue(episode.ConversationId, out var readSeq);
+            return new InboxMessageStats(episode.Id, count, last?.LastVisitorSeq ?? 0, readSeq, last?.LastVisitorMessageAt);
+        }).ToList();
+    }
+    /// <inheritdoc />
     public void AddReceipt(MessageReceipt value) => db.Add(value);
     /// <inheritdoc />
     public Task<List<Conversation>> PageAsync(string tenant, string org, string assistant, int page, int size, CancellationToken ct) =>
@@ -68,6 +102,16 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
             groups.Contains(x.GroupId) && (x.Status == EpisodeStatus.REQUESTED ||
                 ((x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE) && x.AgentId == actor)))
             .OrderBy(x => x.RequestedAt).ThenBy(x => x.Id).Take(100).ToListAsync(ct);
+    /// <inheritdoc />
+    public Task<List<Episode>> InboxEpisodesAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct) =>
+        db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+            (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) &&
+            (x.Status == EpisodeStatus.REQUESTED || ((x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE) && x.AgentId == actor)))
+            .OrderBy(x => x.RequestedAt).ThenBy(x => x.Id).ToListAsync(ct);
+    /// <inheritdoc />
+    public Task<List<Episode>> AutoCloseCandidatesAsync(DateTime now, int limit, CancellationToken ct) =>
+        db.Set<Episode>().AsNoTracking().Where(x => x.Status == EpisodeStatus.ACTIVE && x.AutoCloseAt != null && x.AutoCloseAt <= now)
+            .OrderBy(x => x.AutoCloseAt).ThenBy(x => x.Id).Take(limit).ToListAsync(ct);
     /// <inheritdoc />
     public Task<int> ActiveCountAsync(string tenant, string org, string actor, CancellationToken ct) =>
         db.Set<Episode>().CountAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.AgentId == actor &&
@@ -135,6 +179,25 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
     public Task<List<Followup>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
         db.Set<Followup>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant && groups.Contains(x.GroupId))
             .OrderBy(x => x.SubmittedAt).ThenBy(x => x.Id).Take(100).ToListAsync(ct);
+    /// <inheritdoc />
+    public Task<List<Followup>> InboxAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
+        db.Set<Followup>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+            (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) && x.Origin == "FORM")
+            .OrderBy(x => x.SubmittedAt).ThenBy(x => x.Id).ToListAsync(ct);
+    /// <inheritdoc />
+    public async Task<HashSet<string>> SeenEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, string actor, CancellationToken ct) =>
+        episodes.Count == 0 ? [] : (await db.Set<FollowupReceipt>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+            x.SeenBy == actor && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
+    /// <inheritdoc />
+    public Task<FollowupReceipt?> ReceiptAsync(Scope scope, string episode, string actor, CancellationToken ct) =>
+        db.Set<FollowupReceipt>().SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
+            x.ConversationId == scope.ConversationId && x.EpisodeId == episode && x.SeenBy == actor, ct);
+    /// <inheritdoc />
+    public void AddReceipt(FollowupReceipt receipt) => db.Add(receipt);
+    /// <inheritdoc />
+    public async Task<HashSet<string>> ClosedEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, CancellationToken ct) =>
+        episodes.Count == 0 ? [] : (await db.Set<FollowupResponse>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+            x.State == DeliveryState.CLOSED && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
 }
 
 /// <summary>调查 owner 的一会话一调查 ORM 仓储。</summary>

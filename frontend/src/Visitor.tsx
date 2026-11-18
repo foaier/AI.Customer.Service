@@ -28,7 +28,14 @@ type FollowupForm = {
     content?: string;
     submittedAt?: string;
 };
-type FollowupSnapshot = { form?: FollowupForm };
+type FollowupSnapshot = FollowupForm & { form?: FollowupForm };
+type Survey = {
+    surveyId: string;
+    status: "OPEN" | "SATISFIED" | "DISSATISFIED" | "EXPIRED";
+    handoffChoice: "PENDING" | "OPTED_IN" | "DECLINED" | "NOT_APPLICABLE";
+    version: number;
+    expiresAt: string;
+};
 
 const openStatuses = ["REQUESTED", "CLAIMED", "ACTIVE"];
 
@@ -40,6 +47,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     const [waiting, setWaiting] = useState<Waiting | null>(null);
     const [followup, setFollowup] = useState<FollowupForm | null>(null);
     const [proposals, setProposals] = useState<Proposal[]>([]);
+    const [survey, setSurvey] = useState<Survey | null>(null);
     const [input, setInput] = useState("");
     const [email, setEmail] = useState("");
     const [contactName, setContactName] = useState("");
@@ -49,10 +57,14 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     const [notice, setNotice] = useState("");
     const [error, setError] = useState("");
     const [showFollowup, setShowFollowup] = useState(false);
+    const [showHandoffForm, setShowHandoffForm] = useState(false);
+    const [handoffProposal, setHandoffProposal] = useState<Proposal | null>(null);
+    const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
     const listRef = useRef<HTMLDivElement>(null);
     const sequence = useRef(0);
     const messageNonce = useRef(0);
     const initializedAssistant = useRef("");
+    const surveyReceiptSent = useRef("");
     const isHuman = Boolean(episode && openStatuses.includes(episode.status));
 
     const addHumanMessages = useCallback((items: HumanMessage[]) => {
@@ -79,7 +91,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             );
             const current = latest.episode;
             setEpisode(current);
-            const [pending, waitState, followupState] = await Promise.all([
+            const [pending, waitState, followupState, surveyState] = await Promise.all([
                 request<{ proposals: Proposal[] }>(
                     `/customer-service/conversations/${encodeURIComponent(id)}/handoff-proposals/pending`,
                 ),
@@ -87,11 +99,13 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                     ? request<Waiting>(`/customer-service/conversations/${encodeURIComponent(id)}/waiting`)
                     : Promise.resolve(null),
                 request<FollowupSnapshot>(`/customer-service/conversations/${encodeURIComponent(id)}/followup-form`),
+                request<{ survey: Survey | null }>(`/customer-service/conversations/${encodeURIComponent(id)}/survey`),
             ]);
             setProposals(pending.proposals || []);
             setWaiting(waitState);
-            const submittedForm = followupState.form || {};
+            const submittedForm = followupState.form || followupState;
             setFollowup(Object.keys(submittedForm).length ? submittedForm : null);
+            setSurvey(surveyState.survey);
             if (current && openStatuses.includes(current.status)) {
                 const timeline = await request<{ messages: HumanMessage[] }>(
                     `/customer-service/conversations/${encodeURIComponent(id)}/messages?afterSeq=0&limit=100`,
@@ -143,8 +157,21 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     }, [assistantId, initialize]);
 
     useEffect(() => {
+        const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
+        document.addEventListener("visibilitychange", updateVisibility);
+        return () => document.removeEventListener("visibilitychange", updateVisibility);
+    }, []);
+
+    useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     }, [messages, proposals, notice]);
+
+    useEffect(() => {
+        if (!pageVisible || !survey || survey.status !== "OPEN" || surveyReceiptSent.current === survey.surveyId) return;
+        surveyReceiptSent.current = survey.surveyId;
+        post(`/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/receipt`, {})
+            .catch(() => { surveyReceiptSent.current = ""; });
+    }, [conversationId, pageVisible, survey]);
 
     useEffect(() => {
         if (!conversationId || !episode || !openStatuses.includes(episode.status)) return;
@@ -156,19 +183,16 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             try {
                 const token = await getAccessToken();
                 if (disposed) return;
-                socket = new WebSocket(realtimeUrl());
+                socket = new WebSocket(realtimeUrl({
+                    authorization: `Bearer ${token}`,
+                    agent: false,
+                    conversationId,
+                    topOrgId: assistant.topOrgId,
+                    assistantConfigId: assistantId,
+                    afterSeq: sequence.current,
+                }));
                 socket.onopen = () => {
                     retry = 0;
-                    socket?.send(
-                        JSON.stringify({
-                            authorization: `Bearer ${token}`,
-                            agent: false,
-                            conversationId,
-                            topOrgId: assistant.topOrgId,
-                            assistantConfigId: assistantId,
-                            afterSeq: sequence.current,
-                        }),
-                    );
                 };
                 socket.onmessage = (event) => {
                     const frame = JSON.parse(String(event.data));
@@ -205,6 +229,9 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
         setWaiting(null);
         setFollowup(null);
         setProposals([]);
+        setSurvey(null);
+        setShowHandoffForm(false);
+        setHandoffProposal(null);
         setNotice("");
         setError("");
         sequence.current = 0;
@@ -269,14 +296,20 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                         );
                     },
                     (card) => {
-                        const value = card as { status?: string; data?: Proposal };
+                        const value = card as { status?: string; data?: Proposal & Survey; cardType?: string; content?: { data?: Survey } };
                         if (value.status === "handoff.proposed" && value.data)
                             setProposals((current) =>
                                 current.some((item) => item.proposalId === value.data!.proposalId)
                                     ? current
                                     : [...current, value.data!],
                             );
-                        if (value.status === "handoff.requested") setNotice("人工申请已登记，正在等待客服接单。");
+                        if (value.status === "handoff.email_required") {
+                            setHandoffProposal(null);
+                            setShowHandoffForm(true);
+                            setNotice("请先填写联系邮箱，再提交人工申请。");
+                        }
+                        const surveyCard = value.status === "ai-survey" ? value.data : value.cardType === "ai-survey" ? value.content?.data : undefined;
+                        if (surveyCard?.surveyId) setSurvey(surveyCard as Survey);
                     },
                 );
                 await loadEpisode(conversationId);
@@ -304,17 +337,21 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
         }
     };
 
-    const requestAgent = async () => {
+    const requestAgent = async (contactEmail: string) => {
         if (!conversationId || sending) return;
         setSending(true);
         setError("");
-        const key = `handoff_${crypto.randomUUID().replaceAll("-", "")}`;
+        const storageKey = `cs.handoff.${assistantId}.${conversationId}`;
+        const key = sessionStorage.getItem(storageKey) || `handoff_${crypto.randomUUID().replaceAll("-", "")}`;
+        sessionStorage.setItem(storageKey, key);
         try {
             const result = await post<Episode>(
                 `/customer-service/conversations/${encodeURIComponent(conversationId)}/handoffs`,
-                { requestId: key },
+                { requestId: key, email: contactEmail.trim() },
             );
+            sessionStorage.removeItem(storageKey);
             setEpisode(result);
+            setShowHandoffForm(false);
             setNotice("人工申请已登记。等待期间你可以继续补充信息。");
             await loadEpisode(conversationId);
         } catch (reason) {
@@ -324,22 +361,67 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
         }
     };
 
-    const decideProposal = async (proposal: Proposal, decision: "CONFIRM" | "DISMISS") => {
+    const decideProposal = async (proposal: Proposal, decision: "CONFIRM" | "DISMISS", contactEmail?: string) => {
+        if (decision === "CONFIRM" && !contactEmail) {
+            setHandoffProposal(proposal);
+            setShowHandoffForm(true);
+            return;
+        }
+        const storageKey = `cs.proposal.${assistantId}.${conversationId}.${proposal.proposalId}`;
+        const requestId = sessionStorage.getItem(storageKey) || `proposal_${crypto.randomUUID().replaceAll("-", "")}`;
+        sessionStorage.setItem(storageKey, requestId);
         try {
             const result = await post<Episode>(
                 `/customer-service/conversations/${encodeURIComponent(conversationId)}/handoff-proposals/${encodeURIComponent(proposal.proposalId)}/decision`,
                 {
-                    requestId: `proposal_${crypto.randomUUID().replaceAll("-", "")}`,
+                    requestId,
                     expectedProposalVersion: proposal.version,
                     decision,
+                    email: decision === "CONFIRM" ? contactEmail?.trim() : null,
                 },
             );
+            sessionStorage.removeItem(storageKey);
             setProposals((current) => current.filter((item) => item.proposalId !== proposal.proposalId));
+            setShowHandoffForm(false);
+            setHandoffProposal(null);
             if (decision === "CONFIRM") setEpisode(result);
             setNotice(decision === "CONFIRM" ? "已确认人工协助申请。" : "已关闭这条人工建议。");
             await loadEpisode(conversationId);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : "操作未完成");
+        }
+    };
+
+    const submitHandoff = (event: FormEvent) => {
+        event.preventDefault();
+        if (handoffProposal) void decideProposal(handoffProposal, "CONFIRM", email);
+        else void requestAgent(email);
+    };
+
+    const answerSurvey = async (answer: "SATISFIED" | "DISSATISFIED") => {
+        if (!survey) return;
+        try {
+            const updated = await post<Survey>(
+                `/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/answer`,
+                { expectedVersion: survey.version, answer },
+            );
+            setSurvey(updated);
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "评价提交失败");
+        }
+    };
+
+    const chooseSurveyHandoff = async (choice: "OPTED_IN" | "DECLINED") => {
+        if (!survey) return;
+        try {
+            await post(
+                `/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/handoff-choice`,
+                { expectedVersion: survey.version, choice, email: choice === "OPTED_IN" ? email.trim() : null },
+            );
+            if (choice === "OPTED_IN") setNotice("人工申请已提交，正在等待客服接单。");
+            await loadEpisode(conversationId);
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : "人工选择未完成");
         }
     };
 
@@ -437,6 +519,15 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                     {statusLabel}
                 </div>
             </section>
+            {((episode?.autoCloseAt && episode.status === "ACTIVE") || (episode?.status === "RESOLVED" && episode.resolutionReason)) && (
+                <p className="visitor-state-note">
+                    {episode.status === "ACTIVE"
+                        ? `若人工接待期间访客 5 分钟未回复，将于 ${formatDateTime(episode.autoCloseAt!)} 自动结束。`
+                        : episode.resolutionReason === "VISITOR_INACTIVE_5M"
+                          ? "本次人工接待因访客 5 分钟未回复而自动结束，你可以继续向 AI 咨询。"
+                          : "客服已结束本次接待，你可以继续向 AI 咨询。"}
+                </p>
+            )}
 
             <div className="visitor-layout">
                 <section className="chat-panel" aria-label="在线咨询">
@@ -548,6 +639,47 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                 </button>
                             </div>
                         ))}
+                        {survey?.status === "OPEN" && new Date(survey.expiresAt).getTime() > Date.now() && (
+                            <div className="survey-inline" key={survey.surveyId}>
+                                <strong>本次服务是否解决了您的问题？</strong>
+                                <div className="survey-actions">
+                                    <button type="button" onClick={() => void answerSurvey("SATISFIED")}>
+                                        <Check size={15} /> 已解决
+                                    </button>
+                                    <button type="button" onClick={() => void answerSurvey("DISSATISFIED")}>
+                                        还需要帮助
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {survey?.status === "DISSATISFIED" && survey.handoffChoice === "PENDING" && (
+                            <div className="survey-inline survey-inline--choice">
+                                <strong>需要客服继续协助吗？</strong>
+                                <label htmlFor="survey-contact-email">联系邮箱</label>
+                                <input
+                                    id="survey-contact-email"
+                                    type="email"
+                                    required
+                                    maxLength={254}
+                                    value={email}
+                                    onChange={(event) => setEmail(event.target.value)}
+                                    placeholder="name@example.com"
+                                />
+                                <div className="survey-actions">
+                                    <button type="button" disabled={!email.trim()} onClick={() => void chooseSurveyHandoff("OPTED_IN")}>
+                                        联系人工
+                                    </button>
+                                    <button type="button" onClick={() => void chooseSurveyHandoff("DECLINED")}>
+                                        暂不需要
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {survey?.status === "SATISFIED" && (
+                            <div className="survey-inline survey-inline--complete">
+                                <Check size={15} /> 感谢反馈
+                            </div>
+                        )}
                         {notice && (
                             <div className="thread-notice">
                                 <Check size={15} />
@@ -649,14 +781,36 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                         ) : (
                             <>
                                 <p className="rail-copy">联系在线客服，继续处理需要人工协助的问题。</p>
-                                <button
-                                    className="button button--primary button--full"
-                                    type="button"
-                                    disabled={sending || loading}
-                                    onClick={() => void requestAgent()}
-                                >
-                                    <Headphones size={16} /> 联系人工客服
-                                </button>
+                                {showHandoffForm ? (
+                                    <form className="handoff-email-form" onSubmit={submitHandoff}>
+                                        <label htmlFor="handoff-contact-email">联系邮箱</label>
+                                        <input
+                                            id="handoff-contact-email"
+                                            type="email"
+                                            required
+                                            maxLength={254}
+                                            value={email}
+                                            onChange={(event) => setEmail(event.target.value)}
+                                            placeholder="name@example.com"
+                                            disabled={sending}
+                                        />
+                                        <button className="button button--primary button--full" type="submit" disabled={sending || loading}>
+                                            <Headphones size={16} /> {handoffProposal ? "确认并联系人工" : "提交并联系人工"}
+                                        </button>
+                                        <button className="link-button" type="button" onClick={() => { setShowHandoffForm(false); setHandoffProposal(null); }}>
+                                            取消
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <button
+                                        className="button button--primary button--full"
+                                        type="button"
+                                        disabled={sending || loading}
+                                        onClick={() => { setHandoffProposal(null); setShowHandoffForm(true); }}
+                                    >
+                                        <Headphones size={16} /> 联系人工客服
+                                    </button>
+                                )}
                             </>
                         )}
                     </section>
@@ -792,4 +946,13 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             </footer>
         </main>
     );
+}
+
+function formatDateTime(value: string) {
+    return new Intl.DateTimeFormat("zh-CN", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    }).format(new Date(value));
 }

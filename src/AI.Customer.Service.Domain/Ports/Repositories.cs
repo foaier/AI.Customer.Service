@@ -32,6 +32,8 @@ public interface IConversationRepository
     Task<List<HumanMessage>> MessagesAsync(Scope scope, long afterSeq, int limit, CancellationToken ct);
     /// <summary>读取当前主体的回执水位。</summary>
     Task<MessageReceipt?> ReceiptAsync(Scope scope, string actor, CancellationToken ct);
+    /// <summary>当前客服所有本人接待周期的访客消息未读摘要。</summary>
+    Task<List<InboxMessageStats>> InboxMessageStatsAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
     /// <summary>首次建立主体回执。</summary>
     void AddReceipt(MessageReceipt receipt);
     /// <summary>分页导出指定助手的会话，不暴露其它组织。</summary>
@@ -49,6 +51,10 @@ public interface IReceptionRepository
     void Add(Episode episode);
     /// <summary>按助手和当前权限组过滤队列。</summary>
     Task<List<Episode>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    /// <summary>完整授权范围的收件箱接待投影，不分页。</summary>
+    Task<List<Episode>> InboxEpisodesAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    /// <summary>恢复到期的在线接待自动结单候选。</summary>
+    Task<List<Episode>> AutoCloseCandidatesAsync(DateTime now, int limit, CancellationToken ct);
     /// <summary>统计同组织所有助手的当前接待容量。</summary>
     Task<int> ActiveCountAsync(string tenant, string org, string actor, CancellationToken ct);
     /// <summary>读取原周期等待事实。</summary>
@@ -97,7 +103,20 @@ public interface IFollowupRepository
     void AddResponse(FollowupResponse response);
     /// <summary>仅返回有资格组的留言工单，应用投影去除正文。</summary>
     Task<List<Followup>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
+    /// <summary>完整授权范围内留言摘要，供未读汇总计算。</summary>
+    Task<List<Followup>> InboxAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
+    /// <summary>批量读取本客服已查看的留言周期。</summary>
+    Task<HashSet<string>> SeenEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, string actor, CancellationToken ct);
+    /// <summary>按原周期和客服读取首次查看事实。</summary>
+    Task<FollowupReceipt?> ReceiptAsync(Scope scope, string episode, string actor, CancellationToken ct);
+    /// <summary>首次保存留言查看事实。</summary>
+    void AddReceipt(FollowupReceipt receipt);
+    /// <summary>批量读取已结案留言周期。</summary>
+    Task<HashSet<string>> ClosedEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, CancellationToken ct);
 }
+
+/// <summary>不含消息正文的收件箱访客消息统计。</summary>
+public sealed record InboxMessageStats(string EpisodeId, int UnreadCount, long LastVisitorSeq, long ReadSeq, DateTime? LastVisitorMessageAt);
 
 /// <summary>Conversation owner 的唯一满意度事实端口。</summary>
 public interface ISurveyRepository

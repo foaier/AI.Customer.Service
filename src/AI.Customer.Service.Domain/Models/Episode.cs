@@ -36,6 +36,12 @@ public sealed class Episode : ConversationAggregate
     /// <summary>客服首条有效消息 UTC 时间。</summary>
     public DateTime? FirstResponseAt { get; set; }
 
+    /// <summary>ACTIVE 接待中最近客服回复后五分钟的自动结单截止。</summary>
+    public DateTime? AutoCloseAt { get; set; }
+
+    /// <summary>结束原因；RESOLVED 时为人工结束或访客超时结束。</summary>
+    public string? ResolutionReason { get; set; }
+
     /// <summary>取消或结束 UTC 时间。</summary>
     public DateTime? FinishedAt { get; set; }
 
