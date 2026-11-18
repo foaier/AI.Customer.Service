@@ -18,8 +18,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
     ConversationRuntime runtime, AccessService access, TimeProvider clock)
 {
     /// <summary>同键同内容返回原消息，即使周期已结束；新消息必须仍具备当前回复权。</summary>
-    public Task<object> SendAsync(Actor actor, Scope scope, bool agent, MessageCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+    public async Task<object> SendAsync(Actor actor, Scope scope, bool agent, MessageCommand command, CancellationToken ct)
+    {
+        var result = await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
             Guard.Text(command.ClientMsgId, "消息键");
             Guard.Text(command.Content, "消息正文", 4000);
@@ -31,7 +32,17 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
                 {
                     throw BusinessException.Conflict("同一消息键不能修改内容");
                 }
-                return View(prior);
+                return new SendResult(View(prior), false);
+            }
+            if (episode.Status == EpisodeStatus.ACTIVE && episode.AutoCloseAt is not null && episode.AutoCloseAt <= clock.GetUtcNow().UtcDateTime)
+            {
+                episode.Status = ReceptionRules.Transition(episode.Status, "RESOLVE");
+                episode.AutoCloseAt = null;
+                episode.ResolutionReason = "VISITOR_INACTIVE_5M";
+                episode.FinishedAt = clock.GetUtcNow().UtcDateTime;
+                episode.Version++;
+                await runtime.ResumeAiAsync(scope, episode.Id, ct);
+                return new SendResult(null, true);
             }
             if (!episode.Status.IsOpen() || agent && episode.Status == EpisodeStatus.REQUESTED)
             {
@@ -57,10 +68,26 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
             {
                 episode.Status = ReceptionRules.Transition(episode.Status, "FIRST_MESSAGE");
                 episode.FirstResponseAt ??= message.CreatedAt;
+                episode.AutoCloseAt = message.CreatedAt.AddMinutes(5);
                 episode.Version++;
             }
-            return View(message);
+            else if (agent && episode.Status == EpisodeStatus.ACTIVE)
+            {
+                episode.AutoCloseAt = message.CreatedAt.AddMinutes(5);
+                episode.Version++;
+            }
+            else if (!agent && episode.Status == EpisodeStatus.ACTIVE && episode.AutoCloseAt is not null)
+            {
+                episode.AutoCloseAt = null;
+                episode.Version++;
+            }
+            return new SendResult(View(message), false);
         }, ct);
+        if (result.Expired) throw BusinessException.Conflict("人工接待已因访客超时结束");
+        return result.Message!;
+    }
+
+    private sealed record SendResult(object? Message, bool Expired);
 
     /// <summary>持锁复核认领后读取时间线，改派和撤权提交后旧客服不能读取正文。</summary>
     public Task<object> TimelineAsync(Actor actor, Scope scope, bool agent, long afterSeq, int limit, CancellationToken ct) =>

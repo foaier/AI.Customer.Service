@@ -103,6 +103,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     /// <summary>只有评价不满意并明确 OPTED_IN 才创建同会话人工周期，选择与申请同事务。</summary>
     public async Task<object> ChooseAsync(Actor actor, Scope scope, string id, SurveyChoice command, CancellationToken ct)
     {
+        var email = command.Choice == HandoffChoice.OPTED_IN ? Guard.Email(command.Email) : null;
         var classification = await handoff.PrepareAsync(scope, ct);
         return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -123,7 +124,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
             if (command.Choice == HandoffChoice.OPTED_IN)
             {
                 await handoff.CreateInTransactionAsync(scope, survey.PrincipalId, TriggerSource.SURVEY_DISSATISFIED_OPT_IN,
-                    ReasonCode.SURVEY_DISSATISFIED, classification, actor.TraceId, ct);
+                    ReasonCode.SURVEY_DISSATISFIED, classification, actor.TraceId, ct, email);
             }
             survey.HandoffChoice = command.Choice;
             survey.Version++;

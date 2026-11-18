@@ -768,6 +768,78 @@ svg {
     width: 27px;
     height: 27px;
 }
+.survey-inline {
+    width: min(100%, 390px);
+    align-self: flex-start;
+    display: grid;
+    gap: 9px;
+    margin-left: 35px;
+    padding: 12px;
+    border: 1px solid #dce8e1;
+    border-left: 3px solid #3f9077;
+    border-radius: 5px;
+    background: #f8fbf8;
+}
+.survey-inline > strong {
+    color: #405149;
+    font-size: 11px;
+    line-height: 1.5;
+}
+.survey-inline > label {
+    margin-bottom: -5px;
+    color: #6f7d75;
+    font-size: 10px;
+    font-weight: 600;
+}
+.survey-inline > input,
+.handoff-email-form > input {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 8px 10px;
+    color: #35433e;
+    border: 1px solid #dce5df;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 11px;
+}
+.survey-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+.survey-actions button {
+    min-height: 31px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    color: #52665b;
+    border: 1px solid #dce6df;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 10px;
+}
+.survey-actions button:first-child {
+    color: #fff;
+    border-color: #347b67;
+    background: #347b67;
+}
+.survey-actions button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.survey-inline--complete {
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    color: #367d67;
+    font-size: 10px;
+}
+.survey-inline--complete svg {
+    flex: none;
+}
 .thread-notice {
     display: flex;
     align-items: center;
@@ -907,6 +979,21 @@ svg {
     color: #7b8781;
     font-size: 10px;
     line-height: 1.7;
+}
+.handoff-email-form {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+.handoff-email-form > label {
+    color: #6d7a73;
+    font-size: 10px;
+    font-weight: 600;
+}
+.handoff-email-form .link-button {
+    justify-self: start;
+    padding: 2px 0;
+    font-size: 10px;
 }
 .handoff-state {
     display: flex;
@@ -1138,6 +1225,7 @@ svg {
 .agent-metrics {
     min-height: 75px;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 25px;
     padding: 12px 17px;
@@ -1386,6 +1474,31 @@ svg {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.unread-pill {
+    min-width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    color: #fff;
+    border-radius: 9px;
+    background: #bd6852;
+    font-size: 9px;
+    font-weight: 650;
+    line-height: 1;
+}
+.followup-unseen {
+    min-width: 20px;
+    height: 19px;
+    display: inline-grid;
+    place-items: center;
+    color: #a44837;
+    border-radius: 3px;
+    background: #f8e9e4;
+    font-size: 9px;
+    line-height: 1;
+}
 .status-label {
     display: inline-flex;
     align-items: center;
@@ -1536,6 +1649,12 @@ svg {
 }
 .conversation-context svg {
     color: #8ba398;
+}
+.visitor-state-note {
+    margin: -7px 0 12px;
+    color: #65746c;
+    font-size: 11px;
+    line-height: 1.5;
 }
 .claim-gate {
     min-height: 130px;
@@ -2646,6 +2765,10 @@ svg {
         max-width: 100%;
         flex-wrap: wrap;
         gap: 7px;
+    }
+    .survey-inline {
+        width: 100%;
+        margin-left: 0;
     }
     .proposal-copy {
         min-width: calc(100% - 45px);

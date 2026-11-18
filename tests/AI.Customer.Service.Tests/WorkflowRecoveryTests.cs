@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.WebSockets;
 using System.Text.Json;
 using AI.Customer.Service.Common;
 using AI.Customer.Service.Core;
@@ -115,7 +116,7 @@ public sealed partial class WorkflowTests
         await ChatAsync(visitor, id, "请问展馆在哪里？");
         Assert.AreEqual(0, (await GetAsync(visitor, VisitorPath(id) + "/handoff-proposals/pending")).GetProperty("proposals").GetArrayLength());
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoff-proposals/" + proposal.GetProperty("proposalId").GetString() + "/decision",
-            new { requestId = "stale", expectedProposalVersion = 1, decision = "CONFIRM" }, HttpStatusCode.Conflict);
+            new { requestId = "stale", expectedProposalVersion = 1, decision = "CONFIRM", email = "visitor@example.com" }, HttpStatusCode.Conflict);
     }
 
     /// <summary>新轮次关闭旧调查的未决选择；历史回答回执仍可恢复而不能创建新副作用。</summary>
@@ -137,7 +138,7 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(JsonValueKind.Null, (await GetAsync(visitor, VisitorPath(id) + "/survey")).GetProperty("survey").ValueKind);
         await SendAsync(visitor, HttpMethod.Post, path + "/answer", answer);
         await SendAsync(visitor, HttpMethod.Post, path + "/handoff-choice",
-            new { expectedVersion = result.GetProperty("version").GetInt64(), choice = "OPTED_IN" }, HttpStatusCode.Conflict);
+            new { expectedVersion = result.GetProperty("version").GetInt64(), choice = "OPTED_IN", email = "visitor@example.com" }, HttpStatusCode.Conflict);
     }
 
     /// <summary>曾申请人工的会话在取消后恢复 AI，也不能进入纯 AI 满意度调查。</summary>
@@ -251,5 +252,89 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(1L, task.ManualRetryCount);
         Assert.AreEqual("agent-a", task.LastRetriedBy);
         Assert.IsNotNull(task.LastRetriedAt);
+    }
+
+    /// <summary>收件箱汇总按真实访客消息、持久READ和独立留言SEEN回执变化。</summary>
+    [TestMethod]
+    public async Task InboxSummaryTracksUnreadAndFollowupReceipts()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        using var agent = application.Client("agent-a");
+        var id = await SessionAsync(visitor);
+        await RequestAsync(visitor, id, "inbox-request");
+        const string summaryPath = "/api/customer-service/agents/inbox/summary?topOrgId=org-a&assistantConfigId=assistant-a";
+        var summary = await GetAsync(agent, summaryPath);
+        Assert.AreEqual(1, summary.GetProperty("pendingReceptionCount").GetInt32());
+        var socketClient = application.Server.CreateWebSocketClient();
+        var token = Uri.EscapeDataString("Bearer " + Token("agent-a"));
+        using (var socket = await socketClient.ConnectAsync(new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={token}&agent=true&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"), default))
+        {
+            var buffer = new byte[16384];
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var snapshotResult = await socket.ReceiveAsync(buffer.AsMemory(), timeout.Token);
+            using var snapshot = JsonDocument.Parse(buffer.AsMemory(0, snapshotResult.Count));
+            Assert.AreEqual("snapshot", snapshot.RootElement.GetProperty("type").GetString());
+            var inboxResult = await socket.ReceiveAsync(buffer.AsMemory(), timeout.Token);
+            using var inboxFrame = JsonDocument.Parse(buffer.AsMemory(0, inboxResult.Count));
+            Assert.AreEqual("inbox.notifications", inboxFrame.RootElement.GetProperty("type").GetString());
+            Assert.AreEqual(1, inboxFrame.RootElement.GetProperty("data").GetProperty("pendingReceptionCount").GetInt32());
+            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
+        }
+
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "inbox-claim", expectedVersion = 1 });
+        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "visitor-unread", content = "请帮我看一下订单" });
+        summary = await GetAsync(agent, summaryPath);
+        Assert.AreEqual(1, summary.GetProperty("unreadMessageCount").GetInt32());
+        Assert.AreEqual(1, summary.GetProperty("unreadConversationCount").GetInt32());
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/receipts?topOrgId=org-a", new { kind = "READ", seq = 1L });
+        summary = await GetAsync(agent, summaryPath);
+        Assert.AreEqual(0, summary.GetProperty("unreadMessageCount").GetInt32());
+
+        var followupId = await SessionAsync(visitor);
+        var handoff = await RequestAsync(visitor, followupId, "followup-request");
+        var episodeId = handoff.GetProperty("episodeId").GetString()!;
+        var waiting = await GetAsync(visitor, VisitorPath(followupId) + "/waiting");
+        var form = await SendAsync(visitor, HttpMethod.Post, VisitorPath(followupId) + "/followup-form", new
+        {
+            requestId = "followup-form",
+            expectedVersion = waiting.GetProperty("version").GetInt64(),
+            email = "visitor@example.com",
+            contactName = "访客",
+            content = "请通过邮箱继续跟进"
+        });
+        var ticketId = form.GetProperty("ticketId").GetString()!;
+        summary = await GetAsync(agent, summaryPath);
+        Assert.AreEqual(1, summary.GetProperty("newFollowupCount").GetInt32());
+        await SendAsync(agent, HttpMethod.Post,
+            AgentPath(followupId) + "/followups/" + episodeId + "/receipts?topOrgId=org-a",
+            new { kind = "SEEN", ticketId });
+        summary = await GetAsync(agent, summaryPath);
+        Assert.AreEqual(0, summary.GetProperty("newFollowupCount").GetInt32());
+    }
+
+    /// <summary>客服回复启动访客超时结单，迟到新消息结案且原消息重试仍幂等。</summary>
+    [TestMethod]
+    public async Task VisitorInactivityAutoClosesActiveReception()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        using var agent = application.Client("agent-a");
+        var id = await SessionAsync(visitor);
+        await RequestAsync(visitor, id, "auto-close-request");
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "auto-close-claim", expectedVersion = 1 });
+        var reply = new { clientMsgId = "auto-close-reply", content = "我来帮您处理" };
+        var original = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+        var reception = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
+        Assert.IsNotNull(reception.GetProperty("episode").GetProperty("autoCloseAt").GetString());
+
+        application.Clock.Advance(TimeSpan.FromMinutes(5));
+        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "late-visitor", content = "还在吗" }, HttpStatusCode.Conflict);
+        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+        Assert.AreEqual(original.GetProperty("seq").GetInt64(), replay.GetProperty("seq").GetInt64());
+        var ended = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
+        Assert.AreEqual("RESOLVED", ended.GetProperty("episode").GetProperty("status").GetString());
+        Assert.AreEqual("VISITOR_INACTIVE_5M", ended.GetProperty("episode").GetProperty("resolutionReason").GetString());
+        Assert.AreEqual(JsonValueKind.Null, ended.GetProperty("episode").GetProperty("autoCloseAt").ValueKind);
     }
 }

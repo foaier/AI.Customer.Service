@@ -20,12 +20,12 @@ public static class Guard
     /// <summary>严格校验单个邮箱，拒绝显示名称及邮件头注入。</summary>
     public static string Email(string? value)
     {
-        Text(value, "邮箱", 254);
-        if (!MailAddress.TryCreate(value, out var address) || address.Address != value || value!.Any(char.IsControl))
+        var email = Text(value?.Trim(), "邮箱", 254);
+        if (!MailAddress.TryCreate(email, out var address) || address.Address != email || email.Any(char.IsControl))
         {
             throw BusinessException.Invalid("邮箱格式无效");
         }
-        return value;
+        return email;
     }
 
     /// <summary>比较客户端首次使用的聚合版本。</summary>

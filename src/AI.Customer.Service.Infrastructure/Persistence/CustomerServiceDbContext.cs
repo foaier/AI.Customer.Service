@@ -28,6 +28,7 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         Configure<Survey>(model, "ai_resolution_survey");
         Configure<ResolutionEvidence>(model, "ai_resolution_evidence");
         Configure<Followup>(model, "cs_followup_form");
+        Configure<FollowupReceipt>(model, "cs_followup_receipt");
         Configure<FollowupResponse>(model, "cs_followup_response");
         Configure<ReliableTask>(model, "cs_reliable_task");
         Configure<CommandReceipt>(model, "cs_command_receipt");
@@ -47,11 +48,17 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         model.Entity<ResolutionEvidence>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.TurnId, x.Kind }).IsUnique();
         model.Entity<Waiting>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
         model.Entity<Followup>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
+        model.Entity<FollowupReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.EpisodeId, x.SeenBy }).IsUnique();
         model.Entity<FollowupResponse>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
         model.Entity<ReliableTask>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EventKey }).IsUnique();
         model.Entity<ReliableTask>().HasIndex(x => new { x.Kind, x.State, x.DueAt });
         model.Entity<CommandReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ActorId, x.Action, x.RequestId }).IsUnique();
         model.Entity<Episode>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.AssistantConfigId, x.Status });
+        model.Entity<Episode>().HasIndex(x => new { x.Status, x.AutoCloseAt, x.Id });
+        model.Entity<FollowupReceipt>().HasOne<Followup>().WithMany()
+            .HasForeignKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
+            .HasPrincipalKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
+            .OnDelete(DeleteBehavior.Restrict);
         model.Entity<OrganizationGate>().ToTable("cs_organization_gate");
         model.Entity<OrganizationGate>().HasKey(x => new { x.TenantId, x.TopOrgId });
         model.Entity<OrganizationGate>().Property(x => x.TenantId).HasMaxLength(64);
@@ -62,6 +69,7 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         {
             t.HasCheckConstraint("ck_episode_state", "status BETWEEN 0 AND 4");
             t.HasCheckConstraint("ck_episode_assignee", "status NOT IN (1, 2, 3) OR agent_id IS NOT NULL");
+            t.HasCheckConstraint("ck_episode_auto_close", "(status = 3 AND resolution_reason IS NOT NULL AND resolution_reason IN ('AGENT_MANUAL', 'VISITOR_INACTIVE_5M') AND auto_close_at IS NULL) OR (status <> 3 AND resolution_reason IS NULL AND (auto_close_at IS NULL OR status = 2))");
         });
         model.Entity<Waiting>().ToTable(t => t.HasCheckConstraint("ck_waiting_state", "state BETWEEN 0 AND 6"));
         model.Entity<Survey>().ToTable(t => t.HasCheckConstraint("ck_survey_state", "status BETWEEN 0 AND 3 AND handoff_choice BETWEEN 0 AND 3 AND epoch >= 1"));

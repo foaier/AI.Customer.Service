@@ -125,10 +125,13 @@ export async function streamChat(
     }
 }
 
-export function realtimeUrl(): string {
+export function realtimeUrl(parameters: Record<string, string | number | boolean | null | undefined> = {}): string {
     const base = apiBase ? new URL(apiBase, window.location.href) : new URL(window.location.href);
     base.protocol = base.protocol === "https:" ? "wss:" : "ws:";
     base.pathname = `${base.pathname.replace(/\/$/, "")}/api/customer-service/realtime/ws`;
     base.search = "";
+    for (const [key, value] of Object.entries(parameters)) {
+        if (value !== null && value !== undefined) base.searchParams.set(key, String(value));
+    }
     return base.toString();
 }

@@ -12,6 +12,7 @@
 | ------------------------------------------ | -------------------------------------------------------------- | ---------------------- |
 | Conversation、generation、轮次、消息和水位 | `ConversationRuntime`、`MessagingService`、会话 Repository     | Conversation           |
 | 接待申请、建议卡、认领、首响、结束、取消   | `HandoffService`、`ReceptionService`、`ReceptionRules`         | CustomerService        |
+| 收件箱未读、留言查看和在线接待超时结单     | `InboxService`、`AutoCloseWorker`、接待/跟进 Repository         | CustomerService        |
 | 四类业务组、账号引用、助手路由             | `ConfigurationService`、配置 Repository                        | CustomerService        |
 | 组织在线展示及改派容量                     | `AvailabilityService`、`ReceptionService`                      | CustomerService        |
 | 等待、邮箱、留言、最终回复                 | `WaitingService`、`FollowupService`                            | CustomerService        |
@@ -39,13 +40,15 @@
 
 ## 协议和可靠恢复
 
-AI 文本采用 SSE，人工实时只提供 `/api/customer-service/realtime/ws`。WebSocket 首帧携带 Authorization 和固定订阅范围；URL 禁止令牌和参数，未知字段拒绝。首帧 5 秒、进程最多 64 连接、每秒读取持久事实、15 秒心跳、60 秒复核外部账号；本地成员和认领权限随快照检查。
+AI 文本采用 SSE，人工实时只提供 `/api/customer-service/realtime/ws`。浏览器使用 URL query 提交 Authorization 和固定订阅范围，旧认证首帧仍兼容，未知字段拒绝。URL 包含凭据，代理访问日志和 APM 必须脱敏 query；生产连接使用 WSS。认证限时 5 秒、进程最多 64 连接、每秒读取持久事实、15 秒心跳、60 秒复核外部账号；本地成员和认领权限随快照检查。
 
 人工消息使用单会话递增 seq、稳定 clientMsgId 和正文摘要；回执为单调 delivered/read 水位。客服改派和访客重连按持久事实恢复。HTTP 请求拒绝未知身份字段，tenant/account 从 JWT 解析，组织/大会由持久会话和可信助手推导。
 
 Worker 每 5 秒有界恢复可投递任务；租约 30 秒，最多 5 次，失败退避 5/10/20/40 秒后 DEAD。禁用通道不领取、不耗尝试；EMAIL/INTERNAL 死信可由原组客服恢复，最终回复和系统故障各有独立重试入口。重试保留 eventKey，外部网关必须持久幂等。可选官方企微群机器人仅承诺其回执，官方 webhook 本身不提供按 eventKey 严格去重，重试可能出现重复提醒。
 
-调查 Worker 每 10 秒恢复未评估成功轮次，使用持久评估游标；它不判断用户沉默，不扫描等待期限。跨异步调用显式传递 sessionId、turnId、traceId、tenantId、topOrgId、bventId。
+调查 Worker 每 10 秒恢复未评估成功轮次，使用持久评估游标；它不判断用户沉默，不扫描等待期限。接待自动结单由独立 Worker 每 5 秒有界扫描，并在共享事务锁内复核截止时间。跨异步调用显式传递 sessionId、turnId、traceId、tenantId、topOrgId、bventId。
+
+2026-11-18 收件箱提醒与在线接待自动结单契约及数据库升级步骤见[收件箱提醒与超时结单](inbox-auto-close.md)。
 
 ## 本次独立化的适配边界
 

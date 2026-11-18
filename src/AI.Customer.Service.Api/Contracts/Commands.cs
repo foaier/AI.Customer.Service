@@ -5,8 +5,9 @@ namespace AI.Customer.Service.Api.Contracts;
 
 /// <summary>客户端稳定命令键，不接受自报身份及组织。</summary>
 /// <param name="RequestId">首次提交键，网络重试原样复用。</param>
+/// <param name="Email">访客明确确认的有效联系邮箱。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record HandoffCommand(string RequestId);
+public sealed record HandoffCommand(string RequestId, string Email);
 
 /// <summary>带聚合版本的状态命令。</summary>
 /// <param name="RequestId">稳定首次请求键。</param>
@@ -30,8 +31,9 @@ public sealed record ReceiptCommand(string Kind, long Seq);
 /// <param name="RequestId">稳定命令键。</param>
 /// <param name="ExpectedProposalVersion">首次建议版本。</param>
 /// <param name="Decision">CONFIRM 或 DISMISS。</param>
+/// <param name="Email">确认人工申请时必填；拒绝建议时忽略。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ProposalDecision(string RequestId, long ExpectedProposalVersion, string Decision);
+public sealed record ProposalDecision(string RequestId, long ExpectedProposalVersion, string Decision, string? Email);
 
 /// <summary>等待选择，不能覆盖归属、路由或容量。</summary>
 /// <param name="ExpectedVersion">等待聚合版本。</param>
@@ -56,6 +58,10 @@ public sealed record FollowupFormCommand(string RequestId, long ExpectedVersion,
 /// <param name="Content">1 至 10000 字符纯文本。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ReplyCommand(string RequestId, long ExpectedVersion, string Subject, string Content);
+
+/// <summary>留言首次查看回执，仅接受真实表单工单号。</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record FollowupReceiptCommand(string Kind, string TicketId);
 
 /// <summary>同组改派请求，目标资格由服务器实时核验。</summary>
 /// <param name="RequestId">稳定首次改派键。</param>
@@ -83,8 +89,9 @@ public sealed record SurveyAnswer(long ExpectedVersion, SurveyStatus Answer);
 /// <summary>不满意后单独询问的人工选择。</summary>
 /// <param name="ExpectedVersion">调查版本。</param>
 /// <param name="Choice">OPTED_IN 或 DECLINED。</param>
+/// <param name="Email">选择人工时必填；拒绝人工时忽略。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record SurveyChoice(long ExpectedVersion, HandoffChoice Choice);
+public sealed record SurveyChoice(long ExpectedVersion, HandoffChoice Choice, string? Email);
 
 /// <summary>本地业务路由整体 CAS，不接受客户端身份字段。</summary>
 /// <param name="Version">未保存为 0。</param>

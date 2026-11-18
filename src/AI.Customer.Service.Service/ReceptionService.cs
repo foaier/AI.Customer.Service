@@ -83,8 +83,26 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             episode.Status = ReceptionRules.Transition(episode.Status, action);
             episode.Version++;
             episode.FinishedAt = clock.GetUtcNow().UtcDateTime;
+            episode.AutoCloseAt = null;
+            episode.ResolutionReason = visitor ? null : "AGENT_MANUAL";
             await runtime.ResumeAiAsync(scope, episode.Id, ct);
             return await SaveAsync(actor, episode, action, command.RequestId, command, ct);
+        }, ct);
+
+    /// <summary>扫描候选后在组织写锁内复核截止时间并自动结单。</summary>
+    public Task<bool> AutoCloseAsync(Scope scope, string episodeId, DateTime now, CancellationToken ct) =>
+        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        {
+            var episode = await repository.EpisodeAsync(scope, episodeId, ct);
+            if (episode is null || episode.Status != EpisodeStatus.ACTIVE || episode.AutoCloseAt is null || episode.AutoCloseAt > now)
+                return false;
+            episode.Status = ReceptionRules.Transition(episode.Status, "RESOLVE");
+            episode.AutoCloseAt = null;
+            episode.ResolutionReason = "VISITOR_INACTIVE_5M";
+            episode.FinishedAt = now;
+            episode.Version++;
+            await runtime.ResumeAiAsync(scope, episode.Id, ct);
+            return true;
         }, ct);
 
     /// <summary>同组改派保留原周期及首次来源，目标必须实时外部有效且主动在线有容量。</summary>

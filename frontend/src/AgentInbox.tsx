@@ -4,10 +4,12 @@ import {
     Activity,
     ArrowDownLeft,
     ArrowUpRight,
+    BellRing,
     Check,
     CheckCheck,
     Clock3,
     LoaderCircle,
+    Mail,
     MessageSquareText,
     Power,
     RefreshCw,
@@ -18,9 +20,9 @@ import {
 } from "lucide-react";
 import { getAccessToken } from "./auth";
 import { ApiError, post, realtimeUrl, request } from "./api";
-import type { AgentSnapshot, Assistant, Episode, HumanMessage } from "./types";
+import type { AgentSnapshot, Assistant, Episode, HumanMessage, InboxSummary } from "./types";
 
-type AgentMessage = { id: string; senderRole: "VISITOR" | "AGENT" | "AI"; content: string; createdAt?: string };
+type AgentMessage = { id: string; seq?: number; senderRole: "VISITOR" | "AGENT" | "AI"; content: string; createdAt?: string };
 type Availability = {
     status: "ONLINE" | "AWAY" | "OFFLINE";
     version: number;
@@ -37,6 +39,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const [selected, setSelected] = useState<Episode | null>(null);
     const [messages, setMessages] = useState<AgentMessage[]>([]);
     const [availability, setAvailability] = useState<Availability | null>(null);
+    const [inboxSummary, setInboxSummary] = useState<InboxSummary | null>(null);
     const [input, setInput] = useState("");
     const [busy, setBusy] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +49,12 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const lastSeq = useRef(0);
     const textNonce = useRef(0);
     const selectedRef = useRef<Episode | null>(null);
+    const selectionGeneration = useRef(0);
+    const inboxToken = useRef("");
+    const queueRefreshTimer = useRef(0);
+    const readWatermark = useRef({ conversationId: "", seq: 0 });
+    const pendingRead = useRef("");
+    const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
 
     const syncSelection = useCallback((queue: Episode[]) => {
         const current = selectedRef.current;
@@ -57,6 +66,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             return;
         }
         selectedRef.current = null;
+        selectionGeneration.current++;
         setSelected(null);
         setMessages([]);
         lastSeq.current = 0;
@@ -66,12 +76,17 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         async (quiet = false) => {
             if (!quiet) setRefreshing(true);
             try {
-                const [queue, currentAvailability] = await Promise.all([
+                const [queue, currentAvailability, summary] = await Promise.all([
                     request<{ episodes: Episode[] }>(`/customer-service/agents/queue?${query}`),
                     request<Availability>(`/customer-service/agents/availability?${query}`),
+                    request<InboxSummary>(`/customer-service/agents/inbox/summary?${query}`).catch(() => null),
                 ]);
                 setEpisodes(queue.episodes || []);
                 setAvailability(currentAvailability);
+                if (summary) {
+                    inboxToken.current = summary.changeToken;
+                    setInboxSummary(summary);
+                }
                 syncSelection(queue.episodes || []);
                 setError("");
             } catch (reason) {
@@ -100,6 +115,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     .filter((item) => !seen.has(item.messageId))
                     .map((item) => ({
                         id: item.messageId,
+                        seq: item.seq,
                         senderRole: item.senderRole,
                         content: item.content,
                         createdAt: item.createdAt,
@@ -110,6 +126,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
 
     const loadConversation = useCallback(
         async (episode: Episode) => {
+            const generation = ++selectionGeneration.current;
             selectedRef.current = episode;
             setSelected(episode);
             setMessages([]);
@@ -123,6 +140,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     `/customer-service/agents/conversations/${encodeURIComponent(episode.scope.conversationId)}/history?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
                 ),
             ]);
+            if (generation !== selectionGeneration.current) return;
             setMessages(
                 (history || []).map((item, index) => ({
                     id: item.id || `ai-${index}`,
@@ -149,23 +167,29 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             try {
                 const token = await getAccessToken();
                 if (closed) return;
-                socket = new WebSocket(realtimeUrl());
+                socket = new WebSocket(realtimeUrl({
+                    authorization: `Bearer ${token}`,
+                    agent: true,
+                    topOrgId: assistant.topOrgId,
+                    assistantConfigId: assistantId,
+                    afterSeq: 0,
+                }));
                 socket.onopen = () => {
                     failures = 0;
                     setSocketState("CONNECTED");
-                    socket?.send(
-                        JSON.stringify({
-                            authorization: `Bearer ${token}`,
-                            agent: true,
-                            conversationId: null,
-                            topOrgId: assistant.topOrgId,
-                            assistantConfigId: assistantId,
-                            afterSeq: 0,
-                        }),
-                    );
                 };
                 socket.onmessage = (event) => {
                     const frame = JSON.parse(String(event.data));
+                    if (frame.type === "inbox.notifications") {
+                        const summary = frame.data as InboxSummary;
+                        if (summary.changeToken && summary.changeToken !== inboxToken.current) {
+                            inboxToken.current = summary.changeToken;
+                            setInboxSummary(summary);
+                            window.clearTimeout(queueRefreshTimer.current);
+                            queueRefreshTimer.current = window.setTimeout(() => void loadQueue(true), 150);
+                        }
+                        return;
+                    }
                     if (frame.type === "snapshot") {
                         const data = frame.data as AgentSnapshot;
                         if (data.queue) {
@@ -197,7 +221,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             window.clearTimeout(timer);
             socket?.close();
         };
-    }, [assistant.topOrgId, assistantId, syncSelection]);
+    }, [assistant.topOrgId, assistantId, syncSelection, loadQueue]);
 
     useEffect(() => {
         if (!selected || !activeStatuses.includes(selected.status)) return;
@@ -209,18 +233,14 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             try {
                 const token = await getAccessToken();
                 if (closed) return;
-                socket = new WebSocket(realtimeUrl());
-                socket.onopen = () =>
-                    socket?.send(
-                        JSON.stringify({
-                            authorization: `Bearer ${token}`,
-                            agent: true,
-                            conversationId: selected.scope.conversationId,
-                            topOrgId: assistant.topOrgId,
-                            assistantConfigId: assistantId,
-                            afterSeq: lastSeq.current,
-                        }),
-                    );
+                socket = new WebSocket(realtimeUrl({
+                    authorization: `Bearer ${token}`,
+                    agent: true,
+                    conversationId: selected.scope.conversationId,
+                    topOrgId: assistant.topOrgId,
+                    assistantConfigId: assistantId,
+                    afterSeq: lastSeq.current,
+                }));
                 socket.onmessage = (event) => {
                     const frame = JSON.parse(String(event.data));
                     if (frame.type !== "snapshot") return;
@@ -256,6 +276,37 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
     }, [messages]);
+
+    useEffect(() => {
+        const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
+        document.addEventListener("visibilitychange", updateVisibility);
+        return () => document.removeEventListener("visibilitychange", updateVisibility);
+    }, []);
+
+    useEffect(() => {
+        if (!pageVisible || !selected || !activeStatuses.includes(selected.status)) return;
+        const seq = messages.reduce(
+            (latest, message) => message.senderRole === "VISITOR" ? Math.max(latest, message.seq || 0) : latest,
+            0,
+        );
+        const conversationId = selected.scope.conversationId;
+        if (seq <= 0) return;
+        if (readWatermark.current.conversationId !== conversationId) {
+            readWatermark.current = { conversationId, seq: 0 };
+        }
+        if (seq <= readWatermark.current.seq || pendingRead.current === `${conversationId}:${seq}`) return;
+        const requestKey = `${conversationId}:${seq}`;
+        pendingRead.current = requestKey;
+        post(
+            `/customer-service/agents/conversations/${encodeURIComponent(conversationId)}/receipts?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+            { kind: "READ", seq },
+        ).then(() => {
+            readWatermark.current = { conversationId, seq: Math.max(seq, readWatermark.current.seq) };
+            void loadQueue(true);
+        }).catch(() => undefined).finally(() => {
+            if (pendingRead.current === requestKey) pendingRead.current = "";
+        });
+    }, [assistant.topOrgId, loadQueue, messages, pageVisible, selected]);
 
     useEffect(() => {
         if (availability?.status !== "ONLINE") return;
@@ -368,6 +419,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
 
     const requested = episodes.filter((item) => item.status === "REQUESTED").length;
     const mine = episodes.filter((item) => activeStatuses.includes(item.status)).length;
+    const unreadMessages = inboxSummary?.unreadMessageCount ?? episodes.reduce((sum, item) => sum + (item.unreadCount || 0), 0);
 
     return (
         <main className="agent-page">
@@ -409,7 +461,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     </span>
                     <div>
                         <span>待接单</span>
-                        <strong>{requested.toString().padStart(2, "0")}</strong>
+                        <strong>{(inboxSummary?.pendingReceptionCount ?? requested).toString().padStart(2, "0")}</strong>
                     </div>
                 </div>
                 <div className="metric-item">
@@ -419,6 +471,24 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     <div>
                         <span>我的接待</span>
                         <strong>{mine.toString().padStart(2, "0")}</strong>
+                    </div>
+                </div>
+                <div className="metric-item">
+                    <span className="metric-icon metric-icon--coral">
+                        <BellRing size={17} />
+                    </span>
+                    <div>
+                        <span>未读访客消息</span>
+                        <strong>{unreadMessages.toString().padStart(2, "0")}</strong>
+                    </div>
+                </div>
+                <div className="metric-item">
+                    <span className="metric-icon metric-icon--amber">
+                        <Mail size={17} />
+                    </span>
+                    <div>
+                        <span>新留言</span>
+                        <strong>{(inboxSummary?.newFollowupCount ?? 0).toString().padStart(2, "0")}</strong>
                     </div>
                 </div>
                 <div className="metric-item">
@@ -510,6 +580,11 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                                         </span>
                                     </span>
                                     {isRequested && <span className="new-request-dot" />}
+                                    {typeof item.unreadCount === "number" && item.unreadCount > 0 && (
+                                        <span className="unread-pill" aria-label={`${item.unreadCount} 条未读访客消息`}>
+                                            {item.unreadCount > 99 ? "99+" : item.unreadCount}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
@@ -615,6 +690,12 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                                                 ? "访客主动申请"
                                                 : "人工建议确认"}
                                         </span>
+                                        {selected.autoCloseAt && selected.status === "ACTIVE" && (
+                                            <span>
+                                                <Clock3 size={14} />
+                                                无新访客消息时将于 {formatDate(selected.autoCloseAt)} 自动结束
+                                            </span>
+                                        )}
                                     </div>
                                     <div ref={listRef} className="agent-thread" role="log" aria-live="polite">
                                         {messages.map((message) => (
@@ -676,7 +757,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                                         </form>
                                     ) : (
                                         <div className="resolved-banner">
-                                            <Check size={15} /> 本次接待已结束
+                                            <Check size={15} /> {resolutionText(selected.resolutionReason)}
                                         </div>
                                     )}
                                 </>
@@ -715,6 +796,12 @@ function statusName(status: string) {
             } as Record<string, string>
         )[status] || status
     );
+}
+
+function resolutionText(reason?: Episode["resolutionReason"]) {
+    if (reason === "VISITOR_INACTIVE_5M") return "访客 5 分钟未回复，本次接待已自动结束";
+    if (reason === "AGENT_MANUAL") return "客服已结束本次接待";
+    return "本次接待已结束";
 }
 
 function formatAge(value: string) {

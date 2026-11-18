@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {
     ArrowRight,
@@ -15,9 +15,7 @@ import {
 import { post, request } from "./api";
 import type { Assistant, Followup } from "./types";
 
-type FollowupFormState = {
-    form?: { version?: number; state?: string; contactName?: string; content?: string; assignedTo?: string };
-};
+type FollowupFormState = { version?: number; state?: string; contactName?: string; content?: string; assignedTo?: string };
 type ReplyState = { version: number; state: string; subject?: string; content?: string; attempts?: number };
 
 export default function Followups({ assistant }: { assistant: Assistant }) {
@@ -25,7 +23,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
     const query = `topOrgId=${encodeURIComponent(assistant.topOrgId)}&assistantConfigId=${encodeURIComponent(assistantId)}`;
     const [items, setItems] = useState<Followup[]>([]);
     const [selected, setSelected] = useState<Followup | null>(null);
-    const [form, setForm] = useState<FollowupFormState["form"]>(undefined);
+    const [form, setForm] = useState<FollowupFormState | undefined>(undefined);
     const [reply, setReply] = useState<ReplyState | null>(null);
     const [subject, setSubject] = useState("");
     const [content, setContent] = useState("");
@@ -33,6 +31,9 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [notice, setNotice] = useState("");
+    const seenReceipts = useRef(new Set<string>());
+    const selectionGeneration = useRef(0);
+    const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
     const replySubmitted = Boolean(reply && reply.state !== "OPEN");
 
     const loadItems = useCallback(async () => {
@@ -52,7 +53,30 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         void loadItems();
     }, [loadItems]);
 
+    useEffect(() => {
+        const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
+        document.addEventListener("visibilitychange", updateVisibility);
+        return () => document.removeEventListener("visibilitychange", updateVisibility);
+    }, []);
+
+    useEffect(() => {
+        if (!pageVisible || !selected?.hasUnseen || !form?.content) return;
+        const key = `${selected.scope.conversationId}:${selected.episodeId}:${selected.ticketId}`;
+        if (seenReceipts.current.has(key)) return;
+        seenReceipts.current.add(key);
+        post(
+            `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/receipts?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+            { kind: "SEEN", ticketId: selected.ticketId },
+        ).then(() => {
+            setItems((current) => current.map((item) => item.episodeId === selected.episodeId ? { ...item, hasUnseen: false } : item));
+            setSelected((current) => current?.episodeId === selected.episodeId ? { ...current, hasUnseen: false } : current);
+        }).catch(() => {
+            seenReceipts.current.delete(key);
+        });
+    }, [assistant.topOrgId, form?.content, pageVisible, selected]);
+
     const select = async (item: Followup) => {
+        const generation = ++selectionGeneration.current;
         setSelected(item);
         setForm(undefined);
         setReply(null);
@@ -65,11 +89,13 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
                 request<FollowupFormState>(`${path}/form?topOrgId=${encodeURIComponent(assistant.topOrgId)}`),
                 request<ReplyState>(`${path}?topOrgId=${encodeURIComponent(assistant.topOrgId)}`).catch(() => null),
             ]);
-            setForm(formResult.form);
+            if (generation !== selectionGeneration.current) return;
+            setForm(formResult);
             setReply(replyResult);
             if (replyResult?.subject) setSubject(replyResult.subject);
             if (replyResult?.content) setContent(replyResult.content);
         } catch (reason) {
+            if (generation !== selectionGeneration.current) return;
             setError(reason instanceof Error ? reason.message : "工单详情读取失败");
         }
     };
@@ -223,6 +249,9 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
                                 <span className={`status-label status-label--${item.state.toLowerCase()}`}>
                                     {followupState(item.state)}
                                 </span>
+                                {item.hasUnseen && (
+                                    <span className="followup-unseen" aria-label="有未查看留言">新</span>
+                                )}
                             </button>
                         ))}
                         {!loading && items.length === 0 && (

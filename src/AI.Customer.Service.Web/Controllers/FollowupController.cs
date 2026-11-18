@@ -38,6 +38,11 @@ public sealed class FollowupController(RequestAccess request, WaitingService wai
         return Success(JsonSerializer.SerializeToElement(result, JsonDefaults.Options).GetProperty("followups"));
     }
 
+    /// <summary>当前客服对原周期留言保存首次查看回执。</summary>
+    [HttpPost("agents/conversations/{id}/followups/{episode}/receipts")]
+    public async Task<object> Seen(string id, string episode, string topOrgId, FollowupReceiptCommand command, CancellationToken ct) =>
+        Success(await followups.SeenAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+
     /// <summary>原组客服读取原周期等待和通知状态，不返回邮箱。</summary>
     [HttpGet("agents/conversations/{id}/waiting")]
     public async Task<object> AgentWaiting(string id, string topOrgId, CancellationToken ct, string? episodeId = null) =>
