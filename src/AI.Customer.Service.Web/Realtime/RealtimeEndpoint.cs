@@ -22,7 +22,7 @@ public static class RealtimeEndpoint
 {
     /// <summary>固定订阅范围；新客户端在 URL 鉴权，旧客户端可继续使用首帧。</summary>
     public static async Task HandleAsync(HttpContext context, RealtimeConnectionLimiter limiter, IServiceScopeFactory scopes,
-        IOptionsMonitor<JwtBearerOptions> jwt, IOptions<AuthenticationOptions> authentication)
+        IOptionsMonitor<JwtBearerOptions> jwt, IOptions<AuthenticationOptions> authentication, TimeProvider clock)
     {
         if (!context.WebSockets.IsWebSocketRequest)
         {
@@ -44,8 +44,25 @@ public static class RealtimeEndpoint
                 var first = context.Request.Query.Count > 0
                     ? ReadQuery(context.Request.Query)
                     : await ReadFirstAsync(socket, firstTimeout.Token);
-                var (principal, expires) = await AuthenticateAsync(first.Authorization, jwt.Get(JwtBearerDefaults.AuthenticationScheme), firstTimeout.Token);
-                var actor = RequestAccess.Resolve(principal, context.TraceIdentifier, authentication.Value);
+                if (string.IsNullOrWhiteSpace(first.Authorization) == string.IsNullOrWhiteSpace(first.Credential))
+                    throw BusinessException.Forbidden("实时连接必须提供且只能提供一种凭据");
+                Actor actor;
+                DateTime expires;
+                if (first.Credential is not null)
+                {
+                    if (first.Agent || string.IsNullOrWhiteSpace(first.ConversationId)) throw BusinessException.Forbidden();
+                    await using var credentialScope = scopes.CreateAsyncScope();
+                    var grant = await credentialScope.ServiceProvider.GetRequiredService<ConversationAccessService>()
+                        .AuthorizeAsync(first.Credential, first.ConversationId, firstTimeout.Token);
+                    actor = new(grant.TenantId, grant.PrincipalId, context.TraceIdentifier, grant.ConversationId);
+                    expires = grant.ExpiresAt;
+                }
+                else
+                {
+                    var authenticated = await AuthenticateAsync(first.Authorization!, jwt.Get(JwtBearerDefaults.AuthenticationScheme), firstTimeout.Token);
+                    actor = RequestAccess.Resolve(authenticated.Principal, context.TraceIdentifier, authentication.Value);
+                    expires = authenticated.Expires;
+                }
                 var subscription = new Subscription(first.Agent, first.ConversationId, first.TopOrgId, first.AssistantConfigId);
                 await CheckExternalAsync(scopes, actor, subscription, context.RequestAborted);
                 var checkedAt = DateTime.UtcNow;
@@ -69,7 +86,7 @@ public static class RealtimeEndpoint
                             break;
                         }
                         var now = DateTime.UtcNow;
-                        if (now >= expires)
+                        if ((actor.GuestConversationId is null ? now : clock.GetUtcNow().UtcDateTime) >= expires)
                         {
                             throw BusinessException.Forbidden("登录已过期");
                         }
@@ -174,14 +191,14 @@ public static class RealtimeEndpoint
     {
         var allowed = new HashSet<string>(StringComparer.Ordinal)
         {
-            "authorization", "agent", "conversationId", "topOrgId", "assistantConfigId", "afterSeq"
+            "authorization", "credential", "agent", "conversationId", "topOrgId", "assistantConfigId", "afterSeq"
         };
         if (query.Keys.Any(key => !allowed.Contains(key)))
         {
             throw BusinessException.Invalid("实时连接包含未知参数");
         }
 
-        var authorization = RequiredQuery(query, "authorization");
+        var authorization = OptionalQuery(query, "authorization");
         var agentText = RequiredQuery(query, "agent");
         var afterSeqText = RequiredQuery(query, "afterSeq");
         if (!bool.TryParse(agentText, out var agent) || !long.TryParse(afterSeqText, out var afterSeq) || afterSeq < 0)
@@ -195,7 +212,8 @@ public static class RealtimeEndpoint
             OptionalQuery(query, "conversationId"),
             OptionalQuery(query, "topOrgId"),
             OptionalQuery(query, "assistantConfigId"),
-            afterSeq);
+            afterSeq,
+            OptionalQuery(query, "credential"));
     }
 
     /// <summary>读取唯一的必填 query 值，拒绝空值和重复参数。</summary>
@@ -255,7 +273,11 @@ public static class RealtimeEndpoint
         else
         {
             var conversation = await access.VisitorAsync(actor, Guard.Text(subscription.ConversationId, "会话"), ct);
-            await access.RequireAccountAsync(actor, conversation.TopOrgId, ct);
+            if ((subscription.TopOrgId is not null && subscription.TopOrgId != conversation.TopOrgId) ||
+                (subscription.AssistantConfigId is not null && subscription.AssistantConfigId != conversation.AssistantConfigId))
+                throw BusinessException.Forbidden("订阅范围与会话不一致");
+            if (actor.GuestConversationId is null)
+                await access.RequireAccountAsync(actor, conversation.TopOrgId, ct);
         }
     }
 
@@ -353,8 +375,9 @@ public static class RealtimeEndpoint
     /// <param name="TopOrgId">客服待核验组织。</param>
     /// <param name="AssistantConfigId">客服待核验助手。</param>
     /// <param name="AfterSeq">最后展示的人工持久序列。</param>
+    /// <param name="Credential">匿名会话凭据，不能与登录令牌混用。</param>
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-    private sealed record FirstFrame(string Authorization, bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId, long AfterSeq);
+    private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
 
     /// <summary>去除令牌后保留的固定订阅参数，不保存认证凭据。</summary>
     private sealed record Subscription(bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId);

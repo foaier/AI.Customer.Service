@@ -3,7 +3,7 @@ namespace AI.Customer.Service.Domain.Models;
 /// <summary>带租约退避死信的副作用，核心事务只登记任务。</summary>
 public sealed class ReliableTask : ConversationAggregate
 {
-    /// <summary>INTERNAL、EMAIL、EMAIL_REPLY、SYSTEM_HANDOFF 或 EVENT。</summary>
+    /// <summary>HANDOFF_NOTIFY、INTERNAL、EMAIL、EMAIL_REPLY、SYSTEM_HANDOFF 或 EVENT。</summary>
     public string Kind { get; set; } = "";
 
     /// <summary>Worker 与网关共用的稳定幂等键。</summary>
@@ -44,6 +44,8 @@ public sealed class ReliableTask : ConversationAggregate
 
     /// <summary>不含正文邮箱的稳定失败分类。</summary>
     public string? LastError { get; set; }
+    /// <summary>供应商明确回执中的安全 request_id，用于人工对账，不保存原始响应。</summary>
+    public string? ProviderRequestId { get; set; }
 
     /// <summary>原始追踪标识，跨 Worker 保持。</summary>
     public string TraceId { get; set; } = "";

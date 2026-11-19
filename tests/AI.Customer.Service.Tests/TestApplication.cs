@@ -43,6 +43,8 @@ public sealed class TestApplication : WebApplicationFactory<Program>
     public TestDirectory DirectoryPort { get; } = new();
     /// <summary>可模拟拒绝和受理的通知网关替身。</summary>
     public TestNotification Notification { get; } = new();
+    /// <summary>隔离场景可配置新会话外部身份门禁。</summary>
+    public bool ExternalIdentityRequired { get; init; }
 
     /// <summary>替换外部依赖和数据源，其余正式应用代码保持真实装配。</summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -59,6 +61,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
             ["Assistants:Items:0:TenantId"] = "tenant-a",
             ["Assistants:Items:0:TopOrgId"] = "org-a",
             ["Assistants:Items:0:Name"] = "测试助手",
+            ["Assistants:Items:0:AllowAnonymous"] = "true",
+            ["Assistants:Items:0:ExternalIdentityRequired"] = ExternalIdentityRequired.ToString(),
+            ["Notifications:EncryptionKey"] = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
             ["CustomerService:Capacity"] = "1"
         }));
         builder.ConfigureServices(services =>
@@ -249,6 +254,10 @@ public sealed class TestNotification : INotificationPort
 {
     /// <summary>模拟网关拒绝，任务应退避且最终 DEAD。</summary>
     public bool Reject { get; set; }
+    /// <summary>测试真实仓储的持久开关过滤。</summary>
+    public bool UseConfiguredChatGroups { get; set; }
+    /// <summary>模拟供应商明确的可重试或永久失败。</summary>
+    public NotificationDeliveryException? Failure { get; set; }
     /// <summary>按稳定事件键记录受理事实。</summary>
     public HashSet<string> Accepted { get; } = [];
     /// <inheritdoc />
@@ -256,6 +265,7 @@ public sealed class TestNotification : INotificationPort
     /// <inheritdoc />
     public Task SendAsync(ReliableTask task, CancellationToken ct)
     {
+        if (Failure is not null) throw Failure;
         if (Reject)
         {
             throw BusinessException.Unavailable("测试网关拒绝");

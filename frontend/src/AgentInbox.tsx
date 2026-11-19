@@ -64,6 +64,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const loadRequest = useRef(0);
     const readWatermark = useRef({ conversationId: "", seq: 0 });
     const pendingRead = useRef("");
+    const openedLink = useRef("");
     const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
     const previews = useEpisodePreviews(episodes, assistant.topOrgId);
 
@@ -176,6 +177,23 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         },
         [assistant.topOrgId, receiveTimeline],
     );
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const conversationId = params.get("conversationId");
+        if (
+            !conversationId ||
+            params.get("assistantConfigId") !== assistantId ||
+            params.get("topOrgId") !== assistant.topOrgId
+        )
+            return;
+        const linkKey = `${query}&conversationId=${conversationId}`;
+        if (openedLink.current === linkKey) return;
+        const episode = episodes.find((item) => item.scope.conversationId === conversationId);
+        if (!episode) return;
+        openedLink.current = linkKey;
+        void loadConversation(episode);
+    }, [episodes, assistantId, assistant.topOrgId, query, loadConversation]);
 
     useEffect(() => {
         void loadQueue();

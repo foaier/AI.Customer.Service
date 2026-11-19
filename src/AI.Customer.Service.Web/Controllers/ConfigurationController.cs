@@ -3,8 +3,6 @@ using AI.Customer.Service.Common;
 using AI.Customer.Service.Domain.Models;
 using AI.Customer.Service.Domain.Ports;
 using AI.Customer.Service.Service;
-using AI.Customer.Service.Infrastructure.Configuration;
-using Microsoft.Extensions.Options;
 using AI.Customer.Service.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,8 +14,9 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <param name="accounts">外部账号只读目录。</param>
 /// <param name="model">语义分类协议端口。</param>
 /// <param name="access">可信助手范围。</param>
+/// <param name="notifications">持久通知配置和密钥保留规则。</param>
 public sealed class ConfigurationController(RequestAccess request, ConfigurationService configuration,
-    IAccountDirectory accounts, IChatModel model, AccessService access) : CustomerServiceControllerBase(request)
+    IAccountDirectory accounts, IChatModel model, AccessService access, ChatNotificationService notifications) : CustomerServiceControllerBase(request)
 {
     /// <summary>首次只读返回四类稳定默认组，不自动关联成员。</summary>
     [HttpGet("configuration")]
@@ -35,23 +34,22 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
         return Success(RoutingView(await configuration.SaveAsync(Actor, topOrgId, command, ct)));
     }
 
-    /// <summary>组织管理员读取群路由，不返回部署凭据或外部网关地址。</summary>
+    /// <summary>组织管理员读取群路由及安全配置投影，令牌仅返回是否已配置。</summary>
     [HttpGet("configuration/chat-notifications")]
-    public async Task<object> ChatNotification(string topOrgId, [FromServices] IOptions<NotificationOptions> options, CancellationToken ct)
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<object> ChatNotification(string topOrgId, CancellationToken ct)
     {
         await RequestAccess.ManagerAsync(topOrgId, ct);
-        var value = await configuration.ChatNotificationAsync(Actor, topOrgId, ct);
-        return Success(new { value.Version, value.ChatGroup, enabled = options.Value.Enabled, activeProvider = "WECOM_ROBOT" });
+        return Success(ChatNotificationService.View(await notifications.GetAsync(Actor, topOrgId, ct)));
     }
 
-    /// <summary>首次保存或按版本更新四类群路由，部署开关及认证信息保持独立。</summary>
+    /// <summary>按版本更新群路由、持久开关和供应商设置，令牌省略保留。</summary>
     [HttpPut("configuration/chat-notifications")]
-    public async Task<object> SaveChatNotification(string topOrgId, ChatNotificationCommand command,
-        [FromServices] IOptions<NotificationOptions> options, CancellationToken ct)
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<object> SaveChatNotification(string topOrgId, ChatNotificationCommand command, CancellationToken ct)
     {
         await RequestAccess.ManagerAsync(topOrgId, ct);
-        var value = await configuration.SaveChatNotificationAsync(Actor, topOrgId, command, ct);
-        return Success(new { value.Version, value.ChatGroup, enabled = options.Value.Enabled, activeProvider = "WECOM_ROBOT" });
+        return Success(ChatNotificationService.View(await notifications.SaveAsync(Actor, topOrgId, command, ct)));
     }
 
     /// <summary>正式只读外部人员候选组，不返回手机号或邮箱。</summary>

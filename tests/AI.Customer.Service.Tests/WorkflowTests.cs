@@ -240,7 +240,7 @@ public sealed partial class WorkflowTests
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
         Assert.IsNull((await db.Set<Conversation>().SingleAsync()).HumanEpisodeId);
-        Assert.AreEqual(1, await db.Set<ReliableTask>().CountAsync(x => x.Kind == "INTERNAL"));
+        Assert.AreEqual(0, await db.Set<ReliableTask>().CountAsync(x => x.Kind == "INTERNAL"));
     }
 
     /// <summary>留言正文必须先认领，最终回复经网关受理才可结案。</summary>

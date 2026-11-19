@@ -6,7 +6,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:browser": "node tests/browser/run.mjs",
-    "test:frontend": "node tests/browser/frontend.mjs"
+    "test:frontend": "node tests/browser/frontend.mjs",
+    "test:migrations": "node tests/migrations/backend-contracts.mjs"
   },
   "repository": {
     "type": "git",

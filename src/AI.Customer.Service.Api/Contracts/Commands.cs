@@ -100,9 +100,15 @@ public sealed record SurveyChoice(long ExpectedVersion, HandoffChoice Choice, st
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RoutingCommand(long Version, List<ReceptionGroup> Groups, List<AssistantRoute> Routes);
 
-/// <summary>组织群通知路由整体 CAS 保存，密钥和任意外部地址不由页面修改。</summary>
+/// <summary>组织群通知路由整体 CAS 保存，供应商限定官方地址，令牌只写不读。</summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ChatNotificationCommand(long Version, Dictionary<string, string> ChatGroup);
+public sealed record ChatNotificationCommand(long Version, Dictionary<string, string> ChatGroup, bool? Enabled = null,
+    string? ActiveProvider = null, string? AccountCode = null, string? BaseUrl = null, string? PublicBaseUrl = null,
+    string? ApiToken = null, bool ClearApiToken = false)
+{
+    /// <summary>禁止 record 默认 ToString 泄露令牌与群机器人密钥。</summary>
+    public override string ToString() => "ChatNotificationCommand[REDACTED]";
+}
 
 /// <summary>正式组织日历完整 CAS 保存。</summary>
 /// <param name="Version">未保存为 0。</param>
@@ -133,11 +139,28 @@ public sealed record RoutingPreview(string AssistantConfigId, string Context);
 /// <param name="Extensions">只读取助手引用，其余归属字段重新核验。</param>
 /// <param name="IsReconnect">兼容原页面，生成请求必须为 false。</param>
 /// <param name="SpeechEnabled">本期只支持纯文本，true 拒绝。</param>
+/// <param name="TempUserId">匿名页面可选主体，仅核验一致性，不授予权限。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ChatCommand(string SessionId, string UserInput, string? BusinessType, Dictionary<string, ChatExtension>? Extensions, bool IsReconnect = false, bool SpeechEnabled = false);
+public sealed record ChatCommand(string SessionId, string UserInput, string? BusinessType, Dictionary<string, ChatExtension>? Extensions, bool IsReconnect = false, bool SpeechEnabled = false, string? TempUserId = null);
+
+/// <summary>匿名恢复成功历史，主体只与已认证凭据比较，不能代替授权。</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record AnonymousHistoryCommand(string SessionId, string? TempUserId, string? BusinessType, string? AssistantConfigId);
 
 /// <summary>页面可选助手引用，来源组织和大会不能覆盖服务端事实。</summary>
 /// <param name="AssistantConfigId">配置引用。</param>
 /// <param name="BventId">仅用于一致性核验。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ChatExtension(string AssistantConfigId, string? BventId);
+
+/// <summary>仅接收助手引用；会话和主体由服务器创建。</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record CreateSessionCommand(string AssistantConfigId);
+
+/// <summary>不透明第三方身份 ID，不写 DTO 日志，不允许修改已绑定值。</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record BindExternalIdentityCommand(string CookieId)
+{
+    /// <summary>防止默认 record 日志回显身份原值。</summary>
+    public override string ToString() => "BindExternalIdentityCommand[REDACTED]";
+}

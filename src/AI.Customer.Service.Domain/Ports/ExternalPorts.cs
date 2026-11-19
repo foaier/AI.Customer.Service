@@ -20,6 +20,8 @@ public interface IAssistantRegistry
     AssistantDefinition Require(string tenant, string assistant);
     /// <summary>列举指定租户可选择的可信助手。</summary>
     IReadOnlyList<AssistantDefinition> List(string tenant);
+    /// <summary>匿名创建只允许部署明确公开且全局引用唯一的助手。</summary>
+    AssistantDefinition RequirePublic(string assistant);
 }
 
 /// <summary>部署配置或助手服务维护的运行定义，不包含模型密钥。</summary>
@@ -29,7 +31,10 @@ public interface IAssistantRegistry
 /// <param name="BventId">大会引用。</param>
 /// <param name="Name">助手展示名。</param>
 /// <param name="Language">默认语言。</param>
-public sealed record AssistantDefinition(string Id, string TenantId, string TopOrgId, string? BventId = null, string Name = "智能客服", string Language = "zh-CN");
+/// <param name="AllowAnonymous">是否明确开放匿名咨询，默认 false。</param>
+/// <param name="ExternalIdentityRequired">新会话是否必须先绑定第三方身份再聊天，默认 false。</param>
+public sealed record AssistantDefinition(string Id, string TenantId, string TopOrgId, string? BventId = null, string Name = "智能客服", string Language = "zh-CN",
+    bool AllowAnonymous = false, bool ExternalIdentityRequired = false);
 
 /// <summary>模型协议隔离端口，业务状态只能由应用服务推进。</summary>
 public interface IChatModel
@@ -59,7 +64,7 @@ public interface INotificationPort
 {
     /// <summary>返回真实可发送的任务类型，关闭时 Worker 不查相应任务。</summary>
     IReadOnlyCollection<string> SupportedKinds { get; }
-    /// <summary>允许额外领取已保存组织群路由的 INTERNAL；不把其它未配置组织的任务计为失败。</summary>
+    /// <summary>按组织持久开关领取通知，包含 INTERNAL/HANDOFF_NOTIFY；未启用组织不消耗尝试。</summary>
     bool UseConfiguredChatGroups => false;
     /// <summary>按稳定 eventKey 投递并验证网关明确受理，在业务事务外执行。</summary>
     Task SendAsync(ReliableTask task, CancellationToken ct);

@@ -8,12 +8,17 @@ namespace AI.Customer.Service.Core;
 /// <param name="conversations">本 owner 的仓储。</param>
 /// <param name="transactions">客服与会话共享的短事务。</param>
 /// <param name="clock">可替换的 UTC 时钟。</param>
-public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock)
+/// <param name="access">本 owner 的匿名授权与外部身份关系。</param>
+public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock,
+    IConversationAccessRepository access)
 {
     /// <summary>正式创建会话，组织和大会来自受信助手注册表。</summary>
-    public Task<Conversation> CreateAsync(Actor actor, AssistantDefinition assistant, string id, CancellationToken ct) =>
+    public Task<Conversation> CreateAsync(Actor actor, AssistantDefinition assistant, string id, CancellationToken ct,
+        string? guestCredentialHash = null, DateTime? guestExpiresAt = null) =>
         transactions.ExecuteAsync(actor.TenantId, assistant.TopOrgId, async () =>
         {
+            if (actor.GuestConversationId is not null && actor.GuestConversationId != id)
+                throw BusinessException.Forbidden("匿名凭据不能创建或访问其它会话");
             var existing = await conversations.FindAsync(actor.TenantId, id, ct);
             if (existing is not null)
             {
@@ -34,10 +39,19 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
                 AssistantConfigId = assistant.Id,
                 BventId = assistant.BventId,
                 PrincipalId = actor.AccountId,
+                ExternalIdentityRequired = assistant.ExternalIdentityRequired,
                 CreatedAt = now,
                 UpdatedAt = now
             };
             conversations.Add(value);
+            if (guestCredentialHash is not null)
+            {
+                if (actor.GuestConversationId != id || guestExpiresAt is null) throw BusinessException.Invalid("匿名授权范围无效");
+                var grant = Bind<AnonymousConversationAccess>(value.Scope, value.PrincipalId, Guard.Id("guest_access"));
+                grant.CredentialHash = guestCredentialHash;
+                grant.ExpiresAt = guestExpiresAt.Value;
+                access.AddGuest(grant);
+            }
             return value;
         }, ct);
 
@@ -46,6 +60,7 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     {
         var value = await conversations.FindAsync(actor.TenantId, id, ct) ?? throw BusinessException.Forbidden("会话不存在或不可访问");
         RequireVisitor(value, actor);
+        await RequireGuestAsync(value, actor, ct);
         return value;
     }
 
@@ -55,6 +70,8 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         {
             var conversation = await RequireAsync(scope, ct);
             RequireVisitor(conversation, actor);
+            await RequireGuestAsync(conversation, actor, ct);
+            await RequireChatIdentityAsync(scope, ct);
             if (conversation.HumanEpisodeId is not null)
             {
                 throw BusinessException.Conflict("当前正在人工接待，请通过人工消息接口发送");
@@ -173,9 +190,27 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     /// <summary>校验认证租户和原会话主体。</summary>
     private static void RequireVisitor(Conversation value, Actor actor)
     {
-        if (value.TenantId != actor.TenantId || value.PrincipalId != actor.AccountId)
+        if (value.TenantId != actor.TenantId || value.PrincipalId != actor.AccountId ||
+            (actor.GuestConversationId is not null && actor.GuestConversationId != value.Id))
         {
             throw BusinessException.Forbidden("当前账号不是原会话访客");
         }
+    }
+
+    /// <summary>每次匿名业务读取重查有效期与撤销，外部身份 ID 不替代此授权。</summary>
+    private async Task RequireGuestAsync(Conversation value, Actor actor, CancellationToken ct)
+    {
+        if (actor.GuestConversationId is null) return;
+        var grant = await access.GuestAsync(value.Scope, ct);
+        if (grant is null || grant.PrincipalId != actor.AccountId || grant.RevokedAt is not null || grant.ExpiresAt <= clock.GetUtcNow().UtcDateTime)
+            throw BusinessException.Forbidden("匿名会话凭据已失效，请开始新的咨询");
+    }
+
+    /// <summary>在任何 AI 写入前执行创建时冻结的外部身份门禁。</summary>
+    public async Task RequireChatIdentityAsync(Scope scope, CancellationToken ct)
+    {
+        var conversation = await RequireAsync(scope, ct);
+        if (conversation.ExternalIdentityRequired && await access.IdentityAsync(scope, ct) is null)
+            throw new BusinessException("EXTERNAL_IDENTITY_REQUIRED", "请先绑定第三方身份后再开始 AI 聊天", 409);
     }
 }

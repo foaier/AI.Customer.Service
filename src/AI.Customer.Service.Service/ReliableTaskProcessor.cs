@@ -32,6 +32,7 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
                 continue;
             }
             string? error = null;
+            var retryable = true;
             try
             {
                 if (lease.Kind == "SYSTEM_HANDOFF")
@@ -45,11 +46,12 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             }
             catch (Exception failure) when (!ct.IsCancellationRequested)
             {
-                error = failure is BusinessException business ? business.Code : failure.GetType().Name;
+                error = failure is NotificationDeliveryException delivery ? delivery.Code : failure is BusinessException business ? business.Code : failure.GetType().Name;
+                retryable = failure is not NotificationDeliveryException rejected || rejected.Retryable;
                 logger.LogWarning("任务待恢复 EventKey={EventKey} SessionId={SessionId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Attempt={Attempt} Failure={Failure}",
                     lease.EventKey, lease.ConversationId, lease.TraceId, lease.TopOrgId, lease.BventId, lease.Attempts, error);
             }
-            await CompleteAsync(lease, error, ct);
+            await CompleteAsync(lease, error, retryable, ct);
         }
     }
 
@@ -96,7 +98,7 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
         }, ct);
 
     /// <summary>仅匹配当前租约才能确认，失败按 5、10、20、40 秒退避并最多尝试五次。</summary>
-    private Task<bool> CompleteAsync(ReliableTask lease, string? error, CancellationToken ct) =>
+    private Task<bool> CompleteAsync(ReliableTask lease, string? error, bool retryable, CancellationToken ct) =>
         transactions.ExecuteAsync(lease.TenantId, lease.TopOrgId, async () =>
         {
             var value = await tasks.FindAsync(lease.TenantId, lease.TopOrgId, lease.EventKey, ct);
@@ -104,8 +106,16 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             {
                 return false;
             }
-            value.State = error is null ? DeliveryState.SENT : value.Attempts >= 5 ? DeliveryState.DEAD : DeliveryState.PENDING;
+            value.State = error is null ? DeliveryState.SENT : !retryable || value.Attempts >= 5 ? DeliveryState.DEAD : DeliveryState.PENDING;
             value.LastError = error;
+            // 领取后配置被关闭属于暂停，不消耗投递次数，重新启用后仍沿用同一任务。
+            if (error == "CONFIG_DISABLED")
+            {
+                value.State = DeliveryState.PENDING;
+                value.Attempts--;
+                value.TotalAttempts--;
+            }
+            value.ProviderRequestId = lease.ProviderRequestId;
             value.LeaseId = null;
             value.LeaseUntil = null;
             value.DueAt = clock.GetUtcNow().UtcDateTime.AddSeconds(Math.Min(60, 5 * Math.Pow(2, value.Attempts - 1)));

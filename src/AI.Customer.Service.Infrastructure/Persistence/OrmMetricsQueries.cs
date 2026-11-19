@@ -32,7 +32,7 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
         var backlog = new Dictionary<string, long>
         {
             ["waiting_over_5m"] = await episodes.LongCountAsync(x => x.Status == EpisodeStatus.REQUESTED && x.RequestedAt <= old, ct),
-            ["notification_dead"] = await tasks.LongCountAsync(x => (x.Kind == "EMAIL" || x.Kind == "INTERNAL") && x.State == DeliveryState.DEAD, ct),
+            ["notification_dead"] = await tasks.LongCountAsync(x => (x.Kind == "EMAIL" || x.Kind == "INTERNAL" || x.Kind == "HANDOFF_NOTIFY") && x.State == DeliveryState.DEAD, ct),
             ["reply_dead"] = await tasks.LongCountAsync(x => x.Kind == "EMAIL_REPLY" && x.State == DeliveryState.DEAD, ct),
             ["system_dead"] = await tasks.LongCountAsync(x => x.Kind == "SYSTEM_HANDOFF" && x.State == DeliveryState.DEAD, ct),
             ["outbox_dead"] = await tasks.LongCountAsync(x => x.Kind == "EVENT" && x.State == DeliveryState.DEAD, ct),

@@ -142,10 +142,13 @@ public sealed class ProtocolTests
         }));
         await using var application = new TestApplication();
         await using var scope = application.Services.CreateAsyncScope();
-        var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Enabled = true, Endpoint = "https://gateway.invalid" }),
-            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>());
-        var task = new ReliableTask { Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.SendAsync(task, default));
+        var config = scope.ServiceProvider.GetRequiredService<IConfigurationRepository>();
+        config.AddChatNotification(new ChatNotificationConfiguration { Id = "chat", TenantId = "tenant-a", TopOrgId = "org-a", Enabled = true });
+        await scope.ServiceProvider.GetRequiredService<AI.Customer.Service.Infrastructure.Persistence.CustomerServiceDbContext>().SaveChangesAsync();
+        var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Endpoint = "https://gateway.invalid" }),
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>(), application.Clock);
+        var task = new ReliableTask { TenantId = "tenant-a", TopOrgId = "org-a", Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
+        await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         accepted = true;
         await adapter.SendAsync(task, default);
     }

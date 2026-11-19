@@ -235,8 +235,12 @@ public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepositor
     public void Add(ReliableTask value) => db.Add(value);
     /// <inheritdoc />
     public Task<List<ReliableTask>> DueAsync(IReadOnlyCollection<string> kinds, DateTime now, int limit, CancellationToken ct, bool includeConfiguredChatGroups = false) =>
-        db.Set<ReliableTask>().AsNoTracking().Where(x => (kinds.Contains(x.Kind) ||
-            (includeConfiguredChatGroups && x.Kind == "INTERNAL" && db.Set<ChatNotificationConfiguration>().Any(c => c.TenantId == x.TenantId && c.TopOrgId == x.TopOrgId))) &&
+        db.Set<ReliableTask>().AsNoTracking().Where(x =>
+            ((!includeConfiguredChatGroups && kinds.Contains(x.Kind)) ||
+             (includeConfiguredChatGroups &&
+              ((kinds.Contains(x.Kind) && (x.Kind == "EVENT" || x.Kind == "SYSTEM_HANDOFF")) ||
+               ((kinds.Contains(x.Kind) || x.Kind == "INTERNAL" || x.Kind == "HANDOFF_NOTIFY") &&
+                db.Set<ChatNotificationConfiguration>().Any(c => c.TenantId == x.TenantId && c.TopOrgId == x.TopOrgId && c.Enabled))))) &&
             ((x.State == DeliveryState.PENDING && x.DueAt <= now) || (x.State == DeliveryState.CLAIMED && x.LeaseUntil <= now)))
             .OrderBy(x => x.DueAt).ThenBy(x => x.Id).Take(limit).ToListAsync(ct);
     /// <inheritdoc />

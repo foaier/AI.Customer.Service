@@ -67,7 +67,7 @@ API 和 WebSocket 均验证 issuer、audience、签名和 exp，时钟容差为 
 | `CustomerService:Calendar:Closes`          | `17:00`；HH:mm 或 HH:mm:ss          | 不含结束边界，不支持跨日营业区间           |
 | `CustomerService:Calendar:Overrides`       | 空字典；最多 1000 项，ISO日期→布尔  | 日期覆盖优先，未覆盖时周一至周五营业       |
 
-正式 `/configuration/calendar` 保存的组织日历优先于部署默认，只影响新周期；等待按首次申请时刻冻结窗口。未来最多查找三年营业日，无营业日配置拒绝。等待 5/10 分钟提醒、在线租约 45 秒、客户端在线心跳 15 秒、任务租约 30 秒均为当前实现固定规则，不是可由访客配置的字段。
+正式 `/configuration/calendar` 保存的组织日历优先于部署默认，只影响新周期；等待按首次申请时刻冻结窗口。未来最多查找三年营业日，无营业日配置拒绝。等待 T+5 兼容标记/T+10 繁忙提示、在线租约 45 秒、客户端在线心跳 15 秒、任务租约 30 秒均为当前实现固定规则，不是可由访客配置的字段。
 
 ## 数据源
 
@@ -91,17 +91,20 @@ MySQL 使用官方 EF Provider，建议 UTF8MB4 和区分大小写的标识符�
 
 ## 可靠通知
 
-| 键                             | 默认值 / 范围               | 作用域和缺省行为                                             |
-| ------------------------------ | --------------------------- | ------------------------------------------------------------ |
-| `Notifications:Enabled`        | false；布尔                 | 外发 EMAIL/EMAIL_REPLY/INTERNAL 总开关；关闭不领取、不耗次数 |
-| `Notifications:Endpoint`       | 空；受控 HTTP(S) 网关       | 通知和最终邮件；空地址不发送                                 |
-| `Notifications:Authorization`  | 空；可选服务间认证头        | 网关认证，不写入任务或日志                                   |
-| `Notifications:WeComWebhook`   | 空；官方 HTTPS 群机器人 URL | 只发 INTERNAL，优先于普通网关，不包含邮箱正文                |
-| `Notifications:EventsEnabled`  | false；布尔                 | 可选 EVENT 审计转发；不影响本地接待                          |
-| `Notifications:EventsEndpoint` | 空；受控 HTTP(S) 事件网关   | 开启且有地址才领取 EVENT                                     |
+| 键                             | 默认值 / 范围                 | 作用域和缺省行为                                  |
+| ------------------------------ | ----------------------------- | ------------------------------------------------- |
+| `Notifications:EncryptionKey`  | 空；Base64 编码的随机 32 字节 | 雅式令牌 AES-256-GCM 主密钥；只由部署 Secret 注入 |
+| `Notifications:Endpoint`       | 空；受控 HTTP(S) 网关         | 通知和最终邮件；空地址不发送                      |
+| `Notifications:Authorization`  | 空；可选服务间认证头          | 网关认证，不写入任务或日志                        |
+| `Notifications:EventsEnabled`  | false；布尔                   | 可选 EVENT 审计转发；不影响本地接待               |
+| `Notifications:EventsEndpoint` | 空；受控 HTTP(S) 事件网关     | 开启且有地址才领取 EVENT                          |
 
 HTTP 网关连接 2 秒、请求 5 秒。请求含 `Idempotency-Key: eventKey` 和 traceId，JSON 包含 eventKey、kind、sessionId、episodeId、tenantId、topOrgId、bventId、traceId、payload。网关必须持久去重并返回 `{"accepted":true}`；HTTP 200 本身不算受理。
 
-EMAIL 为建工单通知，payload 含 ticketId/conversationId，由网关根据组织路由找到内部接收者；EMAIL_REPLY 的 payload 含服务端原邮箱、subject、content、ticketId，网关按原邮箱发给访客；INTERNAL 为等待提醒；EVENT 为可选业务审计。不得把缺失接收人规则当成成功发信。
+EMAIL 为建工单通知，payload 含 ticketId/conversationId，由网关根据组织路由找到内部接收者；EMAIL_REPLY 的 payload 含服务端原邮箱、subject、content、ticketId，网关按原邮箱发给访客；INTERNAL 为兼容的旧等待提醒，HANDOFF_NOTIFY 为新申请即时群通知；EVENT 为可选业务审计。不得把缺失接收人规则当成成功发信。
 
 企微仅允许 `https://qyapi.weixin.qq.com/cgi-bin/webhook/send`，必须返回 `errcode=0`；官方机器人不保证事件键去重，可能重复提醒。需要严格去重时使用自有持久幂等网关。任务最多自动尝试 5 次，DEAD 需工作台人工恢复；关闭通道只暂停发送，不丢任务。
+
+组织持久通知配置的 `enabled` 统一控制 EMAIL、EMAIL_REPLY、INTERNAL、HANDOFF_NOTIFY，替代旧部署开关。保存规则、雅式协议和数据库 004 升级见 [后端迁移说明](backend-migration-20261119.md)。
+
+助手定义支持 `AllowAnonymous`、`ExternalIdentityRequired`，默认均为 false。前者允许匿名创建，后者在新会话创建时冻结 AI 聊天前外部身份绑定要求；已有会话保持原策略。公开助手 ID 必须唯一。

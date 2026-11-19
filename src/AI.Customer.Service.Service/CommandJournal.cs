@@ -26,6 +26,12 @@ public sealed class CommandJournal(IReceptionRepository repository, ITaskReposit
             throw BusinessException.Conflict("同一请求键不能更换版本或内容");
         }
         var result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(prior.ResultJson, JsonDefaults.Options)!;
+        if (action == "REQUEST" && result.TryGetValue("episodeId", out var episodeId))
+        {
+            var episode = await repository.EpisodeAsync(scope, episodeId.GetString()!, ct);
+            if (episode is null || episode.Status == EpisodeStatus.CANCELLED)
+                throw BusinessException.Conflict("原转人工申请已取消，请使用新的请求标识重新申请");
+        }
         result["replayed"] = JsonSerializer.SerializeToElement(true);
         return result;
     }

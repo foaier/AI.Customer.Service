@@ -16,7 +16,9 @@
 
 通知首帧作为基线，相同 changeToken 去重，变化在 300ms 内合并刷新。完整队列快照替换旧队列，因此已取消/被他人领取的申请不会残留。切换助手会重建对应页面；过期 HTTP 结果及已关闭 WebSocket 不再覆盖当前选择。修正同源 WebSocket 地址，`/b/inbox` 等页面路由不再进入 API 路径。
 
-## 企业微信群接口和投递
+## 企业微信群接口和投递（初次迁移记录）
+
+以下为提交 412e9e7 时的行为。后续后端补迁移已将总开关改为持久配置、加入 ADSALE 和即时通知，并将正式类别改为 FINANCE；当前契约以 [后端迁移说明](backend-migration-20261119.md) 为准。
 
 `GET/PUT /api/customer-service/configuration/chat-notifications?topOrgId=...`，复用配置页的服务端账号与组织准入。PUT 只接受 `version`、`chatGroup`，不接受身份、认证令牌或任意网关 URL。首次保存版本为 0；成功加一；旧版本返回 409。
 

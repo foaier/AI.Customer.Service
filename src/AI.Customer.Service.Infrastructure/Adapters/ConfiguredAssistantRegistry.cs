@@ -10,6 +10,12 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 public sealed class ConfiguredAssistantRegistry(IOptions<AssistantOptions> options) : IAssistantRegistry
 {
     /// <inheritdoc />
+    public AssistantDefinition RequirePublic(string assistant)
+    {
+        var candidates = options.Value.Items.Where(x => x.Id == assistant && x.AllowAnonymous).ToArray();
+        return candidates.Length == 1 ? candidates[0] : throw BusinessException.Forbidden("助手未开放匿名咨询");
+    }
+    /// <inheritdoc />
     public AssistantDefinition Require(string tenant, string assistant) =>
         options.Value.Items.SingleOrDefault(x => x.TenantId == tenant && x.Id == assistant)
         ?? throw BusinessException.Forbidden("助手未在当前租户注册");

@@ -34,8 +34,10 @@ public static class InfrastructureRegistration
         });
         services.AddScoped<IUnitOfWork, OrmUnitOfWork>();
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IConversationAccessRepository, ConversationAccessRepository>();
         services.AddScoped<IReceptionRepository, ReceptionRepository>();
         services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
+        services.AddScoped<ISecretCipher, NotificationTokenCipher>();
         services.AddScoped<IFollowupRepository, FollowupRepository>();
         services.AddScoped<ISurveyRepository, SurveyRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();

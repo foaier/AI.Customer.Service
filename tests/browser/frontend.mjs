@@ -40,13 +40,20 @@ try {
         lastVisitorSeq: 1,
         readSeq: 1 - index,
     }));
-    const groups = ["EXHIBITOR", "VISITOR", "MEDIA", "OTHER"].map((category) => ({
+    const groups = ["EXHIBITOR", "VISITOR", "FINANCE", "OTHER"].map((category) => ({
         id: category,
         category,
-        name: category === "MEDIA" ? "媒体组" : category,
+        name: category === "FINANCE" ? "财务组" : category,
         members: [],
     }));
-    let chat = { version: 0, enabled: false, activeProvider: "WECOM_ROBOT", chatGroup: {} };
+    let chat = {
+        version: 0,
+        enabled: false,
+        activeProvider: "WECOM_ROBOT",
+        publicBaseUrl: "",
+        apiTokenConfigured: false,
+        chatGroup: {},
+    };
     let configMissing = false;
     let conflict = false;
     let puts = 0;
@@ -124,15 +131,26 @@ try {
             } else if (route.request().method() === "PUT") {
                 puts++;
                 const body = route.request().postDataJSON();
-                assert.deepEqual(Object.keys(body).sort(), ["chatGroup", "version"]);
+                assert.deepEqual(
+                    Object.keys(body)
+                        .filter((key) => key !== "apiToken")
+                        .sort(),
+                    ["activeProvider", "chatGroup", "clearApiToken", "enabled", "publicBaseUrl", "version"],
+                );
                 if (conflict) {
                     status = 409;
                     data = { message: "群通知配置版本已变化，请重新加载" };
                 } else {
-                    chat = { ...chat, ...body, version: chat.version + 1 };
+                    const { apiToken, clearApiToken, ...fields } = body;
+                    chat = {
+                        ...chat,
+                        ...fields,
+                        apiTokenConfigured: clearApiToken ? false : Boolean(apiToken) || chat.apiTokenConfigured,
+                        version: chat.version + 1,
+                    };
                     data = chat;
                 }
-            } else data = { ...chat, apiTokenConfigured: true };
+            } else data = chat;
         } else if (path.endsWith("/configuration/calendar"))
             data = {
                 version: 0,
@@ -204,7 +222,7 @@ try {
         await form.getByLabel(label, { exact: true }).fill(value);
     }
     await form.getByRole("button", { name: "保存群通知" }).click();
-    await expect(form.getByRole("status")).toHaveText("企业微信群配置已保存。");
+    await expect(form.getByRole("status")).toHaveText("群通知配置已保存。");
     assert.equal(puts, 1);
     await expect(form.getByRole("button", { name: "保存群通知" })).toBeDisabled();
     const reloadResponse = page.waitForResponse(
@@ -214,6 +232,19 @@ try {
     await reloadResponse;
     await expect(form.getByRole("button", { name: "重新读取" })).toBeEnabled();
     await expect(form.getByLabel("财务客服", { exact: true })).toHaveValue("finance-hook-123");
+    await form.getByLabel("启用通知", { exact: true }).check();
+    await form.getByLabel("客服站点地址", { exact: true }).fill("https://support.example.com");
+    await form.getByLabel("通知通道", { exact: true }).selectOption("ADSALE");
+    await form.getByLabel("API Token（未配置）", { exact: true }).fill("browser-test-secret");
+    await form.getByRole("button", { name: "保存群通知" }).click();
+    await expect(form.getByLabel("API Token（已配置）", { exact: true })).toHaveValue("");
+    assert.equal(chat.enabled, true);
+    assert.equal(chat.activeProvider, "ADSALE");
+    assert.equal(chat.apiToken, undefined);
+    await form.getByLabel("启用通知", { exact: true }).uncheck();
+    await form.getByLabel("清除已保存令牌", { exact: true }).check();
+    await form.getByRole("button", { name: "保存群通知" }).click();
+    await expect(form.getByLabel("API Token（未配置）", { exact: true })).toHaveValue("");
     conflict = true;
     await form.getByLabel("财务客服", { exact: true }).fill("finance-hook-new");
     await form.getByRole("button", { name: "保存群通知" }).click();
@@ -229,6 +260,10 @@ try {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.getByRole("link", { name: "邮件跟进" }).click();
     await expect(page.locator(".followup-row").first()).toContainText("新留言工单");
+    episodes[0].status = "REQUESTED";
+    await page.goto(base + "/b/inbox?topOrgId=org-a&assistantConfigId=assistant-a&conversationId=read");
+    await expect(page.locator(".conversation-panel").getByRole("button", { name: "认领并查看" })).toBeVisible();
+    console.log("PASS 通知开关、雅式令牌保存/清除、深链接定位且不自动认领");
     assert.deepEqual(errors, []);
     console.log("PASS 留言未查看优先；无浏览器运行错误");
 } finally {

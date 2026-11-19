@@ -66,8 +66,8 @@ public enum Category
     EXHIBITOR,
     /// <summary>观众及一般参观咨询。</summary>
     VISITOR,
-    /// <summary>财务咨询；保留 MEDIA 序列化键兼容既有分组与路由。</summary>
-    MEDIA,
+    /// <summary>付款、发票及账单咨询；沿用旧媒体类别的数据库数值 2。</summary>
+    FINANCE,
     /// <summary>未知主题或模型降级。</summary>
     OTHER
 }

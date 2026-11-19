@@ -1,7 +1,7 @@
 (function () {
     "use strict";
     const el = (id) => document.getElementById(id);
-    const categories = { EXHIBITOR: "展商", VISITOR: "观众", MEDIA: "媒体", OTHER: "其他" };
+    const categories = { EXHIBITOR: "展商", VISITOR: "观众", FINANCE: "财务", OTHER: "其他" };
     const base = (location.pathname.includes("/ai_chat/") ? "/ai_chat" : "") + "/api";
     const params = new URL(location.href).searchParams;
     let config = null,

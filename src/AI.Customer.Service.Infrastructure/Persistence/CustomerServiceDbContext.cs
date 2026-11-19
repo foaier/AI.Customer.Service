@@ -18,6 +18,14 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         model.Ignore<Aggregate>();
         model.Ignore<ConversationAggregate>();
         Configure<Conversation>(model, "ai_conversation_generation");
+        Configure<AnonymousConversationAccess>(model, "ai_anonymous_conversation_access");
+        Configure<ConversationExternalIdentity>(model, "ai_conversation_external_identity");
+        model.Entity<AnonymousConversationAccess>().HasIndex(x => x.CredentialHash).IsUnique();
+        model.Entity<AnonymousConversationAccess>().Property(x => x.CredentialHash).HasMaxLength(64);
+        model.Entity<AnonymousConversationAccess>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId }).IsUnique();
+        model.Entity<ConversationExternalIdentity>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ProviderCode }).IsUnique();
+        model.Entity<ConversationExternalIdentity>().Property(x => x.ExternalAuthId).HasMaxLength(512);
+        model.Entity<ConversationExternalIdentity>().ToTable(t => t.HasCheckConstraint("ck_external_identity_provider", "provider_code = 'ADSALE'"));
         Configure<Episode>(model, "cs_handoff_episode");
         Configure<Waiting>(model, "cs_waiting_workflow");
         Configure<Proposal>(model, "cs_handoff_proposal");
@@ -35,6 +43,9 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         Configure<RoutingConfiguration>(model, "cs_reception_configuration");
         Configure<CalendarPolicy>(model, "cs_reception_calendar");
         Configure<ChatNotificationConfiguration>(model, "cs_chat_notification_configuration");
+        model.Entity<ChatNotificationConfiguration>().Property(x => x.BaseUrl).HasMaxLength(256);
+        model.Entity<ChatNotificationConfiguration>().Property(x => x.PublicBaseUrl).HasMaxLength(256);
+        model.Entity<ChatNotificationConfiguration>().Property(x => x.ApiTokenCiphertext).HasMaxLength(8192);
 
         Json(model.Entity<ChatNotificationConfiguration>().Property(x => x.ChatGroup));
         model.Entity<ChatNotificationConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();

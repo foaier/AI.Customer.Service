@@ -32,14 +32,12 @@ public sealed class AssistantOptions
 /// <summary>可靠通知及可选事件转发网关，所有外发缺省关闭。</summary>
 public sealed class NotificationOptions
 {
-    /// <summary>外部通知总开关，默认 false；关闭时不领取 EMAIL/INTERNAL。</summary>
-    public bool Enabled { get; set; }
+    /// <summary>Base64 编码的 32 字节 AES 主密钥；缺省拒绝保存/解密雅式令牌，所有实例必须一致。</summary>
+    public string EncryptionKey { get; set; } = "";
     /// <summary>需持久 eventKey 去重并返回 accepted=true 的 HTTP(S) 网关，默认空。</summary>
     public string Endpoint { get; set; } = "";
     /// <summary>服务间认证头，默认空，不写入任务、日志或响应。</summary>
     public string Authorization { get; set; } = "";
-    /// <summary>可选官方企微机器人地址，只发送 INTERNAL；默认空。</summary>
-    public string WeComWebhook { get; set; } = "";
     /// <summary>审计事件对外转发开关，默认 false；本地接待不依赖外部转发。</summary>
     public bool EventsEnabled { get; set; }
     /// <summary>可选持久事件网关，默认空，需按 eventKey 幂等受理。</summary>
