@@ -3,6 +3,8 @@ using AI.Customer.Service.Common;
 using AI.Customer.Service.Domain.Models;
 using AI.Customer.Service.Domain.Ports;
 using AI.Customer.Service.Service;
+using AI.Customer.Service.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 using AI.Customer.Service.Web.Security;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,6 +33,25 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     {
         await RequestAccess.ManagerAsync(topOrgId, ct);
         return Success(RoutingView(await configuration.SaveAsync(Actor, topOrgId, command, ct)));
+    }
+
+    /// <summary>组织管理员读取群路由，不返回部署凭据或外部网关地址。</summary>
+    [HttpGet("configuration/chat-notifications")]
+    public async Task<object> ChatNotification(string topOrgId, [FromServices] IOptions<NotificationOptions> options, CancellationToken ct)
+    {
+        await RequestAccess.ManagerAsync(topOrgId, ct);
+        var value = await configuration.ChatNotificationAsync(Actor, topOrgId, ct);
+        return Success(new { value.Version, value.ChatGroup, enabled = options.Value.Enabled, activeProvider = "WECOM_ROBOT" });
+    }
+
+    /// <summary>首次保存或按版本更新四类群路由，部署开关及认证信息保持独立。</summary>
+    [HttpPut("configuration/chat-notifications")]
+    public async Task<object> SaveChatNotification(string topOrgId, ChatNotificationCommand command,
+        [FromServices] IOptions<NotificationOptions> options, CancellationToken ct)
+    {
+        await RequestAccess.ManagerAsync(topOrgId, ct);
+        var value = await configuration.SaveChatNotificationAsync(Actor, topOrgId, command, ct);
+        return Success(new { value.Version, value.ChatGroup, enabled = options.Value.Enabled, activeProvider = "WECOM_ROBOT" });
     }
 
     /// <summary>正式只读外部人员候选组，不返回手机号或邮箱。</summary>

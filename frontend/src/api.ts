@@ -126,7 +126,7 @@ export async function streamChat(
 }
 
 export function realtimeUrl(parameters: Record<string, string | number | boolean | null | undefined> = {}): string {
-    const base = apiBase ? new URL(apiBase, window.location.href) : new URL(window.location.href);
+    const base = apiBase ? new URL(apiBase, window.location.href) : new URL(window.location.origin);
     base.protocol = base.protocol === "https:" ? "wss:" : "ws:";
     base.pathname = `${base.pathname.replace(/\/$/, "")}/api/customer-service/realtime/ws`;
     base.search = "";

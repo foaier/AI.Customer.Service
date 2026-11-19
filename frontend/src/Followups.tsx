@@ -12,10 +12,17 @@ import {
     ShieldCheck,
     UserRound,
 } from "lucide-react";
-import { post, request } from "./api";
+import { post, realtimeUrl, request } from "./api";
+import { getAccessToken } from "./auth";
 import type { Assistant, Followup } from "./types";
 
-type FollowupFormState = { version?: number; state?: string; contactName?: string; content?: string; assignedTo?: string };
+type FollowupFormState = {
+    version?: number;
+    state?: string;
+    contactName?: string;
+    content?: string;
+    assignedTo?: string;
+};
 type ReplyState = { version: number; state: string; subject?: string; content?: string; attempts?: number };
 
 export default function Followups({ assistant }: { assistant: Assistant }) {
@@ -51,7 +58,62 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
 
     useEffect(() => {
         void loadItems();
+        return () => {
+            selectionGeneration.current++;
+        };
     }, [loadItems]);
+
+    useEffect(() => {
+        let closed = false;
+        let reconnect = 0;
+        let refresh = 0;
+        let failures = 0;
+        let socket: WebSocket | null = null;
+        const connect = async () => {
+            try {
+                const token = await getAccessToken();
+                if (closed) return;
+                let changeToken = "";
+                socket = new WebSocket(
+                    realtimeUrl({
+                        authorization: `Bearer ${token}`,
+                        agent: true,
+                        topOrgId: assistant.topOrgId,
+                        assistantConfigId: assistantId,
+                        afterSeq: 0,
+                    }),
+                );
+                socket.onopen = () => {
+                    failures = 0;
+                    void loadItems();
+                };
+                socket.onmessage = (event) => {
+                    if (closed) return;
+                    const frame = JSON.parse(String(event.data));
+                    if (frame.type !== "inbox.notifications" || !frame.data?.changeToken) return;
+                    const changed = changeToken && changeToken !== frame.data.changeToken;
+                    changeToken = frame.data.changeToken;
+                    if (changed && !refresh)
+                        refresh = window.setTimeout(() => {
+                            refresh = 0;
+                            void loadItems();
+                        }, 300);
+                };
+                socket.onclose = () => {
+                    if (!closed) reconnect = window.setTimeout(connect, Math.min(1000 * 2 ** failures++, 15000));
+                };
+            } catch {
+                if (!closed) reconnect = window.setTimeout(connect, Math.min(1000 * 2 ** failures++, 15000));
+            }
+        };
+        void connect();
+        return () => {
+            closed = true;
+            window.clearTimeout(reconnect);
+            window.clearTimeout(refresh);
+            socket?.close();
+        };
+    }, [assistant.topOrgId, assistantId, loadItems]);
 
     useEffect(() => {
         const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
@@ -67,12 +129,20 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         post(
             `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/receipts?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
             { kind: "SEEN", ticketId: selected.ticketId },
-        ).then(() => {
-            setItems((current) => current.map((item) => item.episodeId === selected.episodeId ? { ...item, hasUnseen: false } : item));
-            setSelected((current) => current?.episodeId === selected.episodeId ? { ...current, hasUnseen: false } : current);
-        }).catch(() => {
-            seenReceipts.current.delete(key);
-        });
+        )
+            .then(() => {
+                setItems((current) =>
+                    current.map((item) =>
+                        item.episodeId === selected.episodeId ? { ...item, hasUnseen: false } : item,
+                    ),
+                );
+                setSelected((current) =>
+                    current?.episodeId === selected.episodeId ? { ...current, hasUnseen: false } : current,
+                );
+            })
+            .catch(() => {
+                seenReceipts.current.delete(key);
+            });
     }, [assistant.topOrgId, form?.content, pageVisible, selected]);
 
     const select = async (item: Followup) => {
@@ -232,28 +302,32 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
                         <span className="queue-count">{items.length}</span>
                     </div>
                     <div className="followup-list">
-                        {items.map((item) => (
-                            <button
-                                type="button"
-                                key={`${item.scope.conversationId}-${item.episodeId}`}
-                                className={`followup-row ${selected?.episodeId === item.episodeId ? "active" : ""}`}
-                                onClick={() => void select(item)}
-                            >
-                                <span className="followup-row-icon">
-                                    <Mail size={16} />
-                                </span>
-                                <span className="followup-row-copy">
-                                    <strong>{item.ticketId}</strong>
-                                    <span>{item.scope.conversationId.slice(-10)}</span>
-                                </span>
-                                <span className={`status-label status-label--${item.state.toLowerCase()}`}>
-                                    {followupState(item.state)}
-                                </span>
-                                {item.hasUnseen && (
-                                    <span className="followup-unseen" aria-label="有未查看留言">新</span>
-                                )}
-                            </button>
-                        ))}
+                        {[...items]
+                            .sort((a, b) => Number(Boolean(b.hasUnseen)) - Number(Boolean(a.hasUnseen)))
+                            .map((item) => (
+                                <button
+                                    type="button"
+                                    key={`${item.scope.conversationId}-${item.episodeId}`}
+                                    className={`followup-row ${selected?.episodeId === item.episodeId ? "active" : ""}`}
+                                    onClick={() => void select(item)}
+                                >
+                                    <span className="followup-row-icon">
+                                        <Mail size={16} />
+                                    </span>
+                                    <span className="followup-row-copy">
+                                        <strong>{item.ticketId}</strong>
+                                        <span>{item.scope.conversationId.slice(-10)}</span>
+                                    </span>
+                                    <span className={`status-label status-label--${item.state.toLowerCase()}`}>
+                                        {followupState(item.state)}
+                                    </span>
+                                    {item.hasUnseen && (
+                                        <span className="followup-unseen" aria-label="有未查看留言">
+                                            新
+                                        </span>
+                                    )}
+                                </button>
+                            ))}
                         {!loading && items.length === 0 && (
                             <div className="queue-empty">
                                 <span className="queue-empty-icon">

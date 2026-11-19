@@ -14,11 +14,12 @@ import {
 } from "lucide-react";
 import { post, put, request } from "./api";
 import type { Assistant, Calendar, Group, Routing } from "./types";
+import ChatNotifications from "./ChatNotifications";
 
 const categories = [
     { id: "EXHIBITOR", label: "展商咨询", accent: "teal" },
     { id: "VISITOR", label: "观众咨询", accent: "amber" },
-    { id: "MEDIA", label: "媒体咨询", accent: "coral" },
+    { id: "MEDIA", label: "财务咨询", accent: "coral" },
     { id: "OTHER", label: "其他咨询", accent: "green" },
 ];
 
@@ -50,7 +51,14 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                 request<Routing>(`/customer-service/configuration?${orgQuery}`),
                 request<Calendar>(`/customer-service/configuration/calendar?${orgQuery}`),
             ]);
-            setRouting(routingState);
+            setRouting({
+                ...routingState,
+                groups: routingState.groups.map((group) =>
+                    group.category === "MEDIA" && ["媒体组", "媒体客服"].includes(group.name)
+                        ? { ...group, name: "财务客服" }
+                        : group,
+                ),
+            });
             setCalendar(calendarState);
             const existing = routingState.routes.find((item) => item.assistantConfigId === assistantId);
             setRouteDraft(
@@ -412,6 +420,8 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                             </button>
                         </div>
                     </form>
+
+                    <ChatNotifications key={assistant.topOrgId} topOrgId={assistant.topOrgId} />
 
                     <section className="settings-section route-preview-section">
                         <div className="settings-section-heading">

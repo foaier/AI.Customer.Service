@@ -23,7 +23,7 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
     public async Task RunOnceAsync(CancellationToken ct)
     {
         var kinds = notification.SupportedKinds.Append("SYSTEM_HANDOFF").ToArray();
-        var due = await tasks.DueAsync(kinds, clock.GetUtcNow().UtcDateTime, 100, ct);
+        var due = await tasks.DueAsync(kinds, clock.GetUtcNow().UtcDateTime, 100, ct, notification.UseConfiguredChatGroups);
         foreach (var candidate in due)
         {
             var lease = await ClaimAsync(candidate, ct);

@@ -48,6 +48,7 @@ public static class InfrastructureRegistration
         services.AddHttpClient<IAccountDirectory, UserCenterAdapter>(client => client.Timeout = TimeSpan.FromSeconds(5))
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(2) });
         services.AddHttpClient<INotificationPort, NotificationHttpAdapter>(client => client.Timeout = TimeSpan.FromSeconds(5))
+            .RemoveAllLoggers()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false, ConnectTimeout = TimeSpan.FromSeconds(2) });
         return services;
     }

@@ -76,6 +76,10 @@ public interface IReceptionRepository
 /// <summary>本地路由和营业日历 owner，账号资料只由外部端口核验。</summary>
 public interface IConfigurationRepository
 {
+    /// <summary>读取组织群通知配置，未初始化时为空。</summary>
+    Task<ChatNotificationConfiguration?> ChatNotificationAsync(string tenant, string org, CancellationToken ct);
+    /// <summary>首次保存组织群通知配置。</summary>
+    void AddChatNotification(ChatNotificationConfiguration configuration);
     /// <summary>读取组织整体路由配置。</summary>
     Task<RoutingConfiguration?> RoutingAsync(string tenant, string org, CancellationToken ct);
     /// <summary>首次保存本地业务组配置。</summary>
@@ -139,7 +143,7 @@ public interface ITaskRepository
     /// <summary>业务事务内保存待投递事实。</summary>
     void Add(ReliableTask task);
     /// <summary>在领取前过滤已启用通道，未启用通道不消耗尝试。</summary>
-    Task<List<ReliableTask>> DueAsync(IReadOnlyCollection<string> kinds, DateTime now, int limit, CancellationToken ct);
+    Task<List<ReliableTask>> DueAsync(IReadOnlyCollection<string> kinds, DateTime now, int limit, CancellationToken ct, bool includeConfiguredChatGroups = false);
     /// <summary>查询某组织的任务用于指标和人工恢复。</summary>
     Task<List<ReliableTask>> ListAsync(string tenant, string org, string kind, CancellationToken ct);
 }
