@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using AI.Customer.Service.Api.Contracts;
 using AI.Customer.Service.Common;
 using AI.Customer.Service.Domain.Models;
@@ -20,6 +21,43 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>未保存只读返回四个稳定组，不创建成员或授予权限。</summary>
     public async Task<RoutingConfiguration> GetAsync(Actor actor, string org, CancellationToken ct) =>
         await repository.RoutingAsync(actor.TenantId, org, ct) ?? Defaults(actor.TenantId, org);
+
+    /// <summary>未初始化时允许从空草稿首次保存，读取不产生持久记录。</summary>
+    public async Task<ChatNotificationConfiguration> ChatNotificationAsync(Actor actor, string org, CancellationToken ct) =>
+        await repository.ChatNotificationAsync(actor.TenantId, org, ct) ??
+        new ChatNotificationConfiguration { Id = "chat", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+
+    /// <summary>仅接收四类群 ID，版本冲突时保持原配置，兼容旧分类键。</summary>
+    public Task<ChatNotificationConfiguration> SaveChatNotificationAsync(Actor actor, string org, ChatNotificationCommand command, CancellationToken ct)
+    {
+        if (command.Version < 0 || command.ChatGroup is null || command.ChatGroup.Count > 7)
+            throw BusinessException.Invalid("群通知配置无效");
+        var groups = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (key, raw) in command.ChatGroup)
+        {
+            var canonical = key switch { "EXHIBITOR" => "SALES", "MEDIA" => "FINANCE", "OTHER" => "EMP", _ => key };
+            var value = raw?.Trim() ?? "";
+            if (canonical is not ("SALES" or "VISITOR" or "FINANCE" or "EMP") ||
+                !Regex.IsMatch(value, "\\A[A-Za-z0-9_-]{10,200}\\z", RegexOptions.CultureInvariant) ||
+                (groups.TryGetValue(canonical, out var existing) && existing != value))
+                throw BusinessException.Invalid("请填写有效的群机器人 Hook ID（10–200 位字母、数字、下划线或连字符），不接受完整地址");
+            groups[canonical] = value;
+        }
+        if (groups.Count != 4) throw BusinessException.Invalid("请填写四个接待组的群机器人 Hook ID，可共用同一个群");
+        return transactions.ExecuteAsync(actor.TenantId, org, async () =>
+        {
+            var value = await repository.ChatNotificationAsync(actor.TenantId, org, ct);
+            if ((value?.Version ?? 0) != command.Version) throw BusinessException.Conflict("群通知配置版本已变化，请重新加载");
+            if (value is null)
+            {
+                value = new ChatNotificationConfiguration { Id = "chat", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+                repository.AddChatNotification(value);
+            }
+            value.ChatGroup = groups;
+            value.Version++;
+            return value;
+        }, ct);
+    }
 
     /// <summary>核验全部外部账号后，在短事务内整体 CAS 保存组及路由。</summary>
     public async Task<RoutingConfiguration> SaveAsync(Actor actor, string org, RoutingCommand command, CancellationToken ct)
@@ -117,7 +155,7 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
             Version = 0,
             Groups = Enum.GetValues<Category>().Select(c => new ReceptionGroup(
                 "group_" + Guard.Fingerprint(tenant + "|" + org + "|" + c)[..24], c,
-                c switch { Category.EXHIBITOR => "展商组", Category.VISITOR => "客服组", Category.MEDIA => "媒体组", _ => "其他组" }, [])).ToList()
+                c switch { Category.EXHIBITOR => "展商组", Category.VISITOR => "客服组", Category.MEDIA => "财务客服", _ => "其他组" }, [])).ToList()
         };
 
     /// <summary>完整检查四类、成员唯一性、助手归属及映射，不允许外部组越权成为本地组。</summary>

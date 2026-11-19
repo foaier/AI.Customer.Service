@@ -196,9 +196,33 @@ export default function App() {
                     <Routes>
                         <Route path="/" element={<Navigate to="/c/chat" replace />} />
                         <Route path="/c/chat" element={<Visitor assistant={activeAssistant} />} />
-                        <Route path="/b/inbox" element={<AgentInbox assistant={activeAssistant} />} />
-                        <Route path="/b/followups" element={<Followups assistant={activeAssistant} />} />
-                        <Route path="/b/settings" element={<Settings assistant={activeAssistant} />} />
+                        <Route
+                            path="/b/inbox"
+                            element={
+                                <AgentInbox
+                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    assistant={activeAssistant}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/b/followups"
+                            element={
+                                <Followups
+                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    assistant={activeAssistant}
+                                />
+                            }
+                        />
+                        <Route
+                            path="/b/settings"
+                            element={
+                                <Settings
+                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    assistant={activeAssistant}
+                                />
+                            }
+                        />
                         <Route path="*" element={<Navigate to={isAgent ? "/b/inbox" : "/c/chat"} replace />} />
                     </Routes>
                 )}

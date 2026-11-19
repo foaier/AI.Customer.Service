@@ -143,6 +143,11 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
 public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConfigurationRepository
 {
     /// <inheritdoc />
+    public Task<ChatNotificationConfiguration?> ChatNotificationAsync(string tenant, string org, CancellationToken ct) =>
+        db.Set<ChatNotificationConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+    /// <inheritdoc />
+    public void AddChatNotification(ChatNotificationConfiguration value) => db.Add(value);
+    /// <inheritdoc />
     public Task<RoutingConfiguration?> RoutingAsync(string tenant, string org, CancellationToken ct) =>
         db.Set<RoutingConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
     /// <inheritdoc />
@@ -229,8 +234,9 @@ public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepositor
     /// <inheritdoc />
     public void Add(ReliableTask value) => db.Add(value);
     /// <inheritdoc />
-    public Task<List<ReliableTask>> DueAsync(IReadOnlyCollection<string> kinds, DateTime now, int limit, CancellationToken ct) =>
-        db.Set<ReliableTask>().AsNoTracking().Where(x => kinds.Contains(x.Kind) &&
+    public Task<List<ReliableTask>> DueAsync(IReadOnlyCollection<string> kinds, DateTime now, int limit, CancellationToken ct, bool includeConfiguredChatGroups = false) =>
+        db.Set<ReliableTask>().AsNoTracking().Where(x => (kinds.Contains(x.Kind) ||
+            (includeConfiguredChatGroups && x.Kind == "INTERNAL" && db.Set<ChatNotificationConfiguration>().Any(c => c.TenantId == x.TenantId && c.TopOrgId == x.TopOrgId))) &&
             ((x.State == DeliveryState.PENDING && x.DueAt <= now) || (x.State == DeliveryState.CLAIMED && x.LeaseUntil <= now)))
             .OrderBy(x => x.DueAt).ThenBy(x => x.Id).Take(limit).ToListAsync(ct);
     /// <inheritdoc />

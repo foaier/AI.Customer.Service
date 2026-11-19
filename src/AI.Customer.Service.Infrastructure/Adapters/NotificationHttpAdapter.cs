@@ -11,8 +11,14 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// <summary>可靠通知协议适配，HTTP 成功还需 accepted=true；企微需 errcode=0。</summary>
 /// <param name="http">短超时且不跟随重定向的客户端。</param>
 /// <param name="options">可选通知及事件网关。</param>
-public sealed class NotificationHttpAdapter(HttpClient http, IOptions<NotificationOptions> options) : INotificationPort
+/// <param name="configuration">按任务租户组织读取群路由。</param>
+/// <param name="reception">按原接待周期解析冻结分类。</param>
+public sealed class NotificationHttpAdapter(HttpClient http, IOptions<NotificationOptions> options,
+    IConfigurationRepository configuration, IReceptionRepository reception) : INotificationPort
 {
+    /// <inheritdoc />
+    public bool UseConfiguredChatGroups => options.Value.Enabled;
+
     /// <inheritdoc />
     public IReadOnlyCollection<string> SupportedKinds
     {
@@ -40,9 +46,26 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
     public async Task SendAsync(ReliableTask task, CancellationToken ct)
     {
         var value = options.Value;
-        var weCom = task.Kind == "INTERNAL" && !string.IsNullOrWhiteSpace(value.WeComWebhook);
-        var endpoint = weCom ? value.WeComWebhook : task.Kind == "EVENT" ? value.EventsEndpoint : value.Endpoint;
-        if (!SupportedKinds.Contains(task.Kind) || !Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || uri.Scheme is not "http" and not "https")
+        if (!SupportedKinds.Contains(task.Kind) && !(task.Kind == "INTERNAL" && UseConfiguredChatGroups))
+            throw BusinessException.Unavailable("任务通知通道尚未配置");
+        var webhook = value.WeComWebhook;
+        if (task.Kind == "INTERNAL")
+        {
+            var saved = await configuration.ChatNotificationAsync(task.TenantId, task.TopOrgId, ct);
+            if (saved is not null)
+            {
+                var episode = await reception.EpisodeAsync(task.Scope, task.EpisodeId, ct)
+                    ?? throw BusinessException.Invalid("群通知缺少原接待周期");
+                var key = ChatNotificationConfiguration.GroupKey(episode.Category);
+                if (!saved.ChatGroup.TryGetValue(key, out var hookId) ||
+                    !System.Text.RegularExpressions.Regex.IsMatch(hookId, "\\A[A-Za-z0-9_-]{10,200}\\z"))
+                    throw BusinessException.Unavailable("接待类别尚未配置群机器人");
+                webhook = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=" + Uri.EscapeDataString(hookId);
+            }
+        }
+        var weCom = task.Kind == "INTERNAL" && !string.IsNullOrWhiteSpace(webhook);
+        var endpoint = weCom ? webhook : task.Kind == "EVENT" ? value.EventsEndpoint : value.Endpoint;
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || uri.Scheme is not "http" and not "https")
         {
             throw BusinessException.Unavailable("任务通知通道尚未配置");
         }

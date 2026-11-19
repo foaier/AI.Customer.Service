@@ -100,6 +100,10 @@ public sealed record SurveyChoice(long ExpectedVersion, HandoffChoice Choice, st
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RoutingCommand(long Version, List<ReceptionGroup> Groups, List<AssistantRoute> Routes);
 
+/// <summary>组织群通知路由整体 CAS 保存，密钥和任意外部地址不由页面修改。</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ChatNotificationCommand(long Version, Dictionary<string, string> ChatGroup);
+
 /// <summary>正式组织日历完整 CAS 保存。</summary>
 /// <param name="Version">未保存为 0。</param>
 /// <param name="CalendarVersion">业务日历版本。</param>

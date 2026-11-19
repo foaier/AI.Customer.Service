@@ -55,7 +55,7 @@ dotnet run --project tools/AI.Customer.Service.Schema -- data/sql
 node scripts/format-sql.mjs
 ```
 
-新库脚本：`data/sql/{sqlite,mysql,kingbase}/001_initial.sql`；字段和 owner 说明：[数据库字典](docs/schema.md)。生产部署在全新独立库执行对应脚本，再设置 `Database:Initialize=false`。已有库升级需要单独维护增量迁移，`EnsureCreated` 不升级旧表。
+数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库依次执行 `001_initial.sql`、`002_inbox_auto_close.sql`、`003_chat_notifications.sql`，已有库只执行尚未应用的增量，再设置 `Database:Initialize=false`。字段和 owner 说明：[数据库字典](docs/schema.md)；最新群配置及升级说明：[前端迁移记录](docs/frontend-migration-20261119.md)。`EnsureCreated` 仅初始化空库，不升级旧表。
 
 `data/sql/reference` 和 `docs/java-baseline` 是原项目只读参考快照，不能用于创建此 .NET 数据库，也不能将其中 Java 的历史验收结论当成本项目结果。业务历史数据未自动搬迁，需要另行设计 ETL 和切换窗口。
 

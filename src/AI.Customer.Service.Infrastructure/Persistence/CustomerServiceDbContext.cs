@@ -34,7 +34,10 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         Configure<CommandReceipt>(model, "cs_command_receipt");
         Configure<RoutingConfiguration>(model, "cs_reception_configuration");
         Configure<CalendarPolicy>(model, "cs_reception_calendar");
+        Configure<ChatNotificationConfiguration>(model, "cs_chat_notification_configuration");
 
+        Json(model.Entity<ChatNotificationConfiguration>().Property(x => x.ChatGroup));
+        model.Entity<ChatNotificationConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Groups));
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Routes));
         Json(model.Entity<CalendarPolicy>().Property(x => x.Overrides));

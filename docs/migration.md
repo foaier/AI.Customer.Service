@@ -12,7 +12,7 @@
 | ------------------------------------------ | -------------------------------------------------------------- | ---------------------- |
 | Conversation、generation、轮次、消息和水位 | `ConversationRuntime`、`MessagingService`、会话 Repository     | Conversation           |
 | 接待申请、建议卡、认领、首响、结束、取消   | `HandoffService`、`ReceptionService`、`ReceptionRules`         | CustomerService        |
-| 收件箱未读、留言查看和在线接待超时结单     | `InboxService`、`AutoCloseWorker`、接待/跟进 Repository         | CustomerService        |
+| 收件箱未读、留言查看和在线接待超时结单     | `InboxService`、`AutoCloseWorker`、接待/跟进 Repository        | CustomerService        |
 | 四类业务组、账号引用、助手路由             | `ConfigurationService`、配置 Repository                        | CustomerService        |
 | 组织在线展示及改派容量                     | `AvailabilityService`、`ReceptionService`                      | CustomerService        |
 | 等待、邮箱、留言、最终回复                 | `WaitingService`、`FollowupService`                            | CustomerService        |
@@ -49,6 +49,8 @@ Worker 每 5 秒有界恢复可投递任务；租约 30 秒，最多 5 次，失
 调查 Worker 每 10 秒恢复未评估成功轮次，使用持久评估游标；它不判断用户沉默，不扫描等待期限。接待自动结单由独立 Worker 每 5 秒有界扫描，并在共享事务锁内复核截止时间。跨异步调用显式传递 sessionId、turnId、traceId、tenantId、topOrgId、bventId。
 
 2026-11-18 收件箱提醒与在线接待自动结单契约及数据库升级步骤见[收件箱提醒与超时结单](inbox-auto-close.md)。
+
+2026-11-19 Vue 前端增量、消息预览及群通知配置的 React/.NET 适配见[前端迁移记录](frontend-migration-20261119.md)。
 
 ## 本次独立化的适配边界
 

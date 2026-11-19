@@ -10,6 +10,7 @@ using AI.Customer.Service.Domain.Ports;
 using AI.Customer.Service.Infrastructure.Adapters;
 using AI.Customer.Service.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AI.Customer.Service.Tests;
@@ -139,7 +140,10 @@ public sealed class ProtocolTests
             Assert.AreEqual("followup:ticket-a", request.Headers.GetValues("Idempotency-Key").Single());
             return Task.FromResult(Json(accepted ? "{\"accepted\":true}" : "{\"accepted\":false}"));
         }));
-        var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Enabled = true, Endpoint = "https://gateway.invalid" }));
+        await using var application = new TestApplication();
+        await using var scope = application.Services.CreateAsyncScope();
+        var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Enabled = true, Endpoint = "https://gateway.invalid" }),
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>());
         var task = new ReliableTask { Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
         await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.SendAsync(task, default));
         accepted = true;

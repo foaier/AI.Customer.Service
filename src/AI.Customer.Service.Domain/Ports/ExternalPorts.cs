@@ -59,6 +59,8 @@ public interface INotificationPort
 {
     /// <summary>返回真实可发送的任务类型，关闭时 Worker 不查相应任务。</summary>
     IReadOnlyCollection<string> SupportedKinds { get; }
+    /// <summary>允许额外领取已保存组织群路由的 INTERNAL；不把其它未配置组织的任务计为失败。</summary>
+    bool UseConfiguredChatGroups => false;
     /// <summary>按稳定 eventKey 投递并验证网关明确受理，在业务事务外执行。</summary>
     Task SendAsync(ReliableTask task, CancellationToken ct);
 }

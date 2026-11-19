@@ -5,7 +5,8 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:browser": "node tests/browser/run.mjs"
+    "test:browser": "node tests/browser/run.mjs",
+    "test:frontend": "node tests/browser/frontend.mjs"
   },
   "repository": {
     "type": "git",
