@@ -19,7 +19,7 @@ import ChatNotifications from "./ChatNotifications";
 const categories = [
     { id: "EXHIBITOR", label: "展商咨询", accent: "teal" },
     { id: "VISITOR", label: "观众咨询", accent: "amber" },
-    { id: "MEDIA", label: "财务咨询", accent: "coral" },
+    { id: "FINANCE", label: "财务咨询", accent: "coral" },
     { id: "OTHER", label: "其他咨询", accent: "green" },
 ];
 
@@ -54,7 +54,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
             setRouting({
                 ...routingState,
                 groups: routingState.groups.map((group) =>
-                    group.category === "MEDIA" && ["媒体组", "媒体客服"].includes(group.name)
+                    group.category === "FINANCE" && ["媒体组", "媒体客服"].includes(group.name)
                         ? { ...group, name: "财务客服" }
                         : group,
                 ),

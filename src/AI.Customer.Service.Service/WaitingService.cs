@@ -82,7 +82,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             return await ViewAsync(await RefreshInTransactionAsync(episode, actor.TraceId, ct), ct);
         }, ct);
 
-    /// <summary>只恢复原周期 DEAD 邮件或内部通知，保留首次 eventKey 和载荷。</summary>
+    /// <summary>只恢复原周期 DEAD 邮件或转人工通知，保留首次 eventKey 和冻结载荷。</summary>
     public Task<object> RetryNotificationsAsync(Actor actor, Scope scope, string? episodeId, CancellationToken ct) =>
         transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -92,7 +92,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
                 throw BusinessException.Forbidden("原接待周期不存在");
             }
             await access.RequireGroupAsync(actor, episode, ct);
-            var waiting = await repository.WaitingAsync(scope, episode.Id, ct) ?? throw BusinessException.Conflict("该周期没有等待记录");
+            var waiting = await repository.WaitingAsync(scope, episode.Id, ct) ?? await RefreshInTransactionAsync(episode, actor.TraceId, ct);
             foreach (var task in await DeliveriesAsync(waiting, ct))
             {
                 if (task.State != DeliveryState.DEAD)
@@ -159,8 +159,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         }
         if (!waiting.Reminded && now >= waiting.RemindAt)
         {
-            await journal.EnqueueAsync(episode.Scope, episode.PrincipalId, episode.Id, "INTERNAL", "remind:" + episode.Id,
-                new { type = "waiting.reminder", conversationId = episode.ConversationId, episodeId = episode.Id }, trace, ct);
+            // 新申请已在 REQUESTED 事务登记即时通知；达到旧提醒时间不再重复向群发送。
             waiting.Reminded = true;
             waiting.Version++;
         }
@@ -228,17 +227,17 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         waiting.NextOpensAt,
         waiting.TicketId,
         contactCollected = waiting.Email is not null,
-        deliveries = (await DeliveriesAsync(waiting, ct)).Select(t => new { kind = t.Kind, status = t.State, t.Attempts, t.Version })
+        deliveries = (await DeliveriesAsync(waiting, ct)).Select(t => new { kind = t.Kind, status = t.State, t.Attempts, t.Version, t.ProviderRequestId })
     };
 
     /// <summary>使用固定业务键读取本周期提醒与建单通知，不暴露任务载荷、邮箱或内部接收者。</summary>
     private async Task<List<ReliableTask>> DeliveriesAsync(Waiting waiting, CancellationToken ct)
     {
         var result = new List<ReliableTask>();
-        foreach (var key in new[] { "remind:" + waiting.EpisodeId, "followup:" + waiting.TicketId })
+        foreach (var key in new[] { "handoff-requested:" + waiting.EpisodeId, "remind:" + waiting.EpisodeId, "followup:" + waiting.TicketId })
         {
             var value = await tasks.FindAsync(waiting.TenantId, waiting.TopOrgId, key, ct);
-            if (value is not null && value.ConversationId == waiting.ConversationId && value.EpisodeId == waiting.EpisodeId && value.Kind is "EMAIL" or "INTERNAL")
+            if (value is not null && value.ConversationId == waiting.ConversationId && value.EpisodeId == waiting.EpisodeId && value.Kind is "EMAIL" or "INTERNAL" or "HANDOFF_NOTIFY")
             {
                 result.Add(value);
             }

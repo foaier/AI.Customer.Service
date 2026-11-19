@@ -58,6 +58,8 @@ public sealed partial class WorkflowTests
         await SendAsync(manager, HttpMethod.Put, ChatConfigPath, new
         {
             version = 0,
+            enabled = true,
+            publicBaseUrl = "https://support.example.com",
             chatGroup = new Dictionary<string, string> { ["SALES"] = "sales-hook-123", ["VISITOR"] = "visitor-hook-123", ["FINANCE"] = "finance-hook-123", ["EMP"] = "other-hook-123" }
         });
         using var visitor = application.Client();
@@ -66,7 +68,7 @@ public sealed partial class WorkflowTests
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
         var episode = await db.Set<Episode>().SingleAsync();
-        episode.Category = Category.MEDIA;
+        episode.Category = Category.FINANCE;
         await db.SaveChangesAsync();
         var task = new ReliableTask
         {
@@ -87,7 +89,7 @@ public sealed partial class WorkflowTests
         db.Entry(task).State = EntityState.Detached;
         var tasks = scope.ServiceProvider.GetRequiredService<ITaskRepository>();
         Assert.AreEqual(0, (await tasks.DueAsync([], DateTime.UtcNow, 100, default)).Count);
-        Assert.AreEqual(1, (await tasks.DueAsync([], DateTime.UtcNow, 100, default, includeConfiguredChatGroups: true)).Count);
+        Assert.AreEqual(2, (await tasks.DueAsync([], DateTime.UtcNow, 100, default, includeConfiguredChatGroups: true)).Count);
         var accepted = false;
         var sent = 0;
         using var http = new HttpClient(new ChatHandler(async request =>
@@ -100,17 +102,20 @@ public sealed partial class WorkflowTests
             StringAssert.Contains(payload.RootElement.GetProperty("text").GetProperty("content").GetString(), id);
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(accepted ? "{\"errcode\":0}" : "{\"errcode\":40014}") };
         }));
-        var options = new NotificationOptions { Enabled = true, Authorization = "must-not-leak" };
+        var options = new NotificationOptions { Authorization = "must-not-leak" };
         var adapter = new NotificationHttpAdapter(http, Options.Create(options),
-            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>());
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.SendAsync(task, default));
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>(), application.Clock);
+        await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         accepted = true;
         await adapter.SendAsync(task, default);
-        options.Enabled = false;
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.SendAsync(task, default));
-        options.Enabled = true;
+        var settings = await db.Set<ChatNotificationConfiguration>().SingleAsync();
+        settings.Enabled = false;
+        await db.SaveChangesAsync();
+        await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
+        settings.Enabled = true;
+        await db.SaveChangesAsync();
         task.TopOrgId = "org-b";
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.SendAsync(task, default));
+        await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         Assert.AreEqual(2, sent);
         db.Remove(await db.Set<ChatNotificationConfiguration>().SingleAsync());
         await db.SaveChangesAsync();

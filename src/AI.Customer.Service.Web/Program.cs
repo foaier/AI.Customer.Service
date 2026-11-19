@@ -24,7 +24,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: false).AddEnvironmentVariables();
 var authentication = builder.Configuration.GetSection("Authentication").Get<AuthenticationOptions>() ?? new();
 builder.Services.Configure<AuthenticationOptions>(builder.Configuration.GetSection("Authentication"));
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+builder.Services.AddAuthentication("VisitorOrBearer")
+    .AddPolicyScheme("VisitorOrBearer", "访客凭据或正式登录", options =>
+        options.ForwardDefaultSelector = context => context.Request.Headers.ContainsKey(ConversationCredentialHandler.Header)
+            ? ConversationCredentialHandler.SchemeName : JwtBearerDefaults.AuthenticationScheme)
+    .AddScheme<Microsoft.AspNetCore.Authentication.AuthenticationSchemeOptions, ConversationCredentialHandler>(ConversationCredentialHandler.SchemeName, _ => { })
+    .AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
     options.SaveToken = false;
@@ -84,10 +89,13 @@ builder.Services.AddOptions<CustomerServiceOptions>().Bind(builder.Configuration
     .Validate(x => x.Capacity is >= 1 and <= 100 && x.ProposalTtlMinutes is >= 1 and <= 1440 &&
         x.SurveyTtlMinutes is >= 1 and <= 1440, "客服容量或有效期配置超出合法范围").ValidateOnStart();
 builder.Services.AddScoped<ConversationRuntime>();
+builder.Services.AddScoped<ConversationAccessService>();
 builder.Services.AddScoped<AccessService>();
 builder.Services.AddScoped<ConfigurationService>();
+builder.Services.AddScoped<ChatNotificationService>();
 builder.Services.AddScoped<CommandJournal>();
 builder.Services.AddScoped<HandoffService>();
+builder.Services.AddScoped<HandoffNotificationService>();
 builder.Services.AddScoped<ReceptionService>();
 builder.Services.AddScoped<MessagingService>();
 builder.Services.AddScoped<WaitingService>();

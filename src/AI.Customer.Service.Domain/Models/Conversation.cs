@@ -3,6 +3,8 @@ namespace AI.Customer.Service.Domain.Models;
 /// <summary>Conversation owner 的回复代次和当前轮次，人工与 AI 共用同一会话。</summary>
 public sealed class Conversation : ConversationAggregate
 {
+    /// <summary>创建时冻结的第三方身份要求，后续助手配置变化不追溯已有会话。</summary>
+    public bool ExternalIdentityRequired { get; set; }
     /// <summary>最近完整成功轮次，调查恢复 Worker 仅处理尚未评估的新成功轮次。</summary>
     public string? LastCompletedTurnId { get; set; }
 

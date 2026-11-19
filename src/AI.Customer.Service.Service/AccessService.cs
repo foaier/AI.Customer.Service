@@ -14,6 +14,7 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
 {
     /// <summary>即时核验用户中心账号和组织启用，设置权限不等于接单资格。</summary>
     public Task<Member> RequireAccountAsync(Actor actor, string org, CancellationToken ct) =>
+        actor.GuestConversationId is not null ? throw BusinessException.Forbidden("匿名访客不能操作客服管理接口") :
         accounts.RequireAsync(actor.TenantId, Guard.Text(org, "组织", 64), actor.AccountId, ct);
 
     /// <summary>事务外核验客服外部资格及可信助手归属。</summary>

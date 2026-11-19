@@ -19,9 +19,10 @@ namespace AI.Customer.Service.Service;
 /// <param name="waitingService">同事务保存访客确认的联系方式。</param>
 /// <param name="clock">UTC 时钟。</param>
 /// <param name="options">建议有效期规则。</param>
+/// <param name="notifications">新申请同事务登记即时通知。</param>
 public sealed class HandoffService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, IChatModel model, IConversationRepository conversations, CommandJournal journal,
-    WaitingService waitingService, TimeProvider clock, IOptions<CustomerServiceOptions> options)
+    WaitingService waitingService, TimeProvider clock, IOptions<CustomerServiceOptions> options, HandoffNotificationService notifications)
 {
     /// <summary>访客明确申请不经过建议二次确认；同键重放不重复切换回复权。</summary>
     public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
@@ -173,6 +174,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         }
         await journal.EnqueueAsync(scope, principal, episode.Id, "EVENT", "requested:" + episode.Id,
             new { type = "handoff.requested", episodeId = episode.Id, source, reason, turnId = (string?)null }, trace, ct);
+        await notifications.EnqueueAsync(episode, ct);
         return episode;
     }
 

@@ -25,6 +25,7 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
     /// <summary>同会话生成 AI SSE 事件，失败有明确事件及可靠系统恢复，不写入迟到正文。</summary>
     public async IAsyncEnumerable<ChatEvent> StreamAsync(Actor actor, Scope scope, string input, [EnumeratorCancellation] CancellationToken ct)
     {
+        await runtime.RequireChatIdentityAsync(scope, ct);
         if (ExplicitHandoffIntent.Matches(input))
         {
             yield return new("card", new

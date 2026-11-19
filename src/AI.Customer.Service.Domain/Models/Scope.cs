@@ -12,7 +12,8 @@ public sealed record Scope(string TenantId, string TopOrgId, string Conversation
 /// <param name="TenantId">认证租户。</param>
 /// <param name="AccountId">认证账号。</param>
 /// <param name="TraceId">当前命令的审计关联标识。</param>
-public sealed record Actor(string TenantId, string AccountId, string TraceId);
+/// <param name="GuestConversationId">匿名凭据限定的唯一会话；登录账号为空。</param>
+public sealed record Actor(string TenantId, string AccountId, string TraceId, string? GuestConversationId = null);
 
 /// <summary>全部持久聚合共同具备的隔离范围及并发版本，不包含伪造审计字段。</summary>
 public abstract class Aggregate

@@ -6,6 +6,7 @@ using AI.Customer.Service.Domain.Ports;
 using AI.Customer.Service.Service;
 using AI.Customer.Service.Web.Security;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AI.Customer.Service.Web.Controllers;
@@ -24,10 +25,12 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
 {
     /// <summary>查询当前租户注册的助手，兼容设置页最小列表。</summary>
     [HttpGet("assistant/config/list")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object List() => new { isSuccess = true, returnObj = assistants.List(request.Actor.TenantId).Select(x => new { id = x.Id, configId = x.Id, assistantConfigId = x.Id, name = x.Name, x.TopOrgId }) };
 
     /// <summary>原设置页的助手选择列表，不按客户端身份头授权。</summary>
     [HttpGet("assistant/config/listAssistants")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object ListAssistants() => new
     {
         isSuccess = true,
@@ -37,6 +40,7 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
 
     /// <summary>可信运行配置只来自服务端注册表。</summary>
     [HttpGet("assistant/config/getRuntimeConfig")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object RuntimeConfig(string assistantConfigId)
     {
         var value = assistants.Require(request.Actor.TenantId, assistantConfigId);
@@ -56,6 +60,7 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
 
     /// <summary>生成服务端会话引用；显式给助手时立即持久绑定，否则首个聊天请求绑定。</summary>
     [HttpGet("agent/sessionId")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<object> Session(CancellationToken ct, string? assistantConfigId = null)
     {
         var id = Guard.Id("session");
@@ -70,6 +75,8 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
     [HttpPost("agent/chatStream")]
     public async Task Stream(ChatCommand command, CancellationToken ct)
     {
+        if (command.TempUserId is not null && command.TempUserId != request.Actor.AccountId)
+            throw BusinessException.Forbidden("临时主体与会话凭据不一致");
         if (command.IsReconnect || command.SpeechEnabled)
         {
             throw BusinessException.Invalid("客服迁移当前只支持新文本轮次，重连请读取持久历史");
@@ -90,6 +97,24 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
             await Response.WriteAsync("event: " + item.Event + "\ndata: " + JsonSerializer.Serialize(item.Data, JsonDefaults.Options) + "\n\n", ct);
             await Response.Body.FlushAsync(ct);
         }
+    }
+
+    /// <summary>沿用原匿名 SSE 路径，要求服务端签发的会话凭据。</summary>
+    [HttpPost("agent/anonymous/chatStream")]
+    public Task StreamAnonymous(ChatCommand command, CancellationToken ct)
+    {
+        if (request.Actor.GuestConversationId is null) throw BusinessException.Forbidden();
+        return Stream(command, ct);
+    }
+
+    /// <summary>沿用原匿名历史 POST，临时主体不替代会话凭据。</summary>
+    [HttpPost("agent/anonymous/history_detail")]
+    public Task<object> HistoryAnonymous(AnonymousHistoryCommand command, CancellationToken ct)
+    {
+        if (request.Actor.GuestConversationId is null ||
+            (command.TempUserId is not null && command.TempUserId != request.Actor.AccountId))
+            throw BusinessException.Forbidden();
+        return History(command.SessionId, ct, command.AssistantConfigId);
     }
 
     /// <summary>原访客恢复成功 AI 文本，不含系统提示词及失败回答。</summary>

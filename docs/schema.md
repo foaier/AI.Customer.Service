@@ -359,8 +359,25 @@ Conversation owner 的单次满意度事实，人工结束不会创建调查。�
 | episode_id          | 是   | 唯一对应的原人工周期。                                 |
 | next_opens_at       | 是   | 冻结的下次营业 UTC 时间。                              |
 | principal_id        | 是   | 原会话的访客账号，仅用于归属校验。                     |
-| remind_at           | 是   | T+5 内部提醒 UTC 期限。                                |
-| reminded            | 是   | 是否登记提醒，不表示实际送达。                         |
+| remind_at           | 是   | T+5 旧流程兼容标记期限，不再新增群通知。               |
+| reminded            | 是   | 是否经过旧提醒期限，不表示实际送达。                   |
 | state               | 是   | 独立等待工作流状态。                                   |
 | ticket_id           | 否   | 唯一跟进工单号，不代表邮件已发送。                     |
 | version             | 是   | 从一递增的乐观并发版本，幂等重放不得递增。             |
+
+## 2026-11-19 后端增量
+
+升级脚本为各方言 004，字段和运行契约详见 [后端迁移说明](backend-migration-20261119.md)。
+
+| 表/字段                                               | 约束与用途                                                                                                                                 |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| ai_conversation_generation.external_identity_required | 非空 false；创建时冻结 AI 写入前身份门禁                                                                                                   |
+| ai_anonymous_conversation_access                      | Conversation owner；完整租户组织会话外键；原主体、credential_hash、expires_at、可空 revoked_at                                             |
+| credential_hash                                       | 非空 64 字符 SHA-256 十六进制，全局唯一；不存凭据原文                                                                                      |
+| ai_conversation_external_identity                     | Conversation owner；完整会话外键；provider_code 固定 ADSALE，external_auth_id 最大 512 字符，bound_at 为 UTC                               |
+| 外部身份唯一约束                                      | tenant_id/top_org_id/conversation_id/provider_code；原值首次绑定后不覆盖                                                                   |
+| cs_chat_notification_configuration                    | 组织唯一，CAS version；enabled 默认 false；active_provider、account_code、base_url、public_base_url、chat_group；可空 api_token_ciphertext |
+| api_token_ciphertext                                  | 最大 8192 字符，v1 AES-256-GCM；主密钥不在数据库                                                                                           |
+| cs_reliable_task.provider_request_id                  | 可空 128 字符，仅供应商安全回执；kind 新增 HANDOFF_NOTIFY                                                                                  |
+
+所有新增表沿用复合主键、版本约束与物理保留策略。匿名过期或撤销只改变访问权限，不删除历史；外部 ID 不作为访问凭据。

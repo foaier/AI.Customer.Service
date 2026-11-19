@@ -6,7 +6,9 @@ import { ApiError, put, request } from "./api";
 type ChatConfiguration = {
     version: number;
     enabled: boolean;
-    activeProvider: "WECOM_ROBOT";
+    activeProvider: "WECOM_ROBOT" | "ADSALE";
+    publicBaseUrl: string;
+    apiTokenConfigured: boolean;
     chatGroup: Record<string, string>;
 };
 const groups = [
@@ -25,6 +27,20 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
     const path = `/customer-service/configuration/chat-notifications?topOrgId=${encodeURIComponent(topOrgId)}`;
     const [saved, setSaved] = useState<ChatConfiguration | null>(null);
     const [draft, setDraft] = useState<Record<string, string>>({});
+    const [enabled, setEnabled] = useState(false);
+    const [provider, setProvider] = useState<ChatConfiguration["activeProvider"]>("WECOM_ROBOT");
+    const [publicBaseUrl, setPublicBaseUrl] = useState("");
+    const [apiToken, setApiToken] = useState("");
+    const [clearApiToken, setClearApiToken] = useState(false);
+    function accept(value: ChatConfiguration) {
+        setSaved(value);
+        setDraft(readGroups(value));
+        setEnabled(value.enabled);
+        setProvider(value.activeProvider);
+        setPublicBaseUrl(value.publicBaseUrl || "");
+        setApiToken("");
+        setClearApiToken(false);
+    }
     const [revision, setRevision] = useState(0);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -38,8 +54,7 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
         request<ChatConfiguration>(path, { signal: controller.signal })
             .then((value) => {
                 if (controller.signal.aborted) return;
-                setSaved(value);
-                setDraft(readGroups(value));
+                accept(value);
                 setError("");
             })
             .catch((reason) => {
@@ -57,7 +72,14 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
             });
         return () => controller.abort();
     }, [path, revision]);
-    const changed = saved && groups.some(({ key }) => (draft[key] || "").trim() !== readGroups(saved)[key]);
+    const changed =
+        saved &&
+        (groups.some(({ key }) => (draft[key] || "").trim() !== readGroups(saved)[key]) ||
+            enabled !== saved.enabled ||
+            provider !== saved.activeProvider ||
+            publicBaseUrl.trim() !== (saved.publicBaseUrl || "") ||
+            apiToken.length > 0 ||
+            clearApiToken);
     const save = async (event: FormEvent) => {
         event.preventDefault();
         if (!saved || !changed || saving) return;
@@ -67,11 +89,15 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
         try {
             const value = await put<ChatConfiguration>(path, {
                 version: saved.version,
+                enabled,
+                activeProvider: provider,
+                publicBaseUrl: publicBaseUrl.trim(),
+                ...(apiToken ? { apiToken } : {}),
+                clearApiToken,
                 chatGroup: Object.fromEntries(groups.map(({ key }) => [key, (draft[key] || "").trim()])),
             });
-            setSaved(value);
-            setDraft(readGroups(value));
-            setNotice("企业微信群配置已保存。");
+            accept(value);
+            setNotice("群通知配置已保存。");
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : "群通知保存失败");
         } finally {
@@ -86,13 +112,72 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
                 </span>
                 <div>
                     <h2>企业微信群通知</h2>
-                    <span>按接待类别将等待提醒发送到对应群，可共用同一个群</span>
+                    <span>新转人工申请即时通知对应群，可共用同一个群</span>
                 </div>
             </div>
-            <p className="settings-footnote">填写群机器人 Webhook 中 key= 后的 Hook ID，无需填写完整地址。</p>
-            {saved && !saved.enabled && (
-                <p className="settings-footnote">通知发送当前关闭。群配置可以保存，管理员开启通知服务后生效。</p>
-            )}
+            <fieldset disabled={loading || saving || !saved} className="chat-notification-options">
+                <label className="chat-notification-field">
+                    <span>启用通知</span>
+                    <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+                </label>
+                <p className="settings-footnote">统一控制群通知和邮件通知。关闭后待发送任务暂停，重新启用后继续。</p>
+                <label className="chat-notification-field">
+                    <span>通知通道</span>
+                    <select
+                        aria-label="通知通道"
+                        value={provider}
+                        onChange={(event) => setProvider(event.target.value as ChatConfiguration["activeProvider"])}
+                    >
+                        <option value="WECOM_ROBOT">企业微信机器人</option>
+                        <option value="ADSALE">雅式企微</option>
+                    </select>
+                </label>
+                <label className="chat-notification-field">
+                    <span>客服站点地址</span>
+                    <input
+                        type="url"
+                        value={publicBaseUrl}
+                        onChange={(event) => setPublicBaseUrl(event.target.value)}
+                        required={enabled}
+                        maxLength={256}
+                        placeholder="https://support.example.com"
+                    />
+                </label>
+                {provider === "ADSALE" && (
+                    <>
+                        <label className="chat-notification-field">
+                            <span>API Token{saved?.apiTokenConfigured ? "（已配置）" : "（未配置）"}</span>
+                            <input
+                                type="password"
+                                value={apiToken}
+                                onChange={(event) => {
+                                    setApiToken(event.target.value);
+                                    setClearApiToken(false);
+                                }}
+                                maxLength={2048}
+                                autoComplete="new-password"
+                                placeholder="留空保留原令牌"
+                            />
+                        </label>
+                        <label className="chat-notification-field">
+                            <span>清除已保存令牌</span>
+                            <input
+                                type="checkbox"
+                                checked={clearApiToken}
+                                onChange={(event) => {
+                                    setClearApiToken(event.target.checked);
+                                    setApiToken("");
+                                }}
+                            />
+                        </label>
+                    </>
+                )}
+            </fieldset>
+            <p className="settings-footnote">
+                {provider === "WECOM_ROBOT"
+                    ? "填写群机器人 Webhook 中 key= 后的 Hook ID，无需填写完整地址。"
+                    : "填写雅式群 ID。切换通道后，旧通道任务需管理员处理。"}
+            </p>
             {groups.map(({ key, label }) => (
                 <label className="chat-notification-field" key={key}>
                     <span>{label}</span>
@@ -100,11 +185,11 @@ export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
                         value={draft[key] || ""}
                         onChange={(event) => setDraft((value) => ({ ...value, [key]: event.target.value }))}
                         disabled={loading || saving || !saved}
-                        required
-                        pattern="[A-Za-z0-9_\-]{10,200}"
-                        maxLength={200}
+                        required={enabled}
+                        pattern={provider === "WECOM_ROBOT" ? "[A-Za-z0-9_\\-]{10,200}" : undefined}
+                        maxLength={provider === "WECOM_ROBOT" ? 200 : 128}
                         autoComplete="off"
-                        placeholder="群机器人 Hook ID"
+                        placeholder={provider === "WECOM_ROBOT" ? "群机器人 Hook ID" : "雅式群 ID"}
                     />
                 </label>
             ))}

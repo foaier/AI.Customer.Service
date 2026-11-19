@@ -32,7 +32,9 @@ public sealed class RequestAccess(IHttpContextAccessor accessor, IOptions<Authen
         {
             throw new BusinessException("UNAUTHENTICATED", "登录声明缺少租户或账号", 401);
         }
-        return new(Guard.Text(tenant, "认证租户", 64), Guard.Text(account, "认证账号"), trace);
+        var guestSession = principal.Identity.AuthenticationType == ConversationCredentialHandler.SchemeName
+            ? principal.FindFirstValue("conversation_id") : null;
+        return new(Guard.Text(tenant, "认证租户", 64), Guard.Text(account, "认证账号"), trace, guestSession);
     }
 
     /// <summary>按原访客持久关系授权。</summary>
