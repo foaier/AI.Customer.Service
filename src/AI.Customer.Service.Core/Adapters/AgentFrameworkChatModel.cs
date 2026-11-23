@@ -15,12 +15,17 @@ using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace AI.Customer.Service.Core.Adapters;
 
-/// <summary>使用 Microsoft Agent Framework 执行客服 Agent、流式生成、工具循环和主题分类。</summary>
-/// <param name="http">工厂管理连接池的模型 HTTP 客户端。</param>
-/// <param name="options">服务端模型端点、凭据和提示词。</param>
+/// <summary>使用 Microsoft Agent Framework 执行客服 Agent、流式生成、工具循环和主题分类</summary>
+/// <param name="http">工厂管理连接池的模型 HTTP 客户端</param>
+/// <param name="options">服务端模型端点、凭据和提示词</param>
 public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptions> options) : IChatModel
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 生成文本增量及受限工具结果，显式传播完整范围和轮次
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public async IAsyncEnumerable<ModelDelta> StreamAsync(ModelRequest input, [EnumeratorCancellation] CancellationToken ct)
     {
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -81,7 +86,13 @@ public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptio
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 只识别主题，失败或低置信时由适配器降 OTHER
+    /// </summary>
+    /// <param name="scope"></param>
+    /// <param name="context"></param>
+    /// <param name="ct"></param>
+    /// <returns></returns>
     public async Task<Classification> ClassifyAsync(Scope scope, string context, CancellationToken ct)
     {
         try
@@ -119,7 +130,9 @@ public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptio
         }
     }
 
-    /// <summary>为本次运行构造框架客户端，复用连接池，按请求绑定隔离范围，不共享默认身份头。</summary>
+    /// <summary>
+    /// 为本次运行构造框架客户端，复用连接池，按请求绑定隔离范围，不共享默认身份头
+    /// </summary>
     private AgentResponseGuard CreateClient(Scope scope, string? turnId, string? traceId)
     {
         var value = options.Value;
@@ -152,7 +165,9 @@ public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptio
         return messages;
     }
 
-    /// <summary>将 SDK 传输异常转换为稳定业务依赖错误，由既有恢复链路接管。</summary>
+    /// <summary>
+    /// 将 SDK 传输异常转换为稳定业务依赖错误，由既有恢复链路接管
+    /// </summary>
     private static async ValueTask<bool> MoveNextAsync(IAsyncEnumerator<AgentResponseUpdate> stream)
     {
         try

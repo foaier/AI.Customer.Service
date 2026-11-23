@@ -5,11 +5,15 @@ using Microsoft.Extensions.AI;
 
 namespace AI.Customer.Service.Core.Adapters;
 
-/// <summary>在框架工具循环的每次模型响应边界校验完整性和参数白名单，失败不得提交候选。</summary>
+/// <summary>
+/// 在框架工具循环的每次模型响应边界校验完整性和参数白名单，失败不得提交候选
+/// </summary>
 /// <param name="innerClient">官方 OpenAI provider 的类型化聊天客户端。</param>
 internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingChatClient(innerClient)
 {
-    /// <summary>本轮已出现的工具标识，防止重复调用与超过八个工具。</summary>
+    /// <summary>
+    /// 本轮已出现的工具标识，防止重复调用与超过八个工具
+    /// </summary>
     private readonly HashSet<string> calls = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
@@ -42,7 +46,10 @@ internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingCh
         RequireComplete(finish);
     }
 
-    /// <summary>仅 stop 和 tool_calls 表示完整服务响应；截断、过滤和缺失结束信号一律失败。</summary>
+    /// <summary>
+    /// 仅 stop 和 tool_calls 表示完整服务响应；截断、过滤和缺失结束信号一律失败
+    /// </summary>
+    /// <param name="reason"></param>
     private static void RequireComplete(ChatFinishReason? reason)
     {
         if (reason != ChatFinishReason.Stop && reason != ChatFinishReason.ToolCalls)
@@ -51,7 +58,9 @@ internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingCh
         }
     }
 
-    /// <summary>工具参数在自动绑定前核验，模型不能借助额外字段携带身份或越权状态。</summary>
+    /// <summary>
+    /// 工具参数在自动绑定前核验，模型不能借助额外字段携带身份或越权状态
+    /// </summary>
     private void ValidateTools(IEnumerable<AIContent> contents)
     {
         foreach (var call in contents.OfType<FunctionCallContent>())

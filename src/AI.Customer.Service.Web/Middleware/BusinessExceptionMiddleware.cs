@@ -9,7 +9,9 @@ namespace AI.Customer.Service.Web.Middleware;
 /// <param name="logger">错误类型日志。</param>
 public sealed class BusinessExceptionMiddleware(RequestDelegate next, ILogger<BusinessExceptionMiddleware> logger)
 {
-    /// <summary>处理业务参数、权限、并发和外部依赖失败，不覆盖已开始的 SSE。</summary>
+    /// <summary>
+    /// 处理业务参数、权限、并发和外部依赖失败，不覆盖已开始的 SSE
+    /// </summary>
     public async Task InvokeAsync(HttpContext context)
     {
         try

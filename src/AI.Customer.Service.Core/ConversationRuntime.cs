@@ -9,10 +9,11 @@ namespace AI.Customer.Service.Core;
 /// <param name="transactions">客服与会话共享的短事务。</param>
 /// <param name="clock">可替换的 UTC 时钟。</param>
 /// <param name="access">本 owner 的匿名授权与外部身份关系。</param>
-public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock,
-    IConversationAccessRepository access)
+public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock, IConversationAccessRepository access)
 {
-    /// <summary>正式创建会话，组织和大会来自受信助手注册表。</summary>
+    /// <summary>
+    /// 正式创建会话，组织和大会来自受信助手注册表
+    /// </summary>
     public Task<Conversation> CreateAsync(Actor actor, AssistantDefinition assistant, string id, CancellationToken ct,
         string? guestCredentialHash = null, DateTime? guestExpiresAt = null) =>
         transactions.ExecuteAsync(actor.TenantId, assistant.TopOrgId, async () =>
@@ -55,7 +56,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             return value;
         }, ct);
 
-    /// <summary>读取并校验原访客关系，不能只凭持有会话 ID 读取。</summary>
+    /// <summary>
+    /// 读取并校验原访客关系，不能只凭持有会话 ID 读取
+    /// </summary>
     public async Task<Conversation> VisitorAsync(Actor actor, string id, CancellationToken ct)
     {
         var value = await conversations.FindAsync(actor.TenantId, id, ct) ?? throw BusinessException.Forbidden("会话不存在或不可访问");
@@ -64,7 +67,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         return value;
     }
 
-    /// <summary>短事务登记 AI 轮次，不把网络生成放进事务。</summary>
+    /// <summary>
+    /// 短事务登记 AI 轮次，不把网络生成放进事务
+    /// </summary>
     public Task<AiTurn> BeginAsync(Actor actor, Scope scope, string input, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -95,14 +100,18 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             return turn;
         }, ct);
 
-    /// <summary>每次向访客发送文本前检查当前围栏，人工接管后立即停止旧轮次。</summary>
+    /// <summary>
+    /// 每次向访客发送文本前检查当前围栏，人工接管后立即停止旧轮次
+    /// </summary>
     public async Task<bool> IsCurrentAsync(Scope scope, string turn, long epoch, CancellationToken ct)
     {
         var conversation = await RequireAsync(scope, ct);
         return conversation.HumanEpisodeId is null && conversation.Epoch == epoch && conversation.CurrentTurnId == turn;
     }
 
-    /// <summary>完整成功回答只能在原代次提交；迟到内容标记 FENCED 且不进入展示历史。</summary>
+    /// <summary>
+    /// 完整成功回答只能在原代次提交；迟到内容标记 FENCED 且不进入展示历史
+    /// </summary>
     public Task<bool> FinishAsync(Scope scope, string turnId, long epoch, string? content, string state, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -135,7 +144,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             return current;
         }, ct);
 
-    /// <summary>事务内取得完整会话范围，不允许跨 owner 直接访问持久化对象。</summary>
+    /// <summary>
+    /// 事务内取得完整会话范围，不允许跨 owner 直接访问持久化对象
+    /// </summary>
     public async Task<Conversation> RequireAsync(Scope scope, CancellationToken ct)
     {
         var value = await conversations.FindAsync(scope.TenantId, scope.ConversationId, ct);
@@ -146,7 +157,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         return value;
     }
 
-    /// <summary>在共享事务中转移回复权并使所有旧 AI 响应失效。</summary>
+    /// <summary>
+    /// 在共享事务中转移回复权并使所有旧 AI 响应失效
+    /// </summary>
     public async Task TakeHumanAsync(Scope scope, string episode, CancellationToken ct)
     {
         var value = await RequireAsync(scope, ct);
@@ -161,7 +174,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         value.Version++;
     }
 
-    /// <summary>仅原人工周期能够在同一事务内恢复 AI，不把释放等同于问题已解决。</summary>
+    /// <summary>
+    /// 仅原人工周期能够在同一事务内恢复 AI，不把释放等同于问题已解决
+    /// </summary>
     public async Task ResumeAiAsync(Scope scope, string episode, CancellationToken ct)
     {
         var value = await RequireAsync(scope, ct);
@@ -174,7 +189,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         value.Version++;
     }
 
-    /// <summary>绑定新的领域事实，不从模型或访客请求复制归属。</summary>
+    /// <summary>
+    /// 绑定新的领域事实，不从模型或访客请求复制归属
+    /// </summary>
     public static T Bind<T>(Scope scope, string principal, string id) where T : ConversationAggregate, new() =>
         new()
         {
@@ -187,7 +204,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             PrincipalId = principal
         };
 
-    /// <summary>校验认证租户和原会话主体。</summary>
+    /// <summary>
+    /// 校验认证租户和原会话主体
+    /// </summary>
     private static void RequireVisitor(Conversation value, Actor actor)
     {
         if (value.TenantId != actor.TenantId || value.PrincipalId != actor.AccountId ||
@@ -197,7 +216,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         }
     }
 
-    /// <summary>每次匿名业务读取重查有效期与撤销，外部身份 ID 不替代此授权。</summary>
+    /// <summary>
+    /// 每次匿名业务读取重查有效期与撤销，外部身份 ID 不替代此授权
+    /// </summary>
     private async Task RequireGuestAsync(Conversation value, Actor actor, CancellationToken ct)
     {
         if (actor.GuestConversationId is null) return;
@@ -206,7 +227,9 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             throw BusinessException.Forbidden("匿名会话凭据已失效，请开始新的咨询");
     }
 
-    /// <summary>在任何 AI 写入前执行创建时冻结的外部身份门禁。</summary>
+    /// <summary>
+    /// 在任何 AI 写入前执行创建时冻结的外部身份门禁
+    /// </summary>
     public async Task RequireChatIdentityAsync(Scope scope, CancellationToken ct)
     {
         var conversation = await RequireAsync(scope, ct);

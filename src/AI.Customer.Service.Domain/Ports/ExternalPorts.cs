@@ -39,9 +39,14 @@ public sealed record AssistantDefinition(string Id, string TenantId, string TopO
 /// <summary>模型协议隔离端口，业务状态只能由应用服务推进。</summary>
 public interface IChatModel
 {
-    /// <summary>生成文本增量及受限工具结果，显式传播完整范围和轮次。</summary>
+    /// <summary>
+    /// 生成文本增量及受限工具结果，显式传播完整范围和轮次
+    /// </summary>
     IAsyncEnumerable<ModelDelta> StreamAsync(ModelRequest request, CancellationToken ct);
-    /// <summary>只识别主题，失败或低置信时由适配器降 OTHER。</summary>
+
+    /// <summary>
+    /// 只识别主题，失败或低置信时由适配器降 OTHER
+    /// </summary>
     Task<Classification> ClassifyAsync(Scope scope, string context, CancellationToken ct);
 }
 

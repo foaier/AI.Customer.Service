@@ -8,7 +8,7 @@ AI 对话、流式输出、语义分类和受限工具执行均通过 Microsoft 
 
 ## 本机运行
 
-需要稳定版 .NET SDK **10.0.302**（允许同补丁系列更新）。运行后无需 Java、Consul、Redis 或 Node.js；Node.js 只用于前端检查。
+需要稳定版 .NET SDK **10.0.302**（允许同补丁系列更新）。运行后无需 Java、Consul、Redis 或 Node.js；Node.js 仅在构建前端时使用。
 
 ```powershell
 cd D:\MyCode\AI.Customer.Service
@@ -52,7 +52,7 @@ dotnet run --project src/AI.Customer.Service.Web
 ```powershell
 # 只生成脚本和字段字典，不连接或修改任何数据库
 dotnet run --project tools/AI.Customer.Service.Schema -- data/sql
-node scripts/format-sql.mjs
+npm --prefix frontend run format:sql
 ```
 
 数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库依次执行 `001_initial.sql`、`002_inbox_auto_close.sql`、`003_chat_notifications.sql`，已有库只执行尚未应用的增量，再设置 `Database:Initialize=false`。字段和 owner 说明：[数据库字典](docs/schema.md)；最新群配置及升级说明：[前端迁移记录](docs/frontend-migration-20261119.md)。`EnsureCreated` 仅初始化空库，不升级旧表。
@@ -66,15 +66,15 @@ dotnet test AI.Customer.Service.sln --logger "trx;LogFileName=customer-service.t
 dotnet format AI.Customer.Service.sln --no-restore --verify-no-changes
 dotnet publish src/AI.Customer.Service.Web -c Release -o artifacts/publish
 
-# 以下仅供开发/验证；服务运行不需要 npm
-npm ci
-npx playwright install chromium
-npm run test:browser
+# 前端依赖和浏览器检查仅由 frontend 项目管理
+npm --prefix frontend ci
+npm --prefix frontend run build
+npm --prefix frontend exec playwright install chromium
+npm --prefix frontend run test:browser
 # Windows 已安装 Edge 时也可用：$env:PLAYWRIGHT_CHANNEL='msedge'
-npm run format:check
 ```
 
-测试为独立 SQLite、签名 JWT、正式 Kestrel/HTTP/WebSocket；外部用户中心、OIDC SDK、模型和邮件网关在测试目录中替代，不向真实账号发信。测试脚本不会注册生产身份后门。验证范围及仍需部署联调的内容见 [验证记录](docs/verification.md)。
+测试为独立 SQLite、签名 JWT、正式 Kestrel/HTTP/WebSocket；外部用户中心、OIDC SDK、模型和邮件网关在测试目录中替代，不向真实账号发信。验证范围及仍需部署联调的内容见 [验证记录](docs/verification.md)。
 
 ## 发布
 

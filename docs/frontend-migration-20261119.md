@@ -50,5 +50,6 @@
 
 - .NET 集成/协议回归覆盖配置权限、跨组织/租户拒绝、CAS 冲突、非法 URL、旧键归一、持久重读、真实适配器群选择、明确受理和任务候选范围。
 - `npm --prefix frontend run build` 验证 TypeScript 和生产打包。
-- `npm run test:frontend` 运行 React 浏览器回归，覆盖预览不标已读、未读排序、通知合并、旧响应隔离、切换助手、群配置保存/重读/冲突/404、移动宽度及留言排序。Windows 可设置 `PLAYWRIGHT_CHANNEL=msedge` 使用已安装 Edge。
+- `npm --prefix frontend run test:frontend` 运行 React 浏览器回归，覆盖预览不标已读、未读排序、通知合并、旧响应隔离、切换助手、群配置保存/重读/冲突/404、移动宽度及留言排序。Windows 可设置 `PLAYWRIGHT_CHANNEL=msedge` 使用已安装 Edge。
+- 前端及验证工具依赖由 `frontend/package.json` 独立管理，本迁移不再依赖根目录 Node 工具配置。
 - SQLite 验证 `001 + 002 + 003` 连续升级。MySQL、Kingbase 提供对应 DDL，尚未在实库运行；通知 HTTP 使用可控协议替身，未向真实企业微信群发送测试消息。

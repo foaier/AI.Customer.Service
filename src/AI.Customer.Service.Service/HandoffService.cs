@@ -28,7 +28,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
     public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
         CancellationToken ct, string? failedTurnId = null, string? email = null)
     {
-        var contactEmail = source == TriggerSource.SYSTEM_POLICY ? null : Guard.Email(email);
+        var contactEmail = source == TriggerSource.SYSTEM_POLICY || email is null ? null : Guard.Email(email);
         var classification = await PrepareAsync(scope, ct);
         return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {

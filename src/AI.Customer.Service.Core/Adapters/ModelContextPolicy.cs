@@ -24,7 +24,9 @@ internal sealed class ModelContextPolicy(Scope scope, string? turnId, string? tr
         return ProcessNextAsync(message, pipeline, currentIndex);
     }
 
-    /// <summary>仅设置当前运行的元数据，API 密钥不进入日志、工具或会话历史。</summary>
+    /// <summary>
+    /// 仅设置当前运行的元数据，API 密钥不进入日志、工具或会话历史
+    /// </summary>
     private void AddHeaders(PipelineRequestHeaders headers)
     {
         headers.Set("X-Tenant-Id", scope.TenantId);

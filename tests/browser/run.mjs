@@ -6,10 +6,14 @@ import { createServer as createTcpServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { chromium } from "@playwright/test";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+
+const require = createRequire(new URL("../../frontend/package.json", import.meta.url));
+const { chromium } = require("@playwright/test");
 
 // 测试专用：启动正式 Kestrel、真实签名 JWT 和隔离 SQLite，只有外部模型/目录/登录 SDK 被替代。
-const root = process.cwd();
+const root = fileURLToPath(new URL("../../", import.meta.url));
 const temporary = await mkdtemp(path.join(tmpdir(), "ai-customer-browser-"));
 const artifacts = path.join(root, "artifacts/browser");
 await mkdir(artifacts, { recursive: true });

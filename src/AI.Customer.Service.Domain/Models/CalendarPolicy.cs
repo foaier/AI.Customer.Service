@@ -2,25 +2,39 @@ using AI.Customer.Service.Common;
 
 namespace AI.Customer.Service.Domain.Models;
 
-/// <summary>组织级营业日历，只影响新等待周期，既有 UTC 期限保持冻结。</summary>
+/// <summary>
+/// 组织级营业日历，只影响新等待周期，既有 UTC 期限保持冻结
+/// </summary>
 public sealed class CalendarPolicy : Aggregate
 {
-    /// <summary>业务规则版本，改变时区、时间或日期覆盖时必须升级。</summary>
+    /// <summary>
+    /// 业务规则版本，改变时区、时间或日期覆盖时必须升级
+    /// </summary>
     public string CalendarVersion { get; set; } = "cn-office-v1";
 
-    /// <summary>IANA 时区，默认中国标准时间。</summary>
+    /// <summary>
+    /// IANA 时区，默认中国标准时间
+    /// </summary>
     public string Zone { get; set; } = "Asia/Shanghai";
 
-    /// <summary>同日营业开始，含边界，默认 10:00。</summary>
+    /// <summary>
+    /// 同日营业开始，含边界，默认 10:00
+    /// </summary>
     public string Opens { get; set; } = "10:00";
 
-    /// <summary>同日营业结束，不含边界，默认 17:00。</summary>
+    /// <summary>
+    /// 同日营业结束，不含边界，默认 17:00
+    /// </summary>
     public string Closes { get; set; } = "17:00";
 
-    /// <summary>ISO 日期到开闭班覆盖，最多 1000 项，优先于工作日规则。</summary>
+    /// <summary>
+    /// ISO 日期到开闭班覆盖，最多 1000 项，优先于工作日规则
+    /// </summary>
     public Dictionary<string, bool> Overrides { get; set; } = [];
 
-    /// <summary>严格校验同日营业区间、版本、时区及日期覆盖。</summary>
+    /// <summary>
+    /// 严格校验同日营业区间、版本、时区及日期覆盖
+    /// </summary>
     public void Validate()
     {
         Guard.Text(CalendarVersion, "日历版本", 64);
@@ -43,7 +57,9 @@ public sealed class CalendarPolicy : Aggregate
         }
     }
 
-    /// <summary>根据实际 UTC 时刻计算当前营业和下次营业，不由模型推算。</summary>
+    /// <summary>
+    /// 根据实际 UTC 时刻计算当前营业和下次营业，不由模型推算
+    /// </summary>
     public CalendarWindow Evaluate(DateTime utc)
     {
         Validate();
@@ -65,7 +81,9 @@ public sealed class CalendarPolicy : Aggregate
         throw BusinessException.Invalid("日历未来三年没有营业日");
     }
 
-    /// <summary>日期覆盖优先，未覆盖时仅周一至周五营业。</summary>
+    /// <summary>
+    /// 日期覆盖优先，未覆盖时仅周一至周五营业
+    /// </summary>
     private bool IsWorking(DateOnly date) =>
         Overrides.TryGetValue(date.ToString("yyyy-MM-dd"), out var value)
             ? value

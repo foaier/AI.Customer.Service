@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { chromium, expect } from "@playwright/test";
+import { createRequire } from "node:module";
 import { createServer } from "../../frontend/node_modules/vite/dist/node/index.js";
+
+const require = createRequire(new URL("../../frontend/package.json", import.meta.url));
+const { chromium, expect } = require("@playwright/test");
 
 // 运行真实 React 页面；仅替代外部登录、API 和实时传输。API 的持久化与权限另由 .NET 集成测试覆盖。
 const root = fileURLToPath(new URL("../../frontend", import.meta.url));

@@ -17,10 +17,14 @@ using AuthenticationOptions = AI.Customer.Service.Web.Security.AuthenticationOpt
 
 namespace AI.Customer.Service.Web.Realtime;
 
-/// <summary>人工实时单一 WebSocket Adapter，支持 URL 鉴权和旧首帧兼容，按连接复核权限。</summary>
+/// <summary>
+/// 人工实时单一 WebSocket Adapter，支持 URL 鉴权和旧首帧兼容，按连接复核权限
+/// </summary>
 public static class RealtimeEndpoint
 {
-    /// <summary>固定订阅范围；新客户端在 URL 鉴权，旧客户端可继续使用首帧。</summary>
+    /// <summary>
+    /// 固定订阅范围；新客户端在 URL 鉴权，旧客户端可继续使用首帧
+    /// </summary>
     public static async Task HandleAsync(HttpContext context, RealtimeConnectionLimiter limiter, IServiceScopeFactory scopes,
         IOptionsMonitor<JwtBearerOptions> jwt, IOptions<AuthenticationOptions> authentication, TimeProvider clock)
     {
@@ -104,7 +108,8 @@ public static class RealtimeEndpoint
                             previous = data;
                             sentAt = now;
                             var element = JsonSerializer.SerializeToElement(snapshot, JsonDefaults.Options);
-                            if (element.TryGetProperty("timeline", out var timeline) && timeline.TryGetProperty("messages", out var messages))
+                            if (element.TryGetProperty("timeline", out var timeline) && timeline.ValueKind == JsonValueKind.Object
+                                && timeline.TryGetProperty("messages", out var messages) && messages.ValueKind == JsonValueKind.Array)
                             {
                                 foreach (var message in messages.EnumerateArray())
                                 {
@@ -162,7 +167,9 @@ public static class RealtimeEndpoint
         }
     }
 
-    /// <summary>读取唯一认证首帧，严格 8KB 上限，不把分块消息当完整 JSON。</summary>
+    /// <summary>
+    /// 读取唯一认证首帧，严格 8KB 上限，不把分块消息当完整 JSON
+    /// </summary>
     private static async Task<FirstFrame> ReadFirstAsync(WebSocket socket, CancellationToken ct)
     {
         var buffer = new byte[8192];
@@ -186,7 +193,9 @@ public static class RealtimeEndpoint
         }
     }
 
-    /// <summary>验证浏览器握手 query；不接受客户端扩展认证身份或未定义参数。</summary>
+    /// <summary>
+    /// 验证浏览器握手 query；不接受客户端扩展认证身份或未定义参数
+    /// </summary>
     private static FirstFrame ReadQuery(IQueryCollection query)
     {
         var allowed = new HashSet<string>(StringComparer.Ordinal)
@@ -216,7 +225,9 @@ public static class RealtimeEndpoint
             OptionalQuery(query, "credential"));
     }
 
-    /// <summary>读取唯一的必填 query 值，拒绝空值和重复参数。</summary>
+    /// <summary>
+    /// 读取唯一的必填 query 值，拒绝空值和重复参数
+    /// </summary>
     private static string RequiredQuery(IQueryCollection query, string key)
     {
         if (!query.TryGetValue(key, out var values) || values.Count != 1 || string.IsNullOrWhiteSpace(values[0]))
@@ -226,7 +237,9 @@ public static class RealtimeEndpoint
         return values[0]!;
     }
 
-    /// <summary>读取可选订阅字段；空字符串与缺省字段统一为 null。</summary>
+    /// <summary>
+    /// 读取可选订阅字段；空字符串与缺省字段统一为 null
+    /// </summary>
     private static string? OptionalQuery(IQueryCollection query, string key)
     {
         if (!query.TryGetValue(key, out var values)) return null;
@@ -234,7 +247,9 @@ public static class RealtimeEndpoint
         return string.IsNullOrWhiteSpace(values[0]) ? null : values[0];
     }
 
-    /// <summary>使用与 HTTP 相同的签名、issuer、audience 和 lifetime 规则验证首帧 JWT。</summary>
+    /// <summary>
+    /// 使用与 HTTP 相同的签名、issuer、audience 和 lifetime 规则验证首帧 JWT
+    /// </summary>
     private static async Task<(ClaimsPrincipal Principal, DateTime Expires)> AuthenticateAsync(string authorization, JwtBearerOptions options, CancellationToken ct)
     {
         if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
@@ -257,7 +272,9 @@ public static class RealtimeEndpoint
         return (new ClaimsPrincipal(result.ClaimsIdentity), result.SecurityToken.ValidTo);
     }
 
-    /// <summary>首帧及每六十秒即时复核外部账号组织，期间本地成员在每次快照检查。</summary>
+    /// <summary>
+    /// 首帧及每六十秒即时复核外部账号组织，期间本地成员在每次快照检查
+    /// </summary>
     private static async Task CheckExternalAsync(IServiceScopeFactory scopes, Actor actor, Subscription subscription, CancellationToken ct)
     {
         await using var scope = scopes.CreateAsyncScope();
@@ -281,7 +298,9 @@ public static class RealtimeEndpoint
         }
     }
 
-    /// <summary>每次快照独立作用域查询持久事实，避免 ORM 一级缓存隐藏改派或撤权。</summary>
+    /// <summary>
+    /// 每次快照独立作用域查询持久事实，避免 ORM 一级缓存隐藏改派或撤权
+    /// </summary>
     private static async Task<object> SnapshotAsync(IServiceProvider provider, Actor actor, Subscription sub, long afterSeq, CancellationToken ct)
     {
         var access = provider.GetRequiredService<AccessService>();
@@ -336,7 +355,9 @@ public static class RealtimeEndpoint
         };
     }
 
-    /// <summary>客服快照保留原页面字段，不携带正文。</summary>
+    /// <summary>
+    /// 客服快照保留原页面字段，不携带正文
+    /// </summary>
     private static object AgentEpisodeView(Episode value) => new
     {
         value.Scope,
@@ -353,7 +374,9 @@ public static class RealtimeEndpoint
         value.ResolutionReason
     };
 
-    /// <summary>订阅建立后只允许 WebSocket 关闭，不接受二次认证或客户端切换范围。</summary>
+    /// <summary>
+    /// 订阅建立后只允许 WebSocket 关闭，不接受二次认证或客户端切换范围
+    /// </summary>
     private static async Task ReadUnexpectedAsync(WebSocket socket, CancellationToken ct)
     {
         var buffer = new byte[1];
@@ -364,7 +387,9 @@ public static class RealtimeEndpoint
         }
     }
 
-    /// <summary>仅由当前循环串行发送帧，避免并发写入 socket。</summary>
+    /// <summary>
+    /// 仅由当前循环串行发送帧，避免并发写入 socket
+    /// </summary>
     private static Task SendAsync(WebSocket socket, object value, CancellationToken ct) =>
         socket.SendAsync(JsonSerializer.SerializeToUtf8Bytes(value, JsonDefaults.Options), WebSocketMessageType.Text, true, ct);
 
@@ -379,6 +404,8 @@ public static class RealtimeEndpoint
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
 
-    /// <summary>去除令牌后保留的固定订阅参数，不保存认证凭据。</summary>
+    /// <summary>
+    /// 去除令牌后保留的固定订阅参数，不保存认证凭据
+    /// </summary>
     private sealed record Subscription(bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId);
 }

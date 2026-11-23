@@ -14,7 +14,7 @@
 | SQL                           | 已分别按三种方言格式化        | EF Core 离线生成的新库 DDL，附中文字段及约束说明                 |
 | Release 发布                  | 通过                          | `artifacts/publish/AI.Customer.Service.dll`，含 wwwroot          |
 | MAF Release 发布包烟测        | 通过                          | 健康 200、匿名 401、静态页面 200、独立空库初始化成功             |
-| 依赖漏洞检查                  | 当前源未报告漏洞              | NuGet 含传递依赖、npm 开发依赖；这是当前扫描结果                 |
+| 依赖漏洞检查                  | 当前源未报告漏洞              | NuGet 含传递依赖，前端 npm 依赖由 `frontend/package-lock.json` 锁定 |
 | Java 原仓库                   | `git status --short` 为空     | 未改源码、依赖、配置或原数据库                                   |
 
 自动回归证据：`artifacts/tests/customer-service.trx`。浏览器证据：`artifacts/browser/result.json`、`visitor.png`、`agent.png`、`routing.png`，附独立测试宿主日志。artifacts、bin、obj、临时数据库和本机密钥配置均不进入 Git。

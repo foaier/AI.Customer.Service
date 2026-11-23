@@ -7,7 +7,7 @@ namespace AI.Customer.Service.Api.Contracts;
 /// <param name="RequestId">首次提交键，网络重试原样复用。</param>
 /// <param name="Email">访客明确确认的有效联系邮箱。</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record HandoffCommand(string RequestId, string Email);
+public sealed record HandoffCommand(string RequestId, string? Email = null);
 
 /// <summary>带聚合版本的状态命令。</summary>
 /// <param name="RequestId">稳定首次请求键。</param>

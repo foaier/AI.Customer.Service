@@ -75,4 +75,4 @@ Java 平台的 SYSTEM/TENANT/BVENT 通用配置管理、saveConfirmKey、测试�
 
 已有独立库依次执行 001、002、003 后，停写并备份，再执行对应 `data/sql/{sqlite,mysql,kingbase}/004_backend_contracts.sql` 一次。空库可由 ORM 创建最新结构。004 新增会话策略、匿名授权和外部身份表、通知配置字段及供应商回执。保留组 ID/成员/历史分类数字，将旧 MEDIA JSON 转 FINANCE 并推进配置版本；通知默认关闭，补齐配置后显式启用。回滚恢复备份和原版本，禁止对 Java 原库执行。
 
-验证：.NET 集成/协议回归、React 构建和 Edge 浏览器回归，以及 `npm run test:migrations` 对 SQLite 历史 DDL 连续升级。MySQL/Kingbase 脚本完成静态检查，未连接对应实库；外部通知使用 HTTP 协议替身，未向真实群发送测试消息。
+验证：.NET 集成/协议回归和 React 构建覆盖本次后端契约；`npm --prefix frontend run test:migrations` 对 SQLite 历史 DDL 连续升级。MySQL/Kingbase 脚本完成静态检查，未连接对应实库；外部通知使用 HTTP 协议替身，未向真实群发送测试消息。
