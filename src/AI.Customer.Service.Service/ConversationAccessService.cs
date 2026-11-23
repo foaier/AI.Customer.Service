@@ -24,7 +24,7 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         var principal = Guard.Id("guest");
         var credential = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         var expires = clock.GetUtcNow().UtcDateTime.AddDays(7);
-        var conversation = await runtime.CreateAsync(new(assistant.TenantId, principal, trace, session), assistant, session, ct, Digest(credential), expires);
+        var conversation = await runtime.CreateAsync(new(principal, trace, session), assistant, session, ct, Digest(credential), expires);
         return new { sessionId = session, tempUserId = principal, credential, expiresAt = expires, conversation.ExternalIdentityRequired };
     }
 
@@ -38,7 +38,7 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         var grant = await repository.CredentialAsync(Digest(credential), ct);
         if (grant is null || (session is not null && grant.ConversationId != session))
             throw BusinessException.Forbidden("匿名会话凭据无效");
-        await runtime.VisitorAsync(new(grant.TenantId, grant.PrincipalId, "credential", grant.ConversationId), grant.ConversationId, ct);
+        await runtime.VisitorAsync(new(grant.PrincipalId, "credential", grant.ConversationId), grant.ConversationId, ct);
         return grant;
     }
 
@@ -50,7 +50,7 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         if (string.IsNullOrWhiteSpace(cookieId) || cookieId.Length > 512)
             throw new BusinessException("EXTERNAL_IDENTITY_INVALID", "第三方身份标识不能为空且不得超过 512 字符", 400);
         var conversation = await runtime.VisitorAsync(actor, session, ct);
-        return await transactions.ExecuteAsync(conversation.TenantId, conversation.TopOrgId, async () =>
+        return await transactions.ExecuteAsync(async () =>
         {
             var current = await runtime.VisitorAsync(actor, session, ct);
             var saved = await repository.IdentityAsync(current.Scope, ct);

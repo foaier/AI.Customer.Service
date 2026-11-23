@@ -13,7 +13,7 @@ public static class DeliveryRules
     /// </summary>
     public static void Retry(ReliableTask task, Actor actor, DateTime now)
     {
-        if (task.State != DeliveryState.DEAD || task.TenantId != actor.TenantId)
+        if (task.State != DeliveryState.DEAD)
         {
             throw BusinessException.Conflict("只有当前租户死信可以恢复");
         }

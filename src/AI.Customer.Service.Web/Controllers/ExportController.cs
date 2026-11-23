@@ -27,11 +27,11 @@ public sealed class ExportController(RequestAccess request, AccessService access
     /// 按组织管理权限导出，不暴露认证信息或邮箱
     /// </summary>
     [HttpGet("exports/conversations")]
-    public async Task<IActionResult> Export(string topOrgId, string assistantConfigId, CancellationToken ct, int page = 1, int size = 20)
+    public async Task<IActionResult> Export(string assistantConfigId, CancellationToken ct, int page = 1, int size = 20)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        access.RequireAssistant(Actor, topOrgId, assistantConfigId);
-        var data = await exports.ExportAsync(Actor, topOrgId, assistantConfigId, page, size, ct);
+        await RequestAccess.ManagerAsync(ct);
+        access.RequireAssistant(Actor, assistantConfigId);
+        var data = await exports.ExportAsync(Actor, assistantConfigId, page, size, ct);
         return File(JsonSerializer.SerializeToUtf8Bytes(Success(data), JsonDefaults.Options), "application/json", $"customer-service-{page}.json");
     }
 
@@ -39,19 +39,19 @@ public sealed class ExportController(RequestAccess request, AccessService access
     /// 正式客服读取有范围的可靠任务指标
     /// </summary>
     [HttpGet("agents/metrics")]
-    public async Task<object> Metrics(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<object> Metrics(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(await metrics.ReadAsync(Actor, topOrgId, assistantConfigId, ct));
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Success(await metrics.ReadAsync(Actor, assistantConfigId, ct));
     }
 
     /// <summary>
     /// 正式客服认证下输出同口径 Prometheus gauge，不携带会话或账号标签
     /// </summary>
     [HttpGet("agents/metrics/prometheus")]
-    public async Task<IActionResult> Prometheus(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<IActionResult> Prometheus(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Content(MetricsService.Prometheus(await metrics.ReadAsync(Actor, topOrgId, assistantConfigId, ct)), "text/plain; version=0.0.4; charset=utf-8");
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Content(MetricsService.Prometheus(await metrics.ReadAsync(Actor, assistantConfigId, ct)), "text/plain; version=0.0.4; charset=utf-8");
     }
 }

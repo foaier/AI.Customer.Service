@@ -14,23 +14,21 @@ public sealed class ChatNotificationService(IConfigurationRepository repository,
     /// <summary>
     /// 读取不存在的配置仅返回禁用草稿，不初始化持久行。
     /// </summary>
-    public async Task<ChatNotificationConfiguration> GetAsync(Actor actor, string org, CancellationToken ct) =>
-        await repository.ChatNotificationAsync(actor.TenantId, org, ct) ?? new() { Id = "chat", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+    public async Task<ChatNotificationConfiguration> GetAsync(Actor actor, CancellationToken ct) =>
+        await repository.ChatNotificationAsync(ct) ?? new() { Id = "chat", Version = 0 };
 
     /// <summary>
     /// 保存完整群映射，旧页面未提交的新增设置沿用原值，密钥省略保留。
     /// </summary>
-    public Task<ChatNotificationConfiguration> SaveAsync(Actor actor, string org, ChatNotificationCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+    public Task<ChatNotificationConfiguration> SaveAsync(Actor actor, ChatNotificationCommand command, CancellationToken ct) =>
+        transactions.ExecuteAsync(async () =>
         {
-            var saved = await repository.ChatNotificationAsync(actor.TenantId, org, ct);
+            var saved = await repository.ChatNotificationAsync(ct);
             if (command.Version < 0 || (saved?.Version ?? 0) != command.Version) throw BusinessException.Conflict("群通知配置版本已变化，请重新加载");
             if (command.ChatGroup is null || command.ChatGroup.Count > 7) throw BusinessException.Invalid("群配置无效");
             var value = new ChatNotificationConfiguration
             {
                 Id = "chat",
-                TenantId = actor.TenantId,
-                TopOrgId = org,
                 Version = command.Version + 1,
                 Enabled = command.Enabled ?? saved?.Enabled ?? false,
                 ActiveProvider = command.ActiveProvider ?? saved?.ActiveProvider ?? "WECOM_ROBOT",

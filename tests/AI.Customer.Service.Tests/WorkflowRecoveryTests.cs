@@ -31,7 +31,7 @@ public sealed partial class WorkflowTests
         await using var scope = application.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
         var conversation = await db.Set<Conversation>().SingleAsync();
-        var stream = scope.ServiceProvider.GetRequiredService<ChatService>().StreamAsync(new("tenant-a", "visitor", "disconnect-trace"), conversation.Scope, "请问如何办理参展证？", default).GetAsyncEnumerator();
+        var stream = scope.ServiceProvider.GetRequiredService<ChatService>().StreamAsync(new("visitor", "disconnect-trace"), conversation.Scope, "请问如何办理参展证？", default).GetAsyncEnumerator();
         Assert.IsTrue(await stream.MoveNextAsync());
         await stream.DisposeAsync();
         Assert.AreEqual("FAILED", (await db.Set<AiTurn>().SingleAsync()).Status);
@@ -72,41 +72,34 @@ public sealed partial class WorkflowTests
         var id = await SessionAsync(visitor);
         await RequestAsync(visitor, id);
         application.Clock.Advance(TimeSpan.FromMinutes(6));
-        var metrics = await GetAsync(agent, "/api/customer-service/agents/metrics?topOrgId=org-a&assistantConfigId=assistant-a");
+        var metrics = await GetAsync(agent, "/api/customer-service/agents/metrics?assistantConfigId=assistant-a");
         var reception = metrics.GetProperty("reception");
         Assert.AreEqual(1L, reception.GetProperty("requested").GetProperty("VISITOR_DIRECT_REQUEST:USER_REQUEST").GetInt64());
         Assert.AreEqual(1L, reception.GetProperty("backlog").GetProperty("waiting_over_5m").GetInt64());
         Assert.AreEqual(0L, reception.GetProperty("timings").GetProperty("first_response").GetProperty("count").GetInt64());
-        using var response = await agent.GetAsync("/api/customer-service/agents/metrics/prometheus?topOrgId=org-a&assistantConfigId=assistant-a");
+        using var response = await agent.GetAsync("/api/customer-service/agents/metrics/prometheus?assistantConfigId=assistant-a");
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
         var text = await response.Content.ReadAsStringAsync();
         StringAssert.Contains(text, "# TYPE cs_handoff_backlog gauge");
         StringAssert.Contains(text, "cs_handoff_backlog{kind=\"waiting_over_5m\"} 1");
         Assert.IsFalse(text.Contains(id, StringComparison.Ordinal));
         application.Clock.Advance(TimeSpan.FromDays(2));
-        var old = await GetAsync(agent, "/api/customer-service/agents/metrics?topOrgId=org-a&assistantConfigId=assistant-a");
+        var old = await GetAsync(agent, "/api/customer-service/agents/metrics?assistantConfigId=assistant-a");
         Assert.AreEqual(0, old.GetProperty("reception").GetProperty("requested").EnumerateObject().Count());
         Assert.AreEqual(1L, old.GetProperty("reception").GetProperty("backlog").GetProperty("waiting_over_5m").GetInt64());
     }
 
     /// <summary>
-    /// 数据库同时拒绝跨组织会话引用与非法版本，不能仅靠应用层约定隔离。
+    /// 数据库拒绝非法并发版本，不能仅靠应用层约定保证版本有效。
     /// </summary>
     [TestMethod]
-    public async Task DatabaseRejectsCrossOrganizationAndInvalidVersions()
+    public async Task DatabaseRejectsInvalidVersions()
     {
         using var visitor = application.Client();
-        var id = await SessionAsync(visitor);
         await using (var scope = application.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
-            db.Set<AiTurn>().Add(new AiTurn { Id = "cross-org", TenantId = "tenant-a", TopOrgId = "org-b", ConversationId = id, AssistantConfigId = "assistant-a", PrincipalId = "visitor", Epoch = 1, CreatedAt = DateTime.UtcNow });
-            await Assert.ThrowsExactlyAsync<DbUpdateException>(() => db.SaveChangesAsync());
-        }
-        await using (var scope = application.Services.CreateAsyncScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
-            db.Set<Availability>().Add(new Availability { Id = "invalid-version", TenantId = "tenant-a", TopOrgId = "org-a", Version = 0 });
+            db.Set<Availability>().Add(new Availability { Id = "invalid-version", Version = 0 });
             await Assert.ThrowsExactlyAsync<DbUpdateException>(() => db.SaveChangesAsync());
         }
     }
@@ -248,11 +241,11 @@ public sealed partial class WorkflowTests
         var episode = requested.GetProperty("episodeId").GetString()!;
         var waiting = await GetAsync(visitor, VisitorPath(id) + "/waiting");
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/waiting", new { expectedVersion = waiting.GetProperty("version").GetInt64(), action = "EMAIL", email = "visitor@example.com" });
-        var queue = await GetAsync(agent, "/api/customer-service/agents/followups?topOrgId=org-a&assistantConfigId=assistant-a");
+        var queue = await GetAsync(agent, "/api/customer-service/agents/followups?assistantConfigId=assistant-a");
         Assert.AreEqual(1, queue.GetArrayLength());
         var path = AgentPath(id) + "/followups/" + episode;
-        await SendAsync(agent, HttpMethod.Post, path + "/claim?topOrgId=org-a", new { requestId = "email-claim", expectedVersion = 1 });
-        var form = await GetAsync(agent, path + "/form?topOrgId=org-a");
+        await SendAsync(agent, HttpMethod.Post, path + "/claim", new { requestId = "email-claim", expectedVersion = 1 });
+        var form = await GetAsync(agent, path + "/form");
         Assert.AreEqual("EMAIL", form.GetProperty("origin").GetString());
         Assert.AreEqual("", form.GetProperty("content").GetString());
         application.Notification.Reject = true;
@@ -261,7 +254,7 @@ public sealed partial class WorkflowTests
             await RunWorkerAsync();
             application.Clock.Advance(TimeSpan.FromMinutes(2));
         }
-        var query = "?topOrgId=org-a&episodeId=" + episode;
+        var query = "?episodeId=" + episode;
         var dead = await GetAsync(agent, AgentPath(id) + "/waiting" + query);
         Assert.AreEqual("DEAD", dead.GetProperty("deliveries")[0].GetProperty("status").GetString());
         Assert.IsFalse(dead.TryGetProperty("email", out _));
@@ -289,12 +282,12 @@ public sealed partial class WorkflowTests
         using var agent = application.Client("agent-a");
         var id = await SessionAsync(visitor);
         await RequestAsync(visitor, id, "inbox-request");
-        const string summaryPath = "/api/customer-service/agents/inbox/summary?topOrgId=org-a&assistantConfigId=assistant-a";
+        const string summaryPath = "/api/customer-service/agents/inbox/summary?assistantConfigId=assistant-a";
         var summary = await GetAsync(agent, summaryPath);
         Assert.AreEqual(1, summary.GetProperty("pendingReceptionCount").GetInt32());
         var socketClient = application.Server.CreateWebSocketClient();
         var token = Uri.EscapeDataString("Bearer " + Token("agent-a"));
-        using (var socket = await socketClient.ConnectAsync(new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={token}&agent=true&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"), default))
+        using (var socket = await socketClient.ConnectAsync(new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={token}&agent=true&assistantConfigId=assistant-a&afterSeq=0"), default))
         {
             var buffer = new byte[16384];
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -308,12 +301,12 @@ public sealed partial class WorkflowTests
             await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
         }
 
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "inbox-claim", expectedVersion = 1 });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "inbox-claim", expectedVersion = 1 });
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "visitor-unread", content = "请帮我看一下订单" });
         summary = await GetAsync(agent, summaryPath);
         Assert.AreEqual(1, summary.GetProperty("unreadMessageCount").GetInt32());
         Assert.AreEqual(1, summary.GetProperty("unreadConversationCount").GetInt32());
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/receipts?topOrgId=org-a", new { kind = "READ", seq = 1L });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/receipts", new { kind = "READ", seq = 1L });
         summary = await GetAsync(agent, summaryPath);
         Assert.AreEqual(0, summary.GetProperty("unreadMessageCount").GetInt32());
 
@@ -333,7 +326,7 @@ public sealed partial class WorkflowTests
         summary = await GetAsync(agent, summaryPath);
         Assert.AreEqual(1, summary.GetProperty("newFollowupCount").GetInt32());
         await SendAsync(agent, HttpMethod.Post,
-            AgentPath(followupId) + "/followups/" + episodeId + "/receipts?topOrgId=org-a",
+            AgentPath(followupId) + "/followups/" + episodeId + "/receipts",
             new { kind = "SEEN", ticketId });
         summary = await GetAsync(agent, summaryPath);
         Assert.AreEqual(0, summary.GetProperty("newFollowupCount").GetInt32());
@@ -350,15 +343,15 @@ public sealed partial class WorkflowTests
         using var agent = application.Client("agent-a");
         var id = await SessionAsync(visitor);
         await RequestAsync(visitor, id, "auto-close-request");
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "auto-close-claim", expectedVersion = 1 });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "auto-close-claim", expectedVersion = 1 });
         var reply = new { clientMsgId = "auto-close-reply", content = "我来帮您处理" };
-        var original = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+        var original = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", reply);
         var reception = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
         Assert.IsNotNull(reception.GetProperty("episode").GetProperty("autoCloseAt").GetString());
 
         application.Clock.Advance(TimeSpan.FromMinutes(5));
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "late-visitor", content = "还在吗" }, HttpStatusCode.Conflict);
-        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", reply);
         Assert.AreEqual(original.GetProperty("seq").GetInt64(), replay.GetProperty("seq").GetInt64());
         var ended = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
         Assert.AreEqual("RESOLVED", ended.GetProperty("episode").GetProperty("status").GetString());

@@ -155,21 +155,18 @@
         if (!response.ok || result.isSuccess === false)
             throw new Error(result.message || result.businessMessage || "HTTP " + response.status);
         const config = result.returnObj !== undefined ? result.returnObj : result;
-        if (!config || !config.topOrgId || !["EVENT", "ORGANIZATION"].includes(config.scopeType))
-            throw new Error("运行配置缺少可信组织或级别");
+        if (!config || !["EVENT", "ORGANIZATION"].includes(config.scopeType))
+            throw new Error("运行配置缺少可信服务范围");
         if (config.scopeType === "EVENT" && !config.bventId) throw new Error("会议级运行配置缺少 bventId");
         stopRealtime("queueStream");
         state.runtime = {
             assistantConfigId,
-            topOrgId: config.topOrgId,
             scopeType: config.scopeType,
             bventId: config.bventId || "",
             language: config.resolvedLanguage || "zh-CN",
         };
         el("runtime-state").textContent = "运行配置已锁定";
         el("runtime-state").className = "badge";
-        if (el("runtime-org")) el("runtime-org").textContent = state.runtime.topOrgId;
-        if (el("directory-org")) el("directory-org").value = state.runtime.topOrgId;
         if (pageMode === "agent") {
             stopTimeline(true);
             state.agent = null;
@@ -258,7 +255,6 @@
         const runtime = ensureRuntime();
         const headers = await authHeaders({
             Accept: "text/event-stream",
-            "x-currentOrgId": runtime.topOrgId,
             "x-lang": runtime.language,
         });
         if (runtime.scopeType === "EVENT") headers["x-bventId"] = runtime.bventId;
@@ -696,14 +692,12 @@
             pending = { conversationId, episodeId, content, clientMsgId: requestId(agentMode ? "agent" : "visitor") };
             state[key] = pending;
         }
-        const query = agentMode ? "?topOrgId=" + encodeURIComponent(ensureRuntime().topOrgId) : "";
         await request(
             "/customer-service/" +
                 (agentMode ? "agents/" : "") +
                 "conversations/" +
                 encodeURIComponent(conversationId) +
-                "/messages" +
-                query,
+                "/messages",
             {
                 method: "POST",
                 headers: await authHeaders(),
@@ -720,8 +714,7 @@
         const version = agentMode ? state.agentVersion : state.conversationVersion;
         const key = agentMode ? "agentSeq" : "humanSeq";
         const base = "/customer-service/" + (agentMode ? "agents/" : "") + "conversations/" + encodeURIComponent(id);
-        const query = agentMode ? "?topOrgId=" + encodeURIComponent(ensureRuntime().topOrgId) : "?";
-        const result = await request(base + "/messages" + query + "&afterSeq=" + state[key], {
+        const result = await request(base + "/messages?afterSeq=" + state[key], {
             headers: await authHeaders(),
         });
         if (
@@ -729,7 +722,7 @@
             id !== (agentMode ? el("agent-conversation-id").value.trim() : state.conversationId)
         )
             return;
-        await receiveTimeline(result.data, agentMode, id, version, base, query);
+        await receiveTimeline(result.data, agentMode, id, version, base, "");
     }
 
     /** 流和补偿查询共用序列去重及回执；在等待认证前冻结 seq 并重验会话。 */
@@ -859,7 +852,7 @@
         stopTimeline(agentMode);
         const runtime = ensureRuntime(),
             base = "/customer-service/" + (agentMode ? "agents/" : "") + "conversations/" + encodeURIComponent(id);
-        const query = agentMode ? "?topOrgId=" + encodeURIComponent(runtime.topOrgId) : "?";
+        const query = "";
         // 认证、历史恢复和回执均可跨异步边界；每次继续消费前重验会话代次。
         const current = () =>
             id === (agentMode ? el("agent-conversation-id").value.trim() : state.conversationId) &&
@@ -869,7 +862,6 @@
             {
                 agent: agentMode,
                 conversationId: id,
-                topOrgId: runtime.topOrgId,
                 assistantConfigId: runtime.assistantConfigId,
             },
             () => state[agentMode ? "agentSeq" : "humanSeq"],
@@ -930,7 +922,6 @@
             {
                 agent: true,
                 conversationId: null,
-                topOrgId: runtime.topOrgId,
                 assistantConfigId: runtime.assistantConfigId,
             },
             () => 0,
@@ -962,8 +953,7 @@
         const result = await request(
             "/customer-service/agents/conversations/" +
                 encodeURIComponent(id) +
-                "/reception?topOrgId=" +
-                encodeURIComponent(ensureRuntime().topOrgId),
+                "/reception",
             { headers: await authHeaders() },
         );
         if (!current()) return;
@@ -975,8 +965,7 @@
                 const history = await request(
                     "/customer-service/agents/conversations/" +
                         encodeURIComponent(id) +
-                        "/history?topOrgId=" +
-                        encodeURIComponent(ensureRuntime().topOrgId),
+                        "/history",
                     { headers: await authHeaders() },
                 );
                 if (!current()) return;
@@ -1023,9 +1012,7 @@
         if (!el("agent-availability-status")) return;
         const r = ensureRuntime(),
             query =
-                "?topOrgId=" +
-                encodeURIComponent(r.topOrgId) +
-                "&assistantConfigId=" +
+                "?assistantConfigId=" +
                 encodeURIComponent(r.assistantConfigId);
         const result = await request(
             "/customer-service/agents/availability" + (heartbeat ? "/heartbeat" : "") + query,
@@ -1080,9 +1067,7 @@
             if (seen.has(cursor)) throw new Error("客服目录分页异常，请稍后重试");
             seen.add(cursor);
             const result = await request(
-                "/customer-service/agents/transfer-candidates?topOrgId=" +
-                    encodeURIComponent(r.topOrgId) +
-                    "&assistantConfigId=" +
+                "/customer-service/agents/transfer-candidates?assistantConfigId=" +
                     encodeURIComponent(r.assistantConfigId) +
                     "&afterCursor=" +
                     encodeURIComponent(cursor),
@@ -1118,8 +1103,7 @@
             await request(
                 "/customer-service/agents/conversations/" +
                     encodeURIComponent(p.id) +
-                    "/transfer?topOrgId=" +
-                    encodeURIComponent(ensureRuntime().topOrgId),
+                    "/transfer",
                 {
                     method: "POST",
                     headers: await authHeaders(),
@@ -1154,9 +1138,7 @@
     async function systemFailures() {
         const r = ensureRuntime(),
             query =
-                "?topOrgId=" +
-                encodeURIComponent(r.topOrgId) +
-                "&assistantConfigId=" +
+                "?assistantConfigId=" +
                 encodeURIComponent(r.assistantConfigId);
         const result = await request("/customer-service/agents/system-handoffs" + query, {
             headers: await authHeaders(),
@@ -1197,8 +1179,7 @@
                 encodeURIComponent(id) +
                 "/" +
                 action +
-                "?topOrgId=" +
-                encodeURIComponent(ensureRuntime().topOrgId),
+                "",
             {
                 method: "POST",
                 headers: await authHeaders(),
@@ -1220,9 +1201,7 @@
     async function agentQueue() {
         const runtime = ensureRuntime();
         const result = await request(
-            "/customer-service/agents/queue?topOrgId=" +
-                encodeURIComponent(runtime.topOrgId) +
-                "&assistantConfigId=" +
+            "/customer-service/agents/queue?assistantConfigId=" +
                 encodeURIComponent(runtime.assistantConfigId),
             { headers: await authHeaders() },
         );
@@ -1351,9 +1330,7 @@
     async function agentFollowups() {
         const runtime = ensureRuntime();
         const result = await request(
-            "/customer-service/agents/followups?topOrgId=" +
-                encodeURIComponent(runtime.topOrgId) +
-                "&assistantConfigId=" +
+            "/customer-service/agents/followups?assistantConfigId=" +
                 encodeURIComponent(runtime.assistantConfigId),
             { headers: await authHeaders() },
         );
@@ -1403,10 +1380,7 @@
         if (!id) throw new Error("请输入接待 conversationId");
         const base = "/customer-service/agents/conversations/" + encodeURIComponent(id);
         const chosen = selectedFollowup?.scope.conversationId === id ? selectedFollowup : null;
-        const query =
-            "?topOrgId=" +
-            encodeURIComponent(ensureRuntime().topOrgId) +
-            (chosen ? "&episodeId=" + encodeURIComponent(chosen.episodeId) : "");
+        const query = chosen ? "?episodeId=" + encodeURIComponent(chosen.episodeId) : "";
         if (retry)
             await request(base + "/notifications/retry" + query, { method: "POST", headers: await authHeaders() });
         const result = await request(base + "/waiting" + query, { headers: await authHeaders() });
@@ -1444,7 +1418,7 @@
         );
     }
     function replyQuery() {
-        return "?topOrgId=" + encodeURIComponent(ensureRuntime().topOrgId);
+        return "";
     }
     function requireFollowup() {
         if (!selectedFollowup?.ticketId) throw new Error("请先从后续跟进中选择已有邮箱的工单");
@@ -1596,7 +1570,6 @@
                     await authHeaders();
                     el("auth-state").textContent = "已获取登录凭据";
                     const info = manager.userInfo || {};
-                    if (info.tenantId && el("directory-tenant")) el("directory-tenant").value = info.tenantId;
                     if (info.accountId && el("directory-principal")) el("directory-principal").value = info.accountId;
                     if (pageMode !== "workbench") {
                         const params = new URLSearchParams(window.location.search);

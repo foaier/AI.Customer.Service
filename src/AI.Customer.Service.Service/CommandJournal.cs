@@ -68,7 +68,7 @@ public sealed class CommandJournal(IReceptionRepository repository, ITaskReposit
     /// </summary>
     public async Task EnqueueAsync(Scope scope, string principal, string episode, string kind, string key, object payload, string trace, CancellationToken ct)
     {
-        if (await tasks.FindAsync(scope.TenantId, scope.TopOrgId, key, ct) is not null)
+        if (await tasks.FindAsync(key, ct) is not null)
         {
             return;
         }

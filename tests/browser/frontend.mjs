@@ -97,7 +97,6 @@ try {
             data = ["a", "b"].map((id) => ({
                 id: `assistant-${id}`,
                 name: `助手${id}`,
-                topOrgId: "org-a",
             }));
         else if (path.endsWith("/agents/queue")) {
             queueReads++;
@@ -264,7 +263,7 @@ try {
     await page.getByRole("link", { name: "邮件跟进" }).click();
     await expect(page.locator(".followup-row").first()).toContainText("新留言工单");
     episodes[0].status = "REQUESTED";
-    await page.goto(base + "/b/inbox?topOrgId=org-a&assistantConfigId=assistant-a&conversationId=read");
+    await page.goto(base + "/b/inbox?assistantConfigId=assistant-a&conversationId=read");
     await expect(page.locator(".conversation-panel").getByRole("button", { name: "认领并查看" })).toBeVisible();
     console.log("PASS 通知开关、雅式令牌保存/清除、深链接定位且不自动认领");
     assert.deepEqual(errors, []);

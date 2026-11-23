@@ -15,14 +15,14 @@ public sealed class HandoffNotificationService(IConfigurationRepository configur
     public async Task EnqueueAsync(Episode episode, CancellationToken ct)
     {
         if (episode.Status != EpisodeStatus.REQUESTED) return;
-        var settings = await configuration.ChatNotificationAsync(episode.TenantId, episode.TopOrgId, ct);
+        var settings = await configuration.ChatNotificationAsync(ct);
         if (settings?.Enabled != true) return;
         var history = await conversations.TurnsAsync(episode.Scope, 12, ct);
         var category = ChatNotificationConfiguration.GroupKey(episode.Category);
         var snapshot = new HandoffNotificationSnapshot(settings.ActiveProvider, category,
             settings.ActiveProvider == "ADSALE" ? settings.ChatGroup.GetValueOrDefault(category) : null,
             settings.BaseUrl, settings.PublicBaseUrl, episode.RequestedAt,
-            assistants.Require(episode.TenantId, episode.AssistantConfigId).Language,
+            assistants.Require(episode.AssistantConfigId).Language,
             history.LastOrDefault()?.UserContent, history.LastOrDefault(x => x.Status == "SUCCEEDED")?.AssistantContent);
         await journal.EnqueueAsync(episode.Scope, episode.PrincipalId, episode.Id, "HANDOFF_NOTIFY", "handoff-requested:" + episode.Id,
             snapshot, episode.TraceId, ct);

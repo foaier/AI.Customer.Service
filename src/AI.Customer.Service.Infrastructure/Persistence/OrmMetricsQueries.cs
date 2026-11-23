@@ -15,9 +15,9 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
     /// <summary>
     /// 按租户、组织和助手汇总指定时间窗口内的接待来源、状态及耗时，并统计全部当前积压。
     /// </summary>
-    public async Task<ReceptionMetrics> ReadAsync(string tenant, string org, string assistant, DateTime from, DateTime through, CancellationToken ct)
+    public async Task<ReceptionMetrics> ReadAsync(string assistant, DateTime from, DateTime through, CancellationToken ct)
     {
-        var episodes = db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant);
+        var episodes = db.Set<Episode>().AsNoTracking().Where(x => x.AssistantConfigId == assistant);
         var history = episodes.Where(x => x.RequestedAt >= from && x.RequestedAt < through);
         var requests = await history.GroupBy(x => new { x.TriggerSource, x.ReasonCode })
             .Select(g => new { g.Key.TriggerSource, g.Key.ReasonCode, Count = g.LongCount() }).ToListAsync(ct);
@@ -33,7 +33,7 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
                 Accumulate(timings, "resolve", row.RequestedAt, row.FinishedAt);
             }
         }
-        var tasks = db.Set<ReliableTask>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant);
+        var tasks = db.Set<ReliableTask>().AsNoTracking().Where(x => x.AssistantConfigId == assistant);
         var old = through.AddMinutes(-5);
         var backlog = new Dictionary<string, long>
         {
@@ -74,9 +74,9 @@ public sealed class SurveyMetricsQuery(CustomerServiceDbContext db) : ISurveyMet
     /// <summary>
     /// 按完整授权范围及打开时间窗口统计调查状态，将截至窗口末尾已超期的未回答调查计为过期。
     /// </summary>
-    public async Task<IReadOnlyDictionary<string, long>> CountAsync(string tenant, string org, string assistant, DateTime from, DateTime through, CancellationToken ct)
+    public async Task<IReadOnlyDictionary<string, long>> CountAsync(string assistant, DateTime from, DateTime through, CancellationToken ct)
     {
-        var rows = await db.Set<Survey>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant &&
+        var rows = await db.Set<Survey>().AsNoTracking().Where(x => x.AssistantConfigId == assistant &&
             x.OpenedAt >= from && x.OpenedAt < through).GroupBy(x => x.Status == SurveyStatus.OPEN && x.ExpiresAt <= through ? SurveyStatus.EXPIRED : x.Status)
             .Select(g => new { State = g.Key, Count = g.LongCount() }).ToListAsync(ct);
         var result = Enum.GetValues<SurveyStatus>().ToDictionary(x => x.ToString(), _ => 0L);

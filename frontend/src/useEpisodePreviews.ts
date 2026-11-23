@@ -3,7 +3,7 @@ import { ApiError, request } from "./api";
 import type { Episode, HumanMessage } from "./types";
 
 /** 列表预览只读消息，不提交 READ；仅为当前可读周期加载，最多三个并发请求。 */
-export function useEpisodePreviews(episodes: Episode[], topOrgId: string) {
+export function useEpisodePreviews(episodes: Episode[]) {
     const [previews, setPreviews] = useState<Record<string, string>>({});
     const loaded = useRef(new Map<string, string>());
     const signature = JSON.stringify(
@@ -34,7 +34,7 @@ export function useEpisodePreviews(episodes: Episode[], topOrgId: string) {
                 try {
                     for (let page = 0; page < 20; page++) {
                         const result = await request<{ messages: HumanMessage[] }>(
-                            `/customer-service/agents/conversations/${encodeURIComponent(item.conversationId)}/messages?topOrgId=${encodeURIComponent(topOrgId)}&afterSeq=${cursor}&limit=100`,
+                            `/customer-service/agents/conversations/${encodeURIComponent(item.conversationId)}/messages?afterSeq=${cursor}&limit=100`,
                             { signal: controller.signal },
                         );
                         if (controller.signal.aborted) return;
@@ -57,6 +57,6 @@ export function useEpisodePreviews(episodes: Episode[], topOrgId: string) {
         };
         void Promise.all(Array.from({ length: Math.min(3, pending.length) }, worker));
         return () => controller.abort();
-    }, [signature, topOrgId]);
+    }, [signature]);
     return previews;
 }

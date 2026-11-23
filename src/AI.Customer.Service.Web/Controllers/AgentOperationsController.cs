@@ -39,40 +39,40 @@ public sealed class AgentOperationsController(RequestAccess request, Availabilit
     /// 读取展示状态，不自动上线或续约。
     /// </summary>
     [HttpGet("agents/availability")]
-    public async Task<object> Get(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<object> Get(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(await availability.GetAsync(Actor, topOrgId, ct));
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Success(await availability.GetAsync(Actor, ct));
     }
 
     /// <summary>
     /// 明确状态选择，推进在线代次。
     /// </summary>
     [HttpPost("agents/availability")]
-    public async Task<object> Set(string topOrgId, string assistantConfigId, AvailabilityCommand command, CancellationToken ct)
+    public async Task<object> Set(string assistantConfigId, AvailabilityCommand command, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(await availability.SetAsync(Actor, topOrgId, command.Status, ct));
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Success(await availability.SetAsync(Actor, command.Status, ct));
     }
 
     /// <summary>
     /// 仅续有效同代次 ONLINE。
     /// </summary>
     [HttpPost("agents/availability/heartbeat")]
-    public async Task<object> Heartbeat(string topOrgId, string assistantConfigId, HeartbeatCommand command, CancellationToken ct)
+    public async Task<object> Heartbeat(string assistantConfigId, HeartbeatCommand command, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(await availability.HeartbeatAsync(Actor, topOrgId, command.Version, ct));
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Success(await availability.HeartbeatAsync(Actor, command.Version, ct));
     }
 
     /// <summary>
     /// 同组候选只暴露最小账号引用，真正改派仍实时核验在线和容量。
     /// </summary>
     [HttpGet("agents/transfer-candidates")]
-    public async Task<object> Candidates(string topOrgId, string assistantConfigId, CancellationToken ct, string? afterCursor = null)
+    public async Task<object> Candidates(string assistantConfigId, CancellationToken ct, string? afterCursor = null)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        var config = await configuration.RoutingAsync(Actor.TenantId, topOrgId, ct);
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        var config = await configuration.RoutingAsync(ct);
         var members = config!.Groups.Where(g => g.Members.Any(m => m.AccountId == Actor.AccountId))
             .SelectMany(g => g.Members).Where(m => m.AccountId != Actor.AccountId).DistinctBy(m => m.AccountId).OrderBy(m => m.AccountId)
             .Where(m => afterCursor is null || string.CompareOrdinal(m.AccountId, afterCursor) > 0).Take(101).ToArray();
@@ -83,10 +83,10 @@ public sealed class AgentOperationsController(RequestAccess request, Availabilit
     /// 事务外实时核验目标账号，事务内再次核验原组、在线和容量。
     /// </summary>
     [HttpPost("agents/conversations/{id}/transfer")]
-    public async Task<object> Transfer(string id, string topOrgId, TransferCommand command, CancellationToken ct)
+    public async Task<object> Transfer(string id, TransferCommand command, CancellationToken ct)
     {
-        var scope = await RequestAccess.AgentAsync(topOrgId, id, ct);
-        await accounts.RequireAsync(Actor.TenantId, topOrgId, Guard.Text(command.TargetAccountId, "目标账号"), ct);
+        var scope = await RequestAccess.AgentAsync(id, ct);
+        await accounts.RequireAsync(Guard.Text(command.TargetAccountId, "目标账号"), ct);
         return Success(await reception.TransferAsync(Actor, scope, command, ct));
     }
 
@@ -94,10 +94,10 @@ public sealed class AgentOperationsController(RequestAccess request, Availabilit
     /// 组织系统任务最小失败投影，不返回载荷或正文。
     /// </summary>
     [HttpGet("agents/system-handoffs")]
-    public async Task<object> SystemTasks(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<object> SystemTasks(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        var values = await tasks.ListAsync(Actor.TenantId, topOrgId, "SYSTEM_HANDOFF", ct);
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        var values = await tasks.ListAsync("SYSTEM_HANDOFF", ct);
         return Success(values.Where(x => x.AssistantConfigId == assistantConfigId && x.State == DeliveryState.DEAD)
             .Select(x => new { x.ConversationId, x.EventKey, x.State, x.Attempts, x.LastError, x.Version }));
     }
@@ -106,10 +106,10 @@ public sealed class AgentOperationsController(RequestAccess request, Availabilit
     /// 仅目标组织正式账号可恢复本会话 DEAD 系统任务。
     /// </summary>
     [HttpPost("agents/conversations/{id}/system-handoff/retry")]
-    public async Task<object> Retry(string id, string topOrgId, CancellationToken ct)
+    public async Task<object> Retry(string id, CancellationToken ct)
     {
-        var scope = await RequestAccess.AgentAsync(topOrgId, id, ct);
-        var failed = (await tasks.ListAsync(Actor.TenantId, topOrgId, "SYSTEM_HANDOFF", ct))
+        var scope = await RequestAccess.AgentAsync(id, ct);
+        var failed = (await tasks.ListAsync("SYSTEM_HANDOFF", ct))
             .FirstOrDefault(x => x.ConversationId == id && x.State == DeliveryState.DEAD) ?? throw BusinessException.Conflict("没有可重试的失败任务");
         return Success(await processor.RetrySystemAsync(Actor, scope, failed.EventKey, ct));
     }

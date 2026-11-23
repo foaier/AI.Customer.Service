@@ -23,7 +23,7 @@ public sealed class ConversationSessionController(RequestAccess request, Convers
     public async Task<object> Create(CreateSessionCommand command, CancellationToken ct)
     {
         if (request.Actor.GuestConversationId is not null) throw BusinessException.Forbidden();
-        var value = await runtime.CreateAsync(request.Actor, assistants.Require(request.Actor.TenantId, command.AssistantConfigId), Guard.Id("session"), ct);
+        var value = await runtime.CreateAsync(request.Actor, assistants.Require(command.AssistantConfigId), Guard.Id("session"), ct);
         return new { isSuccess = true, returnObj = new { sessionId = value.Id, value.ExternalIdentityRequired } };
     }
 

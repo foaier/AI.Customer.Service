@@ -22,10 +22,6 @@ public sealed class AuthenticationOptions
     /// </summary>
     public string SigningKey { get; set; } = "";
     /// <summary>
-    /// JWT 中租户声明名，默认 tenantId。
-    /// </summary>
-    public string TenantClaim { get; set; } = "tenantId";
-    /// <summary>
     /// JWT 中账号声明名，默认 accountId。
     /// </summary>
     public string AccountClaim { get; set; } = "accountId";

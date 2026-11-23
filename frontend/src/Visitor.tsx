@@ -187,7 +187,6 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                     authorization: `Bearer ${token}`,
                     agent: false,
                     conversationId,
-                    topOrgId: assistant.topOrgId,
                     assistantConfigId: assistantId,
                     afterSeq: sequence.current,
                 }));
@@ -221,7 +220,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             window.clearTimeout(reconnectTimer);
             socket?.close();
         };
-    }, [conversationId, episode?.status, assistant.topOrgId, assistantId, addHumanMessages]);
+    }, [conversationId, episode?.status, assistantId, addHumanMessages]);
 
     const resetSession = async () => {
         setMessages([]);
@@ -921,10 +920,6 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                         <div className="service-note-row">
                             <span>当前助手</span>
                             <strong>{assistant.name || assistantId}</strong>
-                        </div>
-                        <div className="service-note-row">
-                            <span>组织</span>
-                            <strong>{assistant.topOrgId}</strong>
                         </div>
                         <div className="privacy-note">
                             <ShieldCheck size={14} />

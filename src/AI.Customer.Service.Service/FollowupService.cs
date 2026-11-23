@@ -42,7 +42,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// 同键同内容留言重放；保存邮箱、取消在线等待和表单写入必须原子提交。
     /// </summary>
     public Task<object> SubmitAsync(Actor actor, Scope scope, FollowupFormCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             Guard.Text(command.RequestId, "留言请求键");
             Guard.Text(command.Content, "留言正文", 4000);
@@ -99,13 +99,13 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// <summary>
     /// 待办列表只显示摘要，不返回留言内容及邮箱。
     /// </summary>
-    public async Task<object> QueueAsync(Actor actor, string org, string assistant, CancellationToken ct)
+    public async Task<object> QueueAsync(Actor actor, string assistant, CancellationToken ct)
     {
-        var groups = await access.GroupsAsync(actor, org, ct);
-        var values = await repository.QueueAsync(actor.TenantId, org, assistant, groups, ct);
+        var groups = await access.GroupsAsync(actor, ct);
+        var values = await repository.QueueAsync(assistant, groups, ct);
         var ids = values.Where(x => x.Origin == "FORM").Select(x => x.EpisodeId).ToArray();
-        var seen = await repository.SeenEpisodeIdsAsync(actor.TenantId, org, ids, actor.AccountId, ct);
-        var closed = await repository.ClosedEpisodeIdsAsync(actor.TenantId, org, ids, ct);
+        var seen = await repository.SeenEpisodeIdsAsync(ids, actor.AccountId, ct);
+        var closed = await repository.ClosedEpisodeIdsAsync(ids, ct);
         return new { followups = values.Select(x => new
         {
             x.Scope,
@@ -125,7 +125,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// 固定原周期确认留言已查看，重复请求保留首次服务端时间。
     /// </summary>
     public Task<object> SeenAsync(Actor actor, Scope scope, string episodeId, FollowupReceiptCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object>(async () =>
         {
             if (command.Kind != "SEEN") throw BusinessException.Invalid("留言回执类型必须为 SEEN");
             var ticket = Guard.Text(command.TicketId, "工单号", 64);
@@ -152,7 +152,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// 认领原留言工单，已有人认领时其它人不能读取正文。
     /// </summary>
     public Task<object> ClaimAsync(Actor actor, Scope scope, string episodeId, StateCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var form = await RequireAsync(actor, scope, episodeId, false, ct);
             var action = "FORM_CLAIM:" + episodeId;
@@ -185,7 +185,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
         {
             return new { form.TicketId, state = "OPEN", version = 1 };
         }
-        var task = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, "reply:" + form.TicketId, ct);
+        var task = await tasks.FindAsync("reply:" + form.TicketId, ct);
         return new { response.TicketId, response.State, response.Version, response.Subject, response.Content, attempts = task?.Attempts ?? 0 };
     }
 
@@ -193,7 +193,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// 最终回复只能首次提交，真实收件地址由等待 owner 解析，正文和任务同事务保存。
     /// </summary>
     public Task<object> ReplyAsync(Actor actor, Scope scope, string episodeId, ReplyCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var form = await RequireAsync(actor, scope, episodeId, true, ct);
             var action = "REPLY:" + episodeId;
@@ -232,7 +232,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
     /// 仅 DEAD 可人工恢复，仅 SENT 可显式结案，重试沿用原投递键。
     /// </summary>
     public Task<object> ChangeResponseAsync(Actor actor, Scope scope, string episodeId, StateCommand command, bool close, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var form = await RequireAsync(actor, scope, episodeId, true, ct);
             var action = (close ? "CLOSE:" : "RETRY:") + episodeId;
@@ -247,7 +247,7 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
             {
                 throw BusinessException.Conflict(close ? "邮件尚未被网关受理，不能结案" : "只有最终失败的回复可以重试");
             }
-            var task = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, "reply:" + form.TicketId, ct) ?? throw BusinessException.Conflict("原投递任务不存在");
+            var task = await tasks.FindAsync("reply:" + form.TicketId, ct) ?? throw BusinessException.Conflict("原投递任务不存在");
             if (close)
             {
                 task.State = DeliveryState.CLOSED;

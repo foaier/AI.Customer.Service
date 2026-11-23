@@ -36,7 +36,7 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
     /// </summary>
     public async Task<object> SendAsync(Actor actor, Scope scope, bool agent, MessageCommand command, CancellationToken ct)
     {
-        var result = await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        var result = await transactions.ExecuteAsync(async () =>
         {
             Guard.Text(command.ClientMsgId, "消息键");
             Guard.Text(command.Content, "消息正文", 4000);
@@ -109,7 +109,7 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
     /// 持锁复核认领后读取时间线，改派和撤权提交后旧客服不能读取正文。
     /// </summary>
     public Task<object> TimelineAsync(Actor actor, Scope scope, bool agent, long afterSeq, int limit, CancellationToken ct) =>
-        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object>(async () =>
         {
             if (afterSeq < 0 || limit is < 1 or > 100)
             {
@@ -127,7 +127,7 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
     /// 只推进认证主体水位，READ 同时推进 DELIVERED，拒绝确认未来消息。
     /// </summary>
     public Task<object> ReceiptAsync(Actor actor, Scope scope, bool agent, ReceiptCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             await AuthorizeAsync(actor, scope, agent, ct);
             var conversation = await runtime.RequireAsync(scope, ct);
@@ -158,7 +158,7 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
     /// 当前认领者读取最小 AI 文本历史，不包含提示词或请求 DTO。
     /// </summary>
     public Task<object> HistoryAsync(Actor actor, Scope scope, CancellationToken ct) =>
-        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object>(async () =>
         {
             await AuthorizeAsync(actor, scope, true, ct);
             return (await conversations.TurnsAsync(scope, 100, ct)).Where(x => x.Status == "SUCCEEDED")
@@ -177,7 +177,7 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
             await access.RequireGroupAsync(actor, episode, ct);
             ReceptionRules.RequireAssignee(episode, actor.AccountId);
         }
-        else if (episode.PrincipalId != actor.AccountId || episode.TenantId != actor.TenantId)
+        else if (episode.PrincipalId != actor.AccountId)
         {
             throw BusinessException.Forbidden();
         }

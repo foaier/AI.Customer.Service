@@ -40,7 +40,7 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
     /// </summary>
     [HttpGet("assistant/config/list")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public object List() => new { isSuccess = true, returnObj = assistants.List(request.Actor.TenantId).Select(x => new { id = x.Id, configId = x.Id, assistantConfigId = x.Id, name = x.Name, x.TopOrgId }) };
+    public object List() => new { isSuccess = true, returnObj = assistants.List().Select(x => new { id = x.Id, configId = x.Id, assistantConfigId = x.Id, name = x.Name }) };
 
     /// <summary>
     /// 原设置页的助手选择列表，不按客户端身份头授权。
@@ -50,8 +50,8 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
     public object ListAssistants() => new
     {
         isSuccess = true,
-        returnObj = assistants.List(request.Actor.TenantId)
-        .Select(x => new { assistantConfigId = x.Id, buttonName = x.Name, x.TopOrgId })
+        returnObj = assistants.List()
+        .Select(x => new { assistantConfigId = x.Id, buttonName = x.Name })
     };
 
     /// <summary>
@@ -61,14 +61,13 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object RuntimeConfig(string assistantConfigId)
     {
-        var value = assistants.Require(request.Actor.TenantId, assistantConfigId);
+        var value = assistants.Require(assistantConfigId);
         return new
         {
             isSuccess = true,
             returnObj = new
             {
                 assistantConfigId = value.Id,
-                value.TopOrgId,
                 value.BventId,
                 scopeType = value.BventId is null ? "ORGANIZATION" : "EVENT",
                 resolvedLanguage = value.Language
@@ -86,7 +85,7 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         var id = Guard.Id("session");
         if (assistantConfigId is not null)
         {
-            await runtime.CreateAsync(request.Actor, assistants.Require(request.Actor.TenantId, assistantConfigId), id, ct);
+            await runtime.CreateAsync(request.Actor, assistants.Require(assistantConfigId), id, ct);
         }
         return new { isSuccess = true, returnObj = new { sessionId = id } };
     }
@@ -104,8 +103,8 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
             throw BusinessException.Invalid("当前只支持新文本轮次，重连请读取持久历史");
         }
         var extension = command.Extensions?.GetValueOrDefault("event-assistant");
-        var existing = await conversations.FindAsync(request.Actor.TenantId, command.SessionId, ct);
-        var assistant = assistants.Require(request.Actor.TenantId, extension?.AssistantConfigId ?? existing?.AssistantConfigId ?? "");
+        var existing = await conversations.FindAsync(command.SessionId, ct);
+        var assistant = assistants.Require(extension?.AssistantConfigId ?? existing?.AssistantConfigId ?? "");
         if (!string.IsNullOrEmpty(extension?.BventId) && extension.BventId != assistant.BventId)
         {
             throw BusinessException.Forbidden("大会引用与可信助手不一致");

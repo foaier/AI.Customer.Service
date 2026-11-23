@@ -7,12 +7,11 @@
     let config = null,
         busy = false,
         authReady,
-        loadedOrg = "";
+        loadedConfig = false;
     let directoryGroups = [],
         directoryCursor = null,
         directoryHasMore = false;
     const memberDirectories = new Map();
-    el("org").value = params.get("topOrgId") || "";
     el("assistant").value = params.get("assistantConfigId") || "";
 
     /** 复用项目登录组件，初始化失败允许重新登录；不复制令牌到URL或本地存储。 */
@@ -39,7 +38,7 @@
         await authReady;
     }
 
-    /** 组织归属取自当前认证上下文，页面不能传入操作者或租户身份。 */
+    /** 归属与权限取自当前认证上下文，页面不传递组织或租户身份。 */
     async function request(path, method = "GET", body) {
         await auth();
         const token = await authManager.getToken();
@@ -52,7 +51,6 @@
             headers: {
                 Authorization: authorization,
                 "Content-Type": "application/json",
-                "x-CurrentOrgId": el("org").value.trim(),
             },
             body: body === undefined ? undefined : JSON.stringify(body),
         });
@@ -84,11 +82,10 @@
         }
     }
 
-    /** 导航只沿用公开助手和组织引用，不传递身份或凭据。 */
+    /** 导航只沿用公开助手引用，不传递身份或凭据。 */
     function links() {
         const query = new URLSearchParams({
             assistantConfigId: el("assistant").value.trim(),
-            topOrgId: el("org").value.trim(),
         });
         document.querySelectorAll("[data-entry]").forEach((link) => {
             link.href = link.dataset.entry + "?" + query;
@@ -159,7 +156,6 @@
         const state = directoryState(category);
         if (!state.groupId) throw new Error("请先选择用户中心客服组");
         const query = new URLSearchParams({
-            topOrgId: el("org").value.trim(),
             groupId: state.groupId,
             limit: "50",
         });
@@ -197,10 +193,10 @@
         el("more-directory-groups").hidden = !directoryHasMore;
     }
 
-    /** 读取当前组织用户中心分组；查询词改变时从第一页重新开始。 */
+    /** 读取当前账号可见的用户中心分组；查询词改变时从第一页重新开始。 */
     async function loadDirectoryGroups(append) {
-        if (!loadedOrg || loadedOrg !== el("org").value.trim()) throw new Error("请先加载当前组织配置");
-        const query = new URLSearchParams({ topOrgId: loadedOrg, limit: "100" });
+        if (!loadedConfig) throw new Error("请先加载配置");
+        const query = new URLSearchParams({ limit: "100" });
         const keyword = el("directory-keyword").value.trim();
         if (keyword) query.set("keyword", keyword);
         if (append && directoryCursor) query.set("afterCursor", directoryCursor);
@@ -368,14 +364,11 @@
         renderDirectoryGroups();
     }
 
-    /** 加载组织配置并尝试读取用户中心目录；目录暂不可用不丢失本地配置。 */
+    /** 加载当前账号配置并尝试读取用户中心目录；目录暂不可用不丢失本地配置。 */
     async function load() {
-        const org = el("org").value.trim();
-        if (!org) throw new Error("请填写组织 ID");
-        const previousOrg = loadedOrg;
-        config = await request("/customer-service/configuration?topOrgId=" + encodeURIComponent(org));
-        if (previousOrg !== org) memberDirectories.clear();
-        loadedOrg = org;
+        config = await request("/customer-service/configuration");
+        loadedConfig = true;
+        memberDirectories.clear();
         el("routing-fields").disabled = false;
         directoryGroups = [];
         directoryCursor = null;
@@ -412,7 +405,6 @@
     });
     el("load-assistants").addEventListener("click", () =>
         run(async () => {
-            if (!el("org").value.trim()) throw new Error("请填写组织 ID");
             const list = await request("/assistant/config/listAssistants");
             el("assistant-list").replaceChildren();
             for (const item of list) {
@@ -421,7 +413,7 @@
                 option.textContent = item.buttonName || item.bventName || item.assistantConfigId;
                 el("assistant-list").append(option);
             }
-            if (!list.length) throw new Error("此组织暂无助手");
+            if (!list.length) throw new Error("当前账号暂无助手");
             if (!el("assistant").value) el("assistant").value = list[0].assistantConfigId;
             el("assistant-list").value = el("assistant").value;
             renderRoutes();
@@ -433,15 +425,10 @@
         renderRoutes();
     });
     el("assistant").addEventListener("change", renderRoutes);
-    el("org").addEventListener("change", () => {
-        const fields = el("routing-fields");
-        if (fields) fields.disabled = el("org").value.trim() !== loadedOrg;
-        links();
-    });
     el("routing-form")?.addEventListener("submit", (event) => {
         event.preventDefault();
         run(async () => {
-            if (!config || loadedOrg !== el("org").value.trim()) throw new Error("请先加载当前组织的配置");
+            if (!config || !loadedConfig) throw new Error("请先加载配置");
             const assistant = el("assistant").value.trim();
             if (!assistant) throw new Error("请选择要绑定的助手");
             for (const group of config.groups) group.name = el("group-" + group.category).value.trim();
@@ -455,11 +442,7 @@
                 ...config,
                 routes: [...config.routes.filter((item) => item.assistantConfigId !== assistant), route],
             };
-            config = await request(
-                "/customer-service/configuration?topOrgId=" + encodeURIComponent(loadedOrg),
-                "PUT",
-                payload,
-            );
+            config = await request("/customer-service/configuration", "PUT", payload);
             renderGroups();
             renderRoutes();
             el("status").textContent = "接待配置已保存 · 版本 " + config.version + "，新申请使用此映射。";
@@ -468,7 +451,7 @@
     el("preview")?.addEventListener("click", () =>
         run(async () => {
             const result = await request(
-                "/customer-service/configuration/preview?topOrgId=" + encodeURIComponent(el("org").value.trim()),
+                "/customer-service/configuration/preview",
                 "POST",
                 { assistantConfigId: el("assistant").value.trim(), context: el("preview-context").value },
             );
@@ -493,5 +476,5 @@
         }),
     );
     links();
-    if (el("routing-fields") && el("org").value) run(load);
+    if (el("routing-fields")) run(load);
 })();

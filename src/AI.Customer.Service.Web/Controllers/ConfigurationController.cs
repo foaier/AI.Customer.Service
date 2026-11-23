@@ -36,20 +36,20 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// 首次只读返回四类稳定默认组，不自动关联成员。
     /// </summary>
     [HttpGet("configuration")]
-    public async Task<object> Get(string topOrgId, CancellationToken ct)
+    public async Task<object> Get(CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(RoutingView(await configuration.GetAsync(Actor, topOrgId, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(RoutingView(await configuration.GetAsync(Actor, ct)));
     }
 
     /// <summary>
     /// 核验外部成员后整体 CAS 保存。
     /// </summary>
     [HttpPut("configuration")]
-    public async Task<object> Save(string topOrgId, RoutingCommand command, CancellationToken ct)
+    public async Task<object> Save(RoutingCommand command, CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(RoutingView(await configuration.SaveAsync(Actor, topOrgId, command, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(RoutingView(await configuration.SaveAsync(Actor, command, ct)));
     }
 
     /// <summary>
@@ -57,10 +57,10 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// </summary>
     [HttpGet("configuration/chat-notifications")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<object> ChatNotification(string topOrgId, CancellationToken ct)
+    public async Task<object> ChatNotification(CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(ChatNotificationService.View(await notifications.GetAsync(Actor, topOrgId, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(ChatNotificationService.View(await notifications.GetAsync(Actor, ct)));
     }
 
     /// <summary>
@@ -68,20 +68,20 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// </summary>
     [HttpPut("configuration/chat-notifications")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<object> SaveChatNotification(string topOrgId, ChatNotificationCommand command, CancellationToken ct)
+    public async Task<object> SaveChatNotification(ChatNotificationCommand command, CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(ChatNotificationService.View(await notifications.SaveAsync(Actor, topOrgId, command, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(ChatNotificationService.View(await notifications.SaveAsync(Actor, command, ct)));
     }
 
     /// <summary>
     /// 正式只读外部人员候选组，不返回手机号或邮箱。
     /// </summary>
     [HttpGet("configuration/directory/groups")]
-    public async Task<object> Groups(string topOrgId, CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 100)
+    public async Task<object> Groups(CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 100)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        var page = await accounts.GroupsAsync(Actor.TenantId, topOrgId, keyword, afterCursor, limit, ct);
+        await RequestAccess.ManagerAsync(ct);
+        var page = await accounts.GroupsAsync(keyword, afterCursor, limit, ct);
         return Success(new { page.Status, groups = page.Items.Select(x => new { id = x.GroupId, groupId = x.GroupId, name = x.Name }), page.NextCursor, page.HasMore });
     }
 
@@ -89,10 +89,10 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// 外部组归属核验后返回最小账号候选。
     /// </summary>
     [HttpGet("configuration/directory/accounts")]
-    public async Task<object> Accounts(string topOrgId, string groupId, CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 50)
+    public async Task<object> Accounts(string groupId, CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 50)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        var page = await accounts.AccountsAsync(Actor.TenantId, topOrgId, groupId, keyword, afterCursor, limit, ct);
+        await RequestAccess.ManagerAsync(ct);
+        var page = await accounts.AccountsAsync(groupId, keyword, afterCursor, limit, ct);
         return Success(new { page.Status, candidates = page.Items, page.NextCursor, page.HasMore });
     }
 
@@ -100,13 +100,13 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// 预览主题与已保存映射，不创建人工申请。
     /// </summary>
     [HttpPost("configuration/preview")]
-    public async Task<object> Preview(string topOrgId, RoutingPreview command, CancellationToken ct)
+    public async Task<object> Preview(RoutingPreview command, CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        var assistant = access.RequireAssistant(Actor, topOrgId, command.AssistantConfigId);
-        var scope = new Scope(Actor.TenantId, topOrgId, "preview", assistant.Id, assistant.BventId);
+        await RequestAccess.ManagerAsync(ct);
+        var assistant = access.RequireAssistant(Actor, command.AssistantConfigId);
+        var scope = new Scope("preview", assistant.Id, assistant.BventId);
         var classification = await model.ClassifyAsync(scope, Guard.Text(command.Context, "上下文", 16000), ct);
-        var config = await configuration.GetAsync(Actor, topOrgId, ct);
+        var config = await configuration.GetAsync(Actor, ct);
         var route = config.Routes.SingleOrDefault(x => x.AssistantConfigId == assistant.Id);
         return Success(new { classification, groupId = route?.Groups.GetValueOrDefault(classification.Category), configVersion = config.Version });
     }
@@ -115,29 +115,29 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// 读取持久组织日历，无配置则使用部署缺省。
     /// </summary>
     [HttpGet("configuration/calendar")]
-    public async Task<object> Calendar(string topOrgId, CancellationToken ct)
+    public async Task<object> Calendar(CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(CalendarView(await configuration.CalendarAsync(Actor.TenantId, topOrgId, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(CalendarView(await configuration.CalendarAsync(ct)));
     }
 
     /// <summary>
     /// 保存正式日历，不影响已冻结等待周期。
     /// </summary>
     [HttpPut("configuration/calendar")]
-    public async Task<object> SaveCalendar(string topOrgId, CalendarCommand command, CancellationToken ct)
+    public async Task<object> SaveCalendar(CalendarCommand command, CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
-        return Success(CalendarView(await configuration.SaveCalendarAsync(Actor, topOrgId, command, ct)));
+        await RequestAccess.ManagerAsync(ct);
+        return Success(CalendarView(await configuration.SaveCalendarAsync(Actor, command, ct)));
     }
 
     /// <summary>
     /// 仅预览指定时刻，不改变时钟或持久配置。
     /// </summary>
     [HttpPost("configuration/calendar/preview")]
-    public async Task<object> PreviewCalendar(string topOrgId, CalendarPreview command, CancellationToken ct)
+    public async Task<object> PreviewCalendar(CalendarPreview command, CancellationToken ct)
     {
-        await RequestAccess.ManagerAsync(topOrgId, ct);
+        await RequestAccess.ManagerAsync(ct);
         return Success(ConfigurationService.ToCalendar(command.Calendar).Evaluate(command.At.UtcDateTime));
     }
 

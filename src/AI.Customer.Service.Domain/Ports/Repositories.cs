@@ -10,7 +10,7 @@ public interface IUnitOfWork
     /// <summary>
     /// 在指定租户组织的串行写入边界内执行本地业务，不允许远程调用。
     /// </summary>
-    Task<T> ExecuteAsync<T>(string tenant, string org, Func<Task<T>> action, CancellationToken ct);
+    Task<T> ExecuteAsync<T>(Func<Task<T>> action, CancellationToken ct);
 }
 
 /// <summary>
@@ -25,7 +25,7 @@ public interface IConversationRepository
     /// <summary>
     /// 在可信租户内查找会话，后续必须校验组织及主体。
     /// </summary>
-    Task<Conversation?> FindAsync(string tenant, string id, CancellationToken ct);
+    Task<Conversation?> FindAsync(string id, CancellationToken ct);
     /// <summary>
     /// 新增共享 AI/人工会话。
     /// </summary>
@@ -61,7 +61,7 @@ public interface IConversationRepository
     /// <summary>
     /// 当前客服所有本人接待周期的访客消息未读摘要。
     /// </summary>
-    Task<List<InboxMessageStats>> InboxMessageStatsAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    Task<List<InboxMessageStats>> InboxMessageStatsAsync(string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
     /// <summary>
     /// 首次建立主体回执。
     /// </summary>
@@ -69,7 +69,7 @@ public interface IConversationRepository
     /// <summary>
     /// 分页导出指定助手的会话，不暴露其它组织。
     /// </summary>
-    Task<List<Conversation>> PageAsync(string tenant, string org, string assistant, int page, int size, CancellationToken ct);
+    Task<List<Conversation>> PageAsync(string assistant, int page, int size, CancellationToken ct);
 }
 
 /// <summary>
@@ -92,11 +92,11 @@ public interface IReceptionRepository
     /// <summary>
     /// 按助手和当前权限组过滤队列。
     /// </summary>
-    Task<List<Episode>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    Task<List<Episode>> QueueAsync(string assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
     /// <summary>
     /// 完整授权范围的收件箱接待投影，不分页。
     /// </summary>
-    Task<List<Episode>> InboxEpisodesAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    Task<List<Episode>> InboxEpisodesAsync(string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
     /// <summary>
     /// 恢复到期的在线接待自动结单候选。
     /// </summary>
@@ -104,7 +104,7 @@ public interface IReceptionRepository
     /// <summary>
     /// 统计同组织所有助手的当前接待容量。
     /// </summary>
-    Task<int> ActiveCountAsync(string tenant, string org, string actor, CancellationToken ct);
+    Task<int> ActiveCountAsync(string actor, CancellationToken ct);
     /// <summary>
     /// 读取原周期等待事实。
     /// </summary>
@@ -143,7 +143,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// 读取组织群通知配置，未初始化时为空。
     /// </summary>
-    Task<ChatNotificationConfiguration?> ChatNotificationAsync(string tenant, string org, CancellationToken ct);
+    Task<ChatNotificationConfiguration?> ChatNotificationAsync(CancellationToken ct);
     /// <summary>
     /// 首次保存组织群通知配置。
     /// </summary>
@@ -151,7 +151,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// 读取组织整体路由配置。
     /// </summary>
-    Task<RoutingConfiguration?> RoutingAsync(string tenant, string org, CancellationToken ct);
+    Task<RoutingConfiguration?> RoutingAsync(CancellationToken ct);
     /// <summary>
     /// 首次保存本地业务组配置。
     /// </summary>
@@ -159,7 +159,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// 读取组织日历，空时由应用使用部署默认。
     /// </summary>
-    Task<CalendarPolicy?> CalendarAsync(string tenant, string org, CancellationToken ct);
+    Task<CalendarPolicy?> CalendarAsync(CancellationToken ct);
     /// <summary>
     /// 首次保存组织营业日历。
     /// </summary>
@@ -167,7 +167,7 @@ public interface IConfigurationRepository
     /// <summary>
     /// 读取组织级账号在线行。
     /// </summary>
-    Task<Availability?> AvailabilityAsync(string tenant, string org, string account, CancellationToken ct);
+    Task<Availability?> AvailabilityAsync(string account, CancellationToken ct);
     /// <summary>
     /// 首次建立默认离线运行行，不自动上线。
     /// </summary>
@@ -198,15 +198,15 @@ public interface IFollowupRepository
     /// <summary>
     /// 仅返回有资格组的留言工单，应用投影去除正文。
     /// </summary>
-    Task<List<Followup>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
+    Task<List<Followup>> QueueAsync(string assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
     /// <summary>
     /// 完整授权范围内留言摘要，供未读汇总计算。
     /// </summary>
-    Task<List<Followup>> InboxAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
+    Task<List<Followup>> InboxAsync(string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct);
     /// <summary>
     /// 批量读取本客服已查看的留言周期。
     /// </summary>
-    Task<HashSet<string>> SeenEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, string actor, CancellationToken ct);
+    Task<HashSet<string>> SeenEpisodeIdsAsync(IReadOnlyCollection<string> episodes, string actor, CancellationToken ct);
     /// <summary>
     /// 按原周期和客服读取首次查看事实。
     /// </summary>
@@ -218,7 +218,7 @@ public interface IFollowupRepository
     /// <summary>
     /// 批量读取已结案留言周期。
     /// </summary>
-    Task<HashSet<string>> ClosedEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, CancellationToken ct);
+    Task<HashSet<string>> ClosedEpisodeIdsAsync(IReadOnlyCollection<string> episodes, CancellationToken ct);
 }
 
 /// <summary>
@@ -257,7 +257,7 @@ public interface ITaskRepository
     /// <summary>
     /// 按稳定业务键查找任务。
     /// </summary>
-    Task<ReliableTask?> FindAsync(string tenant, string org, string eventKey, CancellationToken ct);
+    Task<ReliableTask?> FindAsync(string eventKey, CancellationToken ct);
     /// <summary>
     /// 业务事务内保存待投递事实。
     /// </summary>
@@ -269,5 +269,5 @@ public interface ITaskRepository
     /// <summary>
     /// 查询某组织的任务用于指标和人工恢复。
     /// </summary>
-    Task<List<ReliableTask>> ListAsync(string tenant, string org, string kind, CancellationToken ct);
+    Task<List<ReliableTask>> ListAsync(string kind, CancellationToken ct);
 }

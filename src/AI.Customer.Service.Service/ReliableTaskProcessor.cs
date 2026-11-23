@@ -68,8 +68,8 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             {
                 error = failure is NotificationDeliveryException delivery ? delivery.Code : failure is BusinessException business ? business.Code : failure.GetType().Name;
                 retryable = failure is not NotificationDeliveryException rejected || rejected.Retryable;
-                logger.LogWarning("任务待恢复 EventKey={EventKey} SessionId={SessionId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Attempt={Attempt} Failure={Failure}",
-                    lease.EventKey, lease.ConversationId, lease.TraceId, lease.TopOrgId, lease.BventId, lease.Attempts, error);
+                logger.LogWarning("任务待恢复 EventKey={EventKey} SessionId={SessionId} TraceId={TraceId} BventId={BventId} Attempt={Attempt} Failure={Failure}",
+                    lease.EventKey, lease.ConversationId, lease.TraceId, lease.BventId, lease.Attempts, error);
             }
             await CompleteAsync(lease, error, retryable, ct);
         }
@@ -79,9 +79,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
     /// 只允许最终失败任务人工恢复，内容、原始来源和稳定投递键保持。
     /// </summary>
     public Task<object> RetrySystemAsync(Actor actor, Scope scope, string eventKey, CancellationToken ct) =>
-        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object>(async () =>
         {
-            var value = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, eventKey, ct) ?? throw BusinessException.Forbidden();
+            var value = await tasks.FindAsync(eventKey, ct) ?? throw BusinessException.Forbidden();
             if (value.ConversationId != scope.ConversationId || value.Kind != "SYSTEM_HANDOFF" || value.State != DeliveryState.DEAD)
             {
                 throw BusinessException.Conflict("只有本会话最终失败的系统任务可重试");
@@ -94,9 +94,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
     /// 持久租约原子领取，失败达到五次后进入死信，过期租约也计入次数。
     /// </summary>
     private Task<ReliableTask?> ClaimAsync(ReliableTask candidate, CancellationToken ct) =>
-        transactions.ExecuteAsync<ReliableTask?>(candidate.TenantId, candidate.TopOrgId, async () =>
+        transactions.ExecuteAsync<ReliableTask?>(async () =>
         {
-            var value = await tasks.FindAsync(candidate.TenantId, candidate.TopOrgId, candidate.EventKey, ct);
+            var value = await tasks.FindAsync(candidate.EventKey, ct);
             var now = clock.GetUtcNow().UtcDateTime;
             if (value is null || !(value.State == DeliveryState.PENDING && value.DueAt <= now || value.State == DeliveryState.CLAIMED && value.LeaseUntil <= now))
             {
@@ -125,9 +125,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
     /// 仅匹配当前租约才能确认，失败按 5、10、20、40 秒退避并最多尝试五次。
     /// </summary>
     private Task<bool> CompleteAsync(ReliableTask lease, string? error, bool retryable, CancellationToken ct) =>
-        transactions.ExecuteAsync(lease.TenantId, lease.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
-            var value = await tasks.FindAsync(lease.TenantId, lease.TopOrgId, lease.EventKey, ct);
+            var value = await tasks.FindAsync(lease.EventKey, ct);
             if (value?.State != DeliveryState.CLAIMED || value.LeaseId != lease.LeaseId)
             {
                 return false;
@@ -175,13 +175,13 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
         using var payload = JsonDocument.Parse(task.Payload);
         var turnId = payload.RootElement.GetProperty("turnId").GetString()!;
         var turn = await conversations.TurnAsync(task.Scope, turnId, ct);
-        var current = await conversations.FindAsync(task.TenantId, task.ConversationId, ct);
+        var current = await conversations.FindAsync(task.ConversationId, ct);
         if (turn?.Status != "FAILED" || current is null || current.Epoch != turn.Epoch ||
             current.HumanEpisodeId is not null || current.CurrentTurnId is not null)
         {
             return;
         }
-        await handoff.RequestAsync(new(task.TenantId, task.PrincipalId, task.TraceId), task.Scope, task.EventKey,
+        await handoff.RequestAsync(new(task.PrincipalId, task.TraceId), task.Scope, task.EventKey,
             TriggerSource.SYSTEM_POLICY, ReasonCode.SYSTEM_FAILURE, ct, failedTurnId: turnId);
     }
 }

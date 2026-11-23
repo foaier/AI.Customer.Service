@@ -24,13 +24,12 @@ public sealed class ConfiguredAssistantRegistry(IOptions<AssistantOptions> optio
     /// <summary>
     /// 从受控配置读取指定租户的助手，助手未注册时拒绝请求。
     /// </summary>
-    public AssistantDefinition Require(string tenant, string assistant) =>
-        options.Value.Items.SingleOrDefault(x => x.TenantId == tenant && x.Id == assistant)
-        ?? throw BusinessException.Forbidden("助手未在当前租户注册");
+    public AssistantDefinition Require(string assistant) =>
+        options.Value.Items.SingleOrDefault(x => x.Id == assistant)
+        ?? throw BusinessException.Forbidden("助手未注册");
 
     /// <summary>
     /// 列举受控配置中属于指定租户的助手。
     /// </summary>
-    public IReadOnlyList<AssistantDefinition> List(string tenant) =>
-        options.Value.Items.Where(x => x.TenantId == tenant).ToArray();
+    public IReadOnlyList<AssistantDefinition> List() => options.Value.Items.ToArray();
 }

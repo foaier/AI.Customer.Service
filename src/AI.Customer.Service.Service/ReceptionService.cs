@@ -49,14 +49,14 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     /// <summary>
     /// 当前成员只读待接单及本人进行中的接待。
     /// </summary>
-    public async Task<List<Episode>> QueueAsync(Actor actor, string org, string assistant, CancellationToken ct) =>
-        await repository.QueueAsync(actor.TenantId, org, assistant, await access.GroupsAsync(actor, org, ct), actor.AccountId, ct);
+    public async Task<List<Episode>> QueueAsync(Actor actor, string assistant, CancellationToken ct) =>
+        await repository.QueueAsync(assistant, await access.GroupsAsync(actor, ct), actor.AccountId, ct);
 
     /// <summary>
     /// 同版本并发认领只有一人成功，默认离线和过期心跳均不阻止手动接单。
     /// </summary>
     public Task<object> ClaimAsync(Actor actor, Scope scope, StateCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var episode = await RequireAsync(scope, null, ct);
             await access.RequireGroupAsync(actor, episode, ct);
@@ -67,7 +67,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             }
             Guard.Version(command.ExpectedVersion, episode.Version);
             var next = ReceptionRules.Transition(episode.Status, "CLAIM");
-            await RequireCapacityAsync(actor, scope.TopOrgId, false, ct);
+            await RequireCapacityAsync(actor, false, ct);
             var conversation = await runtime.RequireAsync(scope, ct);
             if (conversation.HumanEpisodeId != episode.Id)
             {
@@ -84,7 +84,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     /// 访客取消未接单或认领客服结束已接单，与恢复 AI 原子提交。
     /// </summary>
     public Task<object> FinishAsync(Actor actor, Scope scope, StateCommand command, bool visitor, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var episode = await RequireAsync(scope, null, ct);
             if (visitor)
@@ -119,7 +119,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     /// 扫描候选后在组织写锁内复核截止时间并自动结单。
     /// </summary>
     public Task<bool> AutoCloseAsync(Scope scope, string episodeId, DateTime now, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var episode = await repository.EpisodeAsync(scope, episodeId, ct);
             if (episode is null || episode.Status != EpisodeStatus.ACTIVE || episode.AutoCloseAt is null || episode.AutoCloseAt > now)
@@ -137,7 +137,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     /// 同组改派保留原周期及首次来源，目标必须实时外部有效且主动在线有容量。
     /// </summary>
     public Task<object> TransferAsync(Actor actor, Scope scope, TransferCommand command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var episode = await RequireAsync(scope, null, ct);
             await access.RequireGroupAsync(actor, episode, ct);
@@ -154,7 +154,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             }
             var target = actor with { AccountId = Guard.Text(command.TargetAccountId, "改派目标") };
             await access.RequireGroupAsync(target, episode, ct);
-            await RequireCapacityAsync(target, scope.TopOrgId, true, ct);
+            await RequireCapacityAsync(target, true, ct);
             var oldAgent = episode.AgentId;
             episode.Status = ReceptionRules.Transition(episode.Status, "TRANSFER");
             episode.AgentId = target.AccountId;
@@ -176,19 +176,19 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     /// <summary>
     /// 组织级容量在共享写锁内重新统计；首次运行行默认离线，不伪装上线。
     /// </summary>
-    private async Task RequireCapacityAsync(Actor actor, string org, bool online, CancellationToken ct)
+    private async Task RequireCapacityAsync(Actor actor, bool online, CancellationToken ct)
     {
-        var availability = await configuration.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
+        var availability = await configuration.AvailabilityAsync(actor.AccountId, ct);
         if (availability is null)
         {
-            availability = new Availability { Id = actor.AccountId, TenantId = actor.TenantId, TopOrgId = org };
+            availability = new Availability { Id = actor.AccountId };
             configuration.AddAvailability(availability);
         }
         if (online && (availability.Status != AvailabilityStatus.ONLINE || availability.ExpiresAt <= clock.GetUtcNow().UtcDateTime || availability.ExpiresAt is null))
         {
             throw BusinessException.Conflict("改派目标未在线或心跳已失效");
         }
-        if (await repository.ActiveCountAsync(actor.TenantId, org, actor.AccountId, ct) >= options.Value.Capacity)
+        if (await repository.ActiveCountAsync(actor.AccountId, ct) >= options.Value.Capacity)
         {
             throw BusinessException.Conflict("客服同组织接待容量已满");
         }

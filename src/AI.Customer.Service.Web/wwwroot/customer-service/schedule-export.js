@@ -1,4 +1,4 @@
-/** 正式组织营业时间及分页导出页面；复用登录，令牌不进入URL或下载文件。 */
+/** 正式营业时间及分页导出页面；复用登录，令牌不进入URL或下载文件。 */
 (function () {
     "use strict";
     const el = (id) => document.getElementById(id);
@@ -19,25 +19,19 @@
         if (!r.ok || json.isSuccess === false) throw new Error(json.message || json.businessMessage || "请求失败");
         return json.data;
     }
-    /** 固定当前页面组织，缺失时不使用默认组织。 */
-    function query() {
-        const org = el("org").value.trim();
-        if (!org) throw new Error("请先填写组织");
-        return "?topOrgId=" + encodeURIComponent(org);
-    }
     /** 读取持久化版本作为后续CAS依据。 */
     async function load() {
-        const c = await api("configuration/calendar" + query());
-        version = { org: el("org").value.trim(), value: c.version };
+        const c = await api("configuration/calendar");
+        version = { value: c.version };
         for (const key of ["zone", "opens", "closes"]) el("calendar-" + key).value = c[key];
         el("calendar-version").value = c.calendarVersion;
         el("calendar-overrides").value = JSON.stringify(c.overrides, null, 2);
         el("calendar-status").textContent = "已读取工作时间，版本 " + c.version;
     }
-    /** 草稿整体保存，切换组织后必须重新读取版本。 */
+    /** 草稿整体保存，保存前必须先读取版本。 */
     async function save() {
-        if (!version || version.org !== el("org").value.trim()) throw new Error("请先读取当前组织工作时间");
-        const c = await api("configuration/calendar" + query(), "PUT", {
+        if (!version) throw new Error("请先读取工作时间");
+        const c = await api("configuration/calendar", "PUT", {
             version: version.value,
             calendarVersion: el("calendar-version").value.trim(),
             zone: el("calendar-zone").value.trim(),
@@ -54,9 +48,7 @@
             page = Number(el("export-page").value);
         if (!assistant || !Number.isInteger(page) || page < 1) throw new Error("请选择助手和有效页码");
         const data = await api(
-            "exports/conversations" +
-                query() +
-                "&assistantConfigId=" +
+            "exports/conversations?assistantConfigId=" +
                 encodeURIComponent(assistant) +
                 "&page=" +
                 page +

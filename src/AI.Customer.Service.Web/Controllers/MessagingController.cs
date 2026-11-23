@@ -27,8 +27,8 @@ public sealed class MessagingController(RequestAccess request, MessagingService 
     /// 当前认领客服发送纯文本，首次有效消息推进 ACTIVE。
     /// </summary>
     [HttpPost("agents/conversations/{id}/messages")]
-    public async Task<object> AgentSend(string id, string topOrgId, MessageCommand command, CancellationToken ct) =>
-        Success(await messages.SendAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, command, ct));
+    public async Task<object> AgentSend(string id, MessageCommand command, CancellationToken ct) =>
+        Success(await messages.SendAsync(Actor, await RequestAccess.AgentAsync(id, ct), true, command, ct));
 
     /// <summary>
     /// 访客按序列恢复时间线。
@@ -41,8 +41,8 @@ public sealed class MessagingController(RequestAccess request, MessagingService 
     /// 当前认领客服按序列恢复正文。
     /// </summary>
     [HttpGet("agents/conversations/{id}/messages")]
-    public async Task<object> AgentMessages(string id, string topOrgId, CancellationToken ct, long afterSeq = 0, int limit = 100) =>
-        Success(await messages.TimelineAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, afterSeq, limit, ct));
+    public async Task<object> AgentMessages(string id, CancellationToken ct, long afterSeq = 0, int limit = 100) =>
+        Success(await messages.TimelineAsync(Actor, await RequestAccess.AgentAsync(id, ct), true, afterSeq, limit, ct));
 
     /// <summary>
     /// 访客明确确认自身水位。
@@ -55,13 +55,13 @@ public sealed class MessagingController(RequestAccess request, MessagingService 
     /// 客服明确确认自身水位，不能代访客已读。
     /// </summary>
     [HttpPost("agents/conversations/{id}/receipts")]
-    public async Task<object> AgentReceipt(string id, string topOrgId, ReceiptCommand command, CancellationToken ct) =>
-        Success(await messages.ReceiptAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, command, ct));
+    public async Task<object> AgentReceipt(string id, ReceiptCommand command, CancellationToken ct) =>
+        Success(await messages.ReceiptAsync(Actor, await RequestAccess.AgentAsync(id, ct), true, command, ct));
 
     /// <summary>
     /// 仅当前认领者可读接待前的 AI 文本上下文。
     /// </summary>
     [HttpGet("agents/conversations/{id}/history")]
-    public async Task<object> History(string id, string topOrgId, CancellationToken ct) =>
-        Success(await messages.HistoryAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), ct));
+    public async Task<object> History(string id, CancellationToken ct) =>
+        Success(await messages.HistoryAsync(Actor, await RequestAccess.AgentAsync(id, ct), ct));
 }

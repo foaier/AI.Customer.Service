@@ -13,10 +13,10 @@ public sealed class InboxController(RequestAccess request, AccessService access,
     /// 查询本人当前组权限内的消息、留言和待接待提醒。
     /// </summary>
     [HttpGet("agents/inbox/summary")]
-    public async Task<object> Summary(string topOrgId, CancellationToken ct, string? assistantConfigId = null)
+    public async Task<object> Summary(CancellationToken ct, string? assistantConfigId = null)
     {
-        await access.RequireAccountAsync(Actor, topOrgId, ct);
-        if (assistantConfigId is not null) access.RequireAssistant(Actor, topOrgId, assistantConfigId);
-        return Success(await inbox.SummaryAsync(Actor, topOrgId, assistantConfigId, ct));
+        await access.RequireAccountAsync(Actor, ct);
+        if (assistantConfigId is not null) access.RequireAssistant(Actor, assistantConfigId);
+        return Success(await inbox.SummaryAsync(Actor, assistantConfigId, ct));
     }
 }

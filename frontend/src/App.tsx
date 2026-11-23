@@ -120,7 +120,7 @@ export default function App() {
                                         const id = item.assistantConfigId || item.configId || item.id;
                                         return (
                                             <option key={id} value={id}>
-                                                {item.name} · {item.topOrgId}
+                                                {item.name}
                                             </option>
                                         );
                                     })}
@@ -200,7 +200,7 @@ export default function App() {
                             path="/b/inbox"
                             element={
                                 <AgentInbox
-                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    key={activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}
                                     assistant={activeAssistant}
                                 />
                             }
@@ -209,7 +209,7 @@ export default function App() {
                             path="/b/followups"
                             element={
                                 <Followups
-                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    key={activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}
                                     assistant={activeAssistant}
                                 />
                             }
@@ -218,7 +218,7 @@ export default function App() {
                             path="/b/settings"
                             element={
                                 <Settings
-                                    key={`${activeAssistant.topOrgId}:${activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}`}
+                                    key={activeAssistant.assistantConfigId || activeAssistant.configId || activeAssistant.id}
                                     assistant={activeAssistant}
                                 />
                             }

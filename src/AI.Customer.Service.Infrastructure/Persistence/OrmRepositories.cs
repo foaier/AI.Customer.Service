@@ -21,9 +21,9 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
     /// <summary>
     /// 在指定租户内查找会话；事务外使用只读查询，事务内保留变更跟踪。
     /// </summary>
-    public Task<Conversation?> FindAsync(string tenant, string id, CancellationToken ct) =>
+    public Task<Conversation?> FindAsync(string id, CancellationToken ct) =>
         (db.Database.CurrentTransaction is null ? db.Set<Conversation>().AsNoTracking() : db.Set<Conversation>())
-            .SingleOrDefaultAsync(x => x.TenantId == tenant && x.Id == id, ct);
+            .SingleOrDefaultAsync(x => x.Id == id, ct);
     /// <summary>
     /// 将新会话加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -65,16 +65,16 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
     /// <summary>
     /// 统计当前客服有权处理的进行中接待，汇总访客未读消息数、最新序列和已读水位。
     /// </summary>
-    public async Task<List<InboxMessageStats>> InboxMessageStatsAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct)
+    public async Task<List<InboxMessageStats>> InboxMessageStatsAsync(string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct)
     {
-        var episodes = db.Set<Episode>().Where(e => e.TenantId == tenant && e.TopOrgId == org &&
+        var episodes = db.Set<Episode>().Where(e =>
             (assistant == null || e.AssistantConfigId == assistant) && groups.Contains(e.GroupId) && e.AgentId == actor &&
             (e.Status == EpisodeStatus.CLAIMED || e.Status == EpisodeStatus.ACTIVE));
         var owned = await episodes.ToListAsync(ct);
         if (owned.Count == 0) return [];
         var episodeIds = owned.Select(x => x.Id).ToArray();
         var conversationIds = owned.Select(x => x.ConversationId).Distinct().ToArray();
-        var messages = db.Set<HumanMessage>().Where(m => m.TenantId == tenant && m.TopOrgId == org &&
+        var messages = db.Set<HumanMessage>().Where(m =>
             episodeIds.Contains(m.EpisodeId) && m.SenderRole == "VISITOR");
         var latest = await messages.GroupBy(m => m.EpisodeId).Select(g => new
         {
@@ -82,10 +82,10 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
             LastVisitorSeq = g.Max(m => m.Seq),
             LastVisitorMessageAt = g.Max(m => m.CreatedAt)
         }).ToListAsync(ct);
-        var unread = await messages.Where(m => m.Seq > (db.Set<MessageReceipt>().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+        var unread = await messages.Where(m => m.Seq > (db.Set<MessageReceipt>().Where(r =>
                 r.ConversationId == m.ConversationId && r.ActorId == actor).Select(r => (long?)r.ReadSeq).FirstOrDefault() ?? 0))
             .GroupBy(m => m.EpisodeId).Select(g => new { EpisodeId = g.Key, Count = g.Count() }).ToListAsync(ct);
-        var receipts = await db.Set<MessageReceipt>().AsNoTracking().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+        var receipts = await db.Set<MessageReceipt>().AsNoTracking().Where(r =>
             r.ActorId == actor && conversationIds.Contains(r.ConversationId)).Select(r => new { r.ConversationId, r.ReadSeq }).ToListAsync(ct);
         var lastById = latest.ToDictionary(x => x.EpisodeId, StringComparer.Ordinal);
         var unreadById = unread.ToDictionary(x => x.EpisodeId, x => x.Count, StringComparer.Ordinal);
@@ -105,16 +105,15 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
     /// <summary>
     /// 按租户、组织和助手过滤会话，并按创建时间及标识稳定分页。
     /// </summary>
-    public Task<List<Conversation>> PageAsync(string tenant, string org, string assistant, int page, int size, CancellationToken ct) =>
-        db.Set<Conversation>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant)
+    public Task<List<Conversation>> PageAsync(string assistant, int page, int size, CancellationToken ct) =>
+        db.Set<Conversation>().Where(x => x.AssistantConfigId == assistant)
             .OrderBy(x => x.CreatedAt).ThenBy(x => x.Id).Skip((page - 1) * size).Take(size).ToListAsync(ct);
 
     /// <summary>
     /// 查询始终绑定租户、组织、会话、助手和大会。
     /// </summary>
     private IQueryable<T> InScope<T>(Scope scope) where T : ConversationAggregate =>
-        db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
-            x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
+        db.Set<T>().Where(x => x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
 }
 
 /// <summary>
@@ -141,17 +140,16 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
     /// <summary>
     /// 读取当前权限组内待接单或本人处理中的接待，按申请顺序最多返回一百条。
     /// </summary>
-    public Task<List<Episode>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct) =>
-        db.Set<Episode>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant &&
+    public Task<List<Episode>> QueueAsync(string assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct) =>
+        db.Set<Episode>().Where(x => x.AssistantConfigId == assistant &&
             groups.Contains(x.GroupId) && (x.Status == EpisodeStatus.REQUESTED ||
                 ((x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE) && x.AgentId == actor)))
             .OrderBy(x => x.RequestedAt).ThenBy(x => x.Id).Take(100).ToListAsync(ct);
     /// <summary>
     /// 读取当前权限组内待接单或本人处理中的完整接待列表，支持按助手筛选。
     /// </summary>
-    public Task<List<Episode>> InboxEpisodesAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct) =>
-        db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
-            (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) &&
+    public Task<List<Episode>> InboxEpisodesAsync(string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct) =>
+        db.Set<Episode>().AsNoTracking().Where(x => (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) &&
             (x.Status == EpisodeStatus.REQUESTED || ((x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE) && x.AgentId == actor)))
             .OrderBy(x => x.RequestedAt).ThenBy(x => x.Id).ToListAsync(ct);
     /// <summary>
@@ -163,8 +161,8 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
     /// <summary>
     /// 统计指定客服在同租户组织下所有助手的已认领和进行中接待数量。
     /// </summary>
-    public Task<int> ActiveCountAsync(string tenant, string org, string actor, CancellationToken ct) =>
-        db.Set<Episode>().CountAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.AgentId == actor &&
+    public Task<int> ActiveCountAsync(string actor, CancellationToken ct) =>
+        db.Set<Episode>().CountAsync(x => x.AgentId == actor &&
             (x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE), ct);
     /// <summary>
     /// 按完整会话范围和原接待周期读取等待事实。
@@ -200,8 +198,7 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
     /// 所有客服会话聚合均保留完整可信范围。
     /// </summary>
     private IQueryable<T> InScope<T>(Scope scope) where T : ConversationAggregate =>
-        db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
-            x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
+        db.Set<T>().Where(x => x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
 }
 
 /// <summary>
@@ -215,8 +212,8 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
     /// <summary>
     /// 按租户和组织读取群通知配置，尚未初始化时返回空。
     /// </summary>
-    public Task<ChatNotificationConfiguration?> ChatNotificationAsync(string tenant, string org, CancellationToken ct) =>
-        db.Set<ChatNotificationConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+    public Task<ChatNotificationConfiguration?> ChatNotificationAsync(CancellationToken ct) =>
+        db.Set<ChatNotificationConfiguration>().SingleOrDefaultAsync(ct);
     /// <summary>
     /// 将首次创建的组织群通知配置加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -224,8 +221,8 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
     /// <summary>
     /// 按租户和组织读取整体路由配置。
     /// </summary>
-    public Task<RoutingConfiguration?> RoutingAsync(string tenant, string org, CancellationToken ct) =>
-        db.Set<RoutingConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+    public Task<RoutingConfiguration?> RoutingAsync(CancellationToken ct) =>
+        db.Set<RoutingConfiguration>().SingleOrDefaultAsync(ct);
     /// <summary>
     /// 将首次创建的组织路由配置加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -233,8 +230,8 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
     /// <summary>
     /// 按租户和组织读取营业日历，未配置时返回空，由应用层使用部署默认值。
     /// </summary>
-    public Task<CalendarPolicy?> CalendarAsync(string tenant, string org, CancellationToken ct) =>
-        db.Set<CalendarPolicy>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+    public Task<CalendarPolicy?> CalendarAsync(CancellationToken ct) =>
+        db.Set<CalendarPolicy>().SingleOrDefaultAsync(ct);
     /// <summary>
     /// 将首次创建的组织营业日历加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -242,8 +239,8 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
     /// <summary>
     /// 按租户、组织和账号标识读取在线运行状态。
     /// </summary>
-    public Task<Availability?> AvailabilityAsync(string tenant, string org, string account, CancellationToken ct) =>
-        db.Set<Availability>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.Id == account, ct);
+    public Task<Availability?> AvailabilityAsync(string account, CancellationToken ct) =>
+        db.Set<Availability>().SingleOrDefaultAsync(x => x.Id == account, ct);
     /// <summary>
     /// 将账号首次在线运行记录加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -262,8 +259,7 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
     /// 按完整会话范围和原接待周期查找跟进工单。
     /// </summary>
     public Task<Followup?> FindAsync(Scope s, string episode, CancellationToken ct) =>
-        db.Set<Followup>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
-            x.ConversationId == s.ConversationId && x.EpisodeId == episode && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
+        db.Set<Followup>().SingleOrDefaultAsync(x => x.ConversationId == s.ConversationId && x.EpisodeId == episode && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
     /// <summary>
     /// 将跟进工单加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -272,8 +268,7 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
     /// 按完整会话范围和原接待周期读取最终邮件回复。
     /// </summary>
     public Task<FollowupResponse?> ResponseAsync(Scope s, string episode, CancellationToken ct) =>
-        db.Set<FollowupResponse>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
-            x.ConversationId == s.ConversationId && x.EpisodeId == episode && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
+        db.Set<FollowupResponse>().SingleOrDefaultAsync(x => x.ConversationId == s.ConversationId && x.EpisodeId == episode && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
     /// <summary>
     /// 将最终邮件回复正文加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -281,28 +276,25 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
     /// <summary>
     /// 读取指定租户、组织、助手及权限组内的跟进工单，按提交顺序最多返回一百条。
     /// </summary>
-    public Task<List<Followup>> QueueAsync(string tenant, string org, string assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
-        db.Set<Followup>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant && groups.Contains(x.GroupId))
+    public Task<List<Followup>> QueueAsync(string assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
+        db.Set<Followup>().Where(x => x.AssistantConfigId == assistant && groups.Contains(x.GroupId))
             .OrderBy(x => x.SubmittedAt).ThenBy(x => x.Id).Take(100).ToListAsync(ct);
     /// <summary>
     /// 读取指定授权范围内由访客表单创建的完整留言列表，支持按助手筛选。
     /// </summary>
-    public Task<List<Followup>> InboxAsync(string tenant, string org, string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
-        db.Set<Followup>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
-            (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) && x.Origin == "FORM")
+    public Task<List<Followup>> InboxAsync(string? assistant, IReadOnlyCollection<string> groups, CancellationToken ct) =>
+        db.Set<Followup>().AsNoTracking().Where(x => (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) && x.Origin == "FORM")
             .OrderBy(x => x.SubmittedAt).ThenBy(x => x.Id).ToListAsync(ct);
     /// <summary>
     /// 批量查询指定客服已查看的留言周期标识，空候选列表直接返回空集合。
     /// </summary>
-    public async Task<HashSet<string>> SeenEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, string actor, CancellationToken ct) =>
-        episodes.Count == 0 ? [] : (await db.Set<FollowupReceipt>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
-            x.SeenBy == actor && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
+    public async Task<HashSet<string>> SeenEpisodeIdsAsync(IReadOnlyCollection<string> episodes, string actor, CancellationToken ct) =>
+        episodes.Count == 0 ? [] : (await db.Set<FollowupReceipt>().AsNoTracking().Where(x => x.SeenBy == actor && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
     /// <summary>
     /// 按租户、组织、会话、原接待周期和客服标识读取首次查看回执。
     /// </summary>
     public Task<FollowupReceipt?> ReceiptAsync(Scope scope, string episode, string actor, CancellationToken ct) =>
-        db.Set<FollowupReceipt>().SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
-            x.ConversationId == scope.ConversationId && x.EpisodeId == episode && x.SeenBy == actor, ct);
+        db.Set<FollowupReceipt>().SingleOrDefaultAsync(x => x.ConversationId == scope.ConversationId && x.EpisodeId == episode && x.SeenBy == actor, ct);
     /// <summary>
     /// 将客服首次查看留言的回执加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -310,9 +302,8 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
     /// <summary>
     /// 批量查询指定租户组织内最终回复已结案的周期标识，空候选列表直接返回空集合。
     /// </summary>
-    public async Task<HashSet<string>> ClosedEpisodeIdsAsync(string tenant, string org, IReadOnlyCollection<string> episodes, CancellationToken ct) =>
-        episodes.Count == 0 ? [] : (await db.Set<FollowupResponse>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
-            x.State == DeliveryState.CLOSED && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
+    public async Task<HashSet<string>> ClosedEpisodeIdsAsync(IReadOnlyCollection<string> episodes, CancellationToken ct) =>
+        episodes.Count == 0 ? [] : (await db.Set<FollowupResponse>().AsNoTracking().Where(x => x.State == DeliveryState.CLOSED && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
 }
 
 /// <summary>
@@ -331,15 +322,13 @@ public sealed class SurveyRepository(CustomerServiceDbContext db) : ISurveyRepos
     /// 按完整会话范围、轮次和证据类型查找已有证据，供幂等校验使用。
     /// </summary>
     public Task<ResolutionEvidence?> EvidenceAsync(Scope s, string turn, string kind, CancellationToken ct) =>
-        db.Set<ResolutionEvidence>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
-            x.ConversationId == s.ConversationId && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId &&
+        db.Set<ResolutionEvidence>().SingleOrDefaultAsync(x => x.ConversationId == s.ConversationId && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId &&
             x.TurnId == turn && x.Kind == kind, ct);
     /// <summary>
     /// 读取完整会话范围内唯一的满意度调查，不创建新调查。
     /// </summary>
     public Task<Survey?> FindAsync(Scope s, CancellationToken ct) =>
-        db.Set<Survey>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
-            x.ConversationId == s.ConversationId && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
+        db.Set<Survey>().SingleOrDefaultAsync(x => x.ConversationId == s.ConversationId && x.AssistantConfigId == s.AssistantConfigId && x.BventId == s.BventId, ct);
     /// <summary>
     /// 将经过资格校验的满意度调查加入当前上下文，等待共享事务提交。
     /// </summary>
@@ -357,8 +346,8 @@ public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepositor
     /// <summary>
     /// 按租户、组织和稳定事件键查找可靠任务。
     /// </summary>
-    public Task<ReliableTask?> FindAsync(string tenant, string org, string key, CancellationToken ct) =>
-        db.Set<ReliableTask>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.EventKey == key, ct);
+    public Task<ReliableTask?> FindAsync(string key, CancellationToken ct) =>
+        db.Set<ReliableTask>().SingleOrDefaultAsync(x => x.EventKey == key, ct);
     /// <summary>
     /// 将可靠任务加入当前上下文，与业务变更在同一事务内提交。
     /// </summary>
@@ -372,13 +361,13 @@ public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepositor
              (includeConfiguredChatGroups &&
               ((kinds.Contains(x.Kind) && (x.Kind == "EVENT" || x.Kind == "SYSTEM_HANDOFF")) ||
                ((kinds.Contains(x.Kind) || x.Kind == "INTERNAL" || x.Kind == "HANDOFF_NOTIFY") &&
-                db.Set<ChatNotificationConfiguration>().Any(c => c.TenantId == x.TenantId && c.TopOrgId == x.TopOrgId && c.Enabled))))) &&
+                db.Set<ChatNotificationConfiguration>().Any(c =>  c.Enabled))))) &&
             ((x.State == DeliveryState.PENDING && x.DueAt <= now) || (x.State == DeliveryState.CLAIMED && x.LeaseUntil <= now)))
             .OrderBy(x => x.DueAt).ThenBy(x => x.Id).Take(limit).ToListAsync(ct);
     /// <summary>
     /// 按租户、组织和任务类型读取最近创建的任务，最多返回一千条。
     /// </summary>
-    public Task<List<ReliableTask>> ListAsync(string tenant, string org, string kind, CancellationToken ct) =>
-        db.Set<ReliableTask>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.Kind == kind)
+    public Task<List<ReliableTask>> ListAsync(string kind, CancellationToken ct) =>
+        db.Set<ReliableTask>().Where(x => x.Kind == kind)
             .OrderByDescending(x => x.CreatedAt).Take(1000).ToListAsync(ct);
 }

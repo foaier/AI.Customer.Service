@@ -78,8 +78,6 @@ public sealed class TestApplication : WebApplicationFactory<Program>
             ["Authentication:Audience"] = "tests",
             ["Authentication:SigningKey"] = SigningKey,
             ["Assistants:Items:0:Id"] = "assistant-a",
-            ["Assistants:Items:0:TenantId"] = "tenant-a",
-            ["Assistants:Items:0:TopOrgId"] = "org-a",
             ["Assistants:Items:0:Name"] = "测试助手",
             ["Assistants:Items:0:AllowAnonymous"] = "true",
             ["Assistants:Items:0:ExternalIdentityRequired"] = ExternalIdentityRequired.ToString(),
@@ -128,17 +126,17 @@ public sealed class TestApplication : WebApplicationFactory<Program>
     /// <summary>
     /// 创建携带正式签名 JWT 的 HTTP 客户端，账号不会从测试身份头注入。
     /// </summary>
-    public HttpClient Client(string account = "visitor", string tenant = "tenant-a")
+    public HttpClient Client(string account = "visitor")
     {
         var client = CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(account, tenant));
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token(account));
         return client;
     }
 
     /// <summary>
     /// 按正式规则生成测试 JWT，支持租户和过期验证。
     /// </summary>
-    public static string Token(string account, string tenant = "tenant-a", bool expired = false) =>
+    public static string Token(string account, bool expired = false) =>
         new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
             Issuer = "tests",
@@ -146,7 +144,7 @@ public sealed class TestApplication : WebApplicationFactory<Program>
             IssuedAt = DateTime.UtcNow.AddMinutes(-2),
             NotBefore = DateTime.UtcNow.AddMinutes(-2),
             Expires = DateTime.UtcNow.AddMinutes(expired ? -1 : 10),
-            Subject = new ClaimsIdentity([new Claim("accountId", account), new Claim("tenantId", tenant)]),
+            Subject = new ClaimsIdentity([new Claim("accountId", account)]),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey)), SecurityAlgorithms.HmacSha256)
         });
 
@@ -156,7 +154,7 @@ public sealed class TestApplication : WebApplicationFactory<Program>
     public async Task ConfigureAsync()
     {
         using var manager = Client("agent-a");
-        var current = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+        var current = await GetAsync(manager, "/api/customer-service/configuration");
         var groups = current.GetProperty("groups").EnumerateArray().Select(x => new
         {
             id = x.GetProperty("id").GetString(),
@@ -164,7 +162,7 @@ public sealed class TestApplication : WebApplicationFactory<Program>
             name = x.GetProperty("name").GetString(),
             members = new[] { new { accountId = "agent-a", displayName = "客户端名不授予权限" }, new { accountId = "agent-b", displayName = "客服乙" } }
         }).ToArray();
-        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a", new
+        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration", new
         {
             version = current.GetProperty("version").GetInt64(),
             groups,
@@ -259,19 +257,19 @@ public sealed class TestDirectory : IAccountDirectory
     /// <summary>
     /// 仅允许固定测试租户组织中未被禁用的预设账号，并返回测试用权威名称。
     /// </summary>
-    public Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct) =>
-        tenant == "tenant-a" && org == "org-a" && !Disabled.Contains(account) && account is "agent-a" or "agent-b" or "visitor"
+    public Task<Member> RequireAsync(string account, CancellationToken ct) =>
+        !Disabled.Contains(account) && account is "agent-a" or "agent-b" or "visitor"
             ? Task.FromResult(new Member(account, "权威名称-" + account))
             : throw BusinessException.Forbidden("外部账号未启用");
     /// <summary>
     /// 返回固定的单页测试人员组，用于隔离真实用户中心依赖。
     /// </summary>
-    public Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string tenant, string org, string? keyword, string? cursor, int limit, CancellationToken ct) =>
+    public Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string? keyword, string? cursor, int limit, CancellationToken ct) =>
         Task.FromResult(new DirectoryPage<DirectoryGroup>("READY", [new("external-group", "用户中心组")], null, false));
     /// <summary>
     /// 返回固定的两位测试客服候选，供目录及路由回归使用。
     /// </summary>
-    public Task<DirectoryPage<Member>> AccountsAsync(string tenant, string org, string group, string? keyword, string? cursor, int limit, CancellationToken ct) =>
+    public Task<DirectoryPage<Member>> AccountsAsync(string group, string? keyword, string? cursor, int limit, CancellationToken ct) =>
         Task.FromResult(new DirectoryPage<Member>("READY", [new("agent-a", "客服甲"), new("agent-b", "客服乙")], null, false));
 }
 

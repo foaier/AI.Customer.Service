@@ -10,15 +10,15 @@ public interface IAccountDirectory
     /// <summary>
     /// 实时核验账号、租户及目标组织启用关系。
     /// </summary>
-    Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct);
+    Task<Member> RequireAsync(string account, CancellationToken ct);
     /// <summary>
     /// 分页读取用户中心既有人员组。
     /// </summary>
-    Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string tenant, string org, string? keyword, string? cursor, int limit, CancellationToken ct);
+    Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string? keyword, string? cursor, int limit, CancellationToken ct);
     /// <summary>
     /// 先核验组归属，再分页读取最小账号候选。
     /// </summary>
-    Task<DirectoryPage<Member>> AccountsAsync(string tenant, string org, string group, string? keyword, string? cursor, int limit, CancellationToken ct);
+    Task<DirectoryPage<Member>> AccountsAsync(string group, string? keyword, string? cursor, int limit, CancellationToken ct);
 }
 
 /// <summary>
@@ -29,11 +29,11 @@ public interface IAssistantRegistry
     /// <summary>
     /// 读取属于指定租户的可信助手，未知助手拒绝。
     /// </summary>
-    AssistantDefinition Require(string tenant, string assistant);
+    AssistantDefinition Require(string assistant);
     /// <summary>
     /// 列举指定租户可选择的可信助手。
     /// </summary>
-    IReadOnlyList<AssistantDefinition> List(string tenant);
+    IReadOnlyList<AssistantDefinition> List();
     /// <summary>
     /// 匿名创建只允许部署明确公开且全局引用唯一的助手。
     /// </summary>
@@ -45,12 +45,6 @@ public interface IAssistantRegistry
 /// </summary>
 /// <param name="Id">
 /// 助手配置引用。
-/// </param>
-/// <param name="TenantId">
-/// 数据归属租户。
-/// </param>
-/// <param name="TopOrgId">
-/// 数据归属组织。
 /// </param>
 /// <param name="BventId">
 /// 大会引用。
@@ -67,7 +61,7 @@ public interface IAssistantRegistry
 /// <param name="ExternalIdentityRequired">
 /// 新会话是否必须先绑定第三方身份再聊天，默认 false。
 /// </param>
-public sealed record AssistantDefinition(string Id, string TenantId, string TopOrgId, string? BventId = null, string Name = "智能客服", string Language = "zh-CN",
+public sealed record AssistantDefinition(string Id, string? BventId = null, string Name = "智能客服", string Language = "zh-CN",
     bool AllowAnonymous = false, bool ExternalIdentityRequired = false);
 
 /// <summary>

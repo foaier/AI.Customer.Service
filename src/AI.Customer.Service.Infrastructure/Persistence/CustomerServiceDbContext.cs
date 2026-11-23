@@ -28,8 +28,8 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         Configure<ConversationExternalIdentity>(model, "ai_conversation_external_identity");
         model.Entity<AnonymousConversationAccess>().HasIndex(x => x.CredentialHash).IsUnique();
         model.Entity<AnonymousConversationAccess>().Property(x => x.CredentialHash).HasMaxLength(64);
-        model.Entity<AnonymousConversationAccess>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId }).IsUnique();
-        model.Entity<ConversationExternalIdentity>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ProviderCode }).IsUnique();
+        model.Entity<AnonymousConversationAccess>().HasIndex(x => x.ConversationId).IsUnique();
+        model.Entity<ConversationExternalIdentity>().HasIndex(x => new { x.ConversationId, x.ProviderCode }).IsUnique();
         model.Entity<ConversationExternalIdentity>().Property(x => x.ExternalAuthId).HasMaxLength(512);
         model.Entity<ConversationExternalIdentity>().ToTable(t => t.HasCheckConstraint("ck_external_identity_provider", "provider_code = 'ADSALE'"));
         Configure<Episode>(model, "cs_handoff_episode");
@@ -54,35 +54,31 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         model.Entity<ChatNotificationConfiguration>().Property(x => x.ApiTokenCiphertext).HasMaxLength(8192);
 
         Json(model.Entity<ChatNotificationConfiguration>().Property(x => x.ChatGroup));
-        model.Entity<ChatNotificationConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
+        model.Entity<ChatNotificationConfiguration>().HasIndex(x => x.Id).IsUnique();
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Groups));
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Routes));
         Json(model.Entity<CalendarPolicy>().Property(x => x.Overrides));
-        model.Entity<Conversation>().HasIndex(x => new { x.TenantId, x.Id }).IsUnique();
-        model.Entity<RoutingConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
-        model.Entity<CalendarPolicy>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
-        model.Entity<HumanMessage>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.Seq }).IsUnique();
-        model.Entity<HumanMessage>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.SenderId, x.ClientMsgId }).IsUnique();
-        model.Entity<MessageReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ActorId }).IsUnique();
-        model.Entity<Survey>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId }).IsUnique();
-        model.Entity<ResolutionEvidence>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.TurnId, x.Kind }).IsUnique();
-        model.Entity<Waiting>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
-        model.Entity<Followup>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
-        model.Entity<FollowupReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.EpisodeId, x.SeenBy }).IsUnique();
-        model.Entity<FollowupResponse>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
-        model.Entity<ReliableTask>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EventKey }).IsUnique();
+        model.Entity<Conversation>().HasIndex(x => x.Id).IsUnique();
+        model.Entity<RoutingConfiguration>().HasIndex(x => x.Id).IsUnique();
+        model.Entity<CalendarPolicy>().HasIndex(x => x.Id).IsUnique();
+        model.Entity<HumanMessage>().HasIndex(x => new { x.ConversationId, x.Seq }).IsUnique();
+        model.Entity<HumanMessage>().HasIndex(x => new { x.ConversationId, x.SenderId, x.ClientMsgId }).IsUnique();
+        model.Entity<MessageReceipt>().HasIndex(x => new { x.ConversationId, x.ActorId }).IsUnique();
+        model.Entity<Survey>().HasIndex(x => x.ConversationId).IsUnique();
+        model.Entity<ResolutionEvidence>().HasIndex(x => new { x.ConversationId, x.TurnId, x.Kind }).IsUnique();
+        model.Entity<Waiting>().HasIndex(x => new { x.ConversationId, x.EpisodeId }).IsUnique();
+        model.Entity<Followup>().HasIndex(x => new { x.ConversationId, x.EpisodeId }).IsUnique();
+        model.Entity<FollowupReceipt>().HasIndex(x => new { x.ConversationId, x.EpisodeId, x.SeenBy }).IsUnique();
+        model.Entity<FollowupResponse>().HasIndex(x => new { x.ConversationId, x.EpisodeId }).IsUnique();
+        model.Entity<ReliableTask>().HasIndex(x => x.EventKey).IsUnique();
         model.Entity<ReliableTask>().HasIndex(x => new { x.Kind, x.State, x.DueAt });
-        model.Entity<CommandReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ActorId, x.Action, x.RequestId }).IsUnique();
-        model.Entity<Episode>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.AssistantConfigId, x.Status });
+        model.Entity<CommandReceipt>().HasIndex(x => new { x.ConversationId, x.ActorId, x.Action, x.RequestId }).IsUnique();
+        model.Entity<Episode>().HasIndex(x => new { x.AssistantConfigId, x.Status });
         model.Entity<Episode>().HasIndex(x => new { x.Status, x.AutoCloseAt, x.Id });
         model.Entity<FollowupReceipt>().HasOne<Followup>().WithMany()
-            .HasForeignKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
-            .HasPrincipalKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
+            .HasForeignKey(x => new { x.ConversationId, x.EpisodeId })
+            .HasPrincipalKey(x => new { x.ConversationId, x.EpisodeId })
             .OnDelete(DeleteBehavior.Restrict);
-        model.Entity<OrganizationGate>().ToTable("cs_organization_gate");
-        model.Entity<OrganizationGate>().HasKey(x => new { x.TenantId, x.TopOrgId });
-        model.Entity<OrganizationGate>().Property(x => x.TenantId).HasMaxLength(64);
-        model.Entity<OrganizationGate>().Property(x => x.TopOrgId).HasMaxLength(64);
         // 固定 DDL 约束只在 ORM 建模层声明，所有运行查询继续由 LINQ 和 ORM 生成。
         model.Entity<Conversation>().ToTable(t => t.HasCheckConstraint("ck_conversation_identity", "conversation_id = id AND epoch >= 1 AND next_seq >= 0"));
         model.Entity<Episode>().ToTable(t =>
@@ -117,21 +113,20 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
     }
 
     /// <summary>
-    /// 每个聚合独立表及完整复合主键，组织字段同时参加引用完整性。
+    /// 每个聚合独立表及唯一主键，关联字段参加引用完整性。
     /// </summary>
     private static void Configure<T>(ModelBuilder model, string table) where T : Aggregate
     {
         var entity = model.Entity<T>();
         entity.HasBaseType((Type?)null);
         entity.ToTable(table, definition => definition.HasCheckConstraint("ck_" + table + "_scope",
-            "tenant_id <> '' AND top_org_id <> '' AND id <> '' AND version >= 1"));
-        entity.HasKey(x => new { x.TenantId, x.TopOrgId, x.Id });
+            "id <> '' AND version >= 1"));
+        entity.HasKey(x => x.Id);
         entity.Property(x => x.Version).IsConcurrencyToken();
         foreach (var property in typeof(T).GetProperties().Where(p => p.PropertyType == typeof(string)))
         {
             entity.Property(property.Name).HasMaxLength(property.Name switch
             {
-                "TenantId" or "TopOrgId" => 64,
                 "Content" or "UserContent" or "AssistantContent" or "Payload" or "ResultJson" => 65535,
                 "Subject" => 200,
                 "UserFacingReason" => 500,
@@ -146,7 +141,7 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
             if (typeof(T) != typeof(Conversation))
             {
                 entity.HasOne<Conversation>().WithMany()
-                    .HasForeignKey(nameof(Aggregate.TenantId), nameof(Aggregate.TopOrgId), nameof(ConversationAggregate.ConversationId))
+                    .HasForeignKey(nameof(ConversationAggregate.ConversationId))
                     .OnDelete(DeleteBehavior.Restrict);
             }
         }
@@ -165,23 +160,4 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
             value => JsonSerializer.Serialize(value, JsonDefaults.Options).GetHashCode(),
             value => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value, JsonDefaults.Options), JsonDefaults.Options)!));
     }
-}
-
-/// <summary>
-/// 基础设施组织写入门闩，跨进程串行容量与本地撤权，不保存业务主数据。
-/// </summary>
-internal sealed class OrganizationGate
-{
-    /// <summary>
-    /// 认证租户，复合主键组成部分。
-    /// </summary>
-    public string TenantId { get; set; } = "";
-    /// <summary>
-    /// 核验组织，复合主键组成部分。
-    /// </summary>
-    public string TopOrgId { get; set; } = "";
-    /// <summary>
-    /// 事务持有期间原子递增，用 ORM 类型化更新获取数据库写锁。
-    /// </summary>
-    public long Version { get; set; }
 }

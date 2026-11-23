@@ -42,10 +42,10 @@ public sealed partial class WorkflowTests
     public async Task Cleanup() => await application.DisposeAsync();
 
     /// <summary>
-    /// 匿名、过期和跨租户会话访问均失败。
+    /// 匿名和过期凭据访问失败。
     /// </summary>
     [TestMethod]
-    public async Task AuthenticationAndTenantIsolation()
+    public async Task AuthenticationRejectsAnonymousAndExpired()
     {
         using var anonymous = application.CreateClient();
         Assert.AreEqual(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/agent/sessionId")).StatusCode);
@@ -54,8 +54,7 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(HttpStatusCode.Unauthorized, (await expired.GetAsync("/api/agent/sessionId")).StatusCode);
         using var visitor = application.Client();
         var id = await SessionAsync(visitor);
-        using var other = application.Client("visitor", "tenant-b");
-        await GetAsync(other, VisitorPath(id) + "/handoffs/latest", HttpStatusCode.Forbidden);
+        await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
     }
 
     /// <summary>
@@ -65,16 +64,16 @@ public sealed partial class WorkflowTests
     public async Task RoutingReadAndCompareAndSwap()
     {
         using var manager = application.Client("agent-a");
-        var initial = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+        var initial = await GetAsync(manager, "/api/customer-service/configuration");
         Assert.AreEqual(0L, initial.GetProperty("version").GetInt64());
         await using (var scope = application.Services.CreateAsyncScope())
         {
             Assert.AreEqual(0, await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<RoutingConfiguration>().CountAsync());
         }
         await application.ConfigureAsync();
-        var saved = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+        var saved = await GetAsync(manager, "/api/customer-service/configuration");
         Assert.AreEqual("权威名称-agent-a", saved.GetProperty("groups")[0].GetProperty("members")[0].GetProperty("displayName").GetString());
-        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a",
+        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration",
             new { version = 0, groups = saved.GetProperty("groups"), routes = saved.GetProperty("routes") }, HttpStatusCode.Conflict);
     }
 
@@ -98,7 +97,7 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(2L, conversation.Epoch);
         Assert.AreEqual(TriggerSource.VISITOR_DIRECT_REQUEST, (await db.Set<Episode>().SingleAsync()).TriggerSource);
         Assert.AreEqual("visitor@example.com", (await db.Set<Waiting>().SingleAsync()).Email);
-        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", tenantId = "tenant-b" }, HttpStatusCode.BadRequest);
+        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", forgedField = "forged" }, HttpStatusCode.BadRequest);
     }
 
     /// <summary>
@@ -114,8 +113,8 @@ public sealed partial class WorkflowTests
         using var first = application.Client("agent-a");
         using var second = application.Client("agent-b");
         var responses = await Task.WhenAll(
-            first.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim-a", expectedVersion = 1 }),
-            second.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim-b", expectedVersion = 1 }));
+            first.PostAsJsonAsync(AgentPath(id) + "/claim", new { requestId = "claim-a", expectedVersion = 1 }),
+            second.PostAsJsonAsync(AgentPath(id) + "/claim", new { requestId = "claim-b", expectedVersion = 1 }));
         CollectionAssert.AreEquivalent(new[] { HttpStatusCode.OK, HttpStatusCode.Conflict }, responses.Select(x => x.StatusCode).ToArray());
         foreach (var response in responses)
         {
@@ -139,8 +138,8 @@ public sealed partial class WorkflowTests
         await RequestAsync(visitor, two, "two");
         using var agent = application.Client("agent-a");
         var responses = await Task.WhenAll(
-            agent.PostAsJsonAsync(AgentPath(one) + "/claim?topOrgId=org-a", new { requestId = "one", expectedVersion = 1 }),
-            agent.PostAsJsonAsync(AgentPath(two) + "/claim?topOrgId=org-a", new { requestId = "two", expectedVersion = 1 }));
+            agent.PostAsJsonAsync(AgentPath(one) + "/claim", new { requestId = "one", expectedVersion = 1 }),
+            agent.PostAsJsonAsync(AgentPath(two) + "/claim", new { requestId = "two", expectedVersion = 1 }));
         CollectionAssert.AreEquivalent(new[] { HttpStatusCode.OK, HttpStatusCode.Conflict }, responses.Select(x => x.StatusCode).ToArray());
         foreach (var response in responses)
         {
@@ -161,7 +160,7 @@ public sealed partial class WorkflowTests
         await RequestAsync(visitor, id);
         var results = await Task.WhenAll(
             visitor.PostAsJsonAsync(VisitorPath(id) + "/reception/cancel", new { requestId = "cancel", expectedVersion = 1 }),
-            agent.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 }));
+            agent.PostAsJsonAsync(AgentPath(id) + "/claim", new { requestId = "claim", expectedVersion = 1 }));
         Assert.AreEqual(1, results.Count(x => x.StatusCode == HttpStatusCode.OK));
         Assert.AreEqual(1, results.Count(x => x.StatusCode == HttpStatusCode.Conflict));
         await using var scope = application.Services.CreateAsyncScope();
@@ -186,22 +185,22 @@ public sealed partial class WorkflowTests
         using var agent = application.Client("agent-a");
         var id = await SessionAsync(visitor);
         await RequestAsync(visitor, id);
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 });
-        var first = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "claim", expectedVersion = 1 });
+        var first = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
         Assert.AreEqual(1L, first.GetProperty("seq").GetInt64());
-        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
         Assert.AreEqual(first.GetProperty("messageId").GetString(), replay.GetProperty("messageId").GetString());
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "改写" }, HttpStatusCode.Conflict);
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", new { clientMsgId = "hello", content = "改写" }, HttpStatusCode.Conflict);
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/receipts", new { kind = "READ", seq = 2 }, HttpStatusCode.BadRequest);
         var receipt = await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/receipts", new { kind = "READ", seq = 1 });
         Assert.AreEqual(1L, receipt.GetProperty("deliveredSeq").GetInt64());
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/receipts", new { kind = "READ", seq = 0 });
         var timeline = await GetAsync(visitor, VisitorPath(id) + "/messages");
         Assert.AreEqual(1L, timeline.GetProperty("receipt").GetProperty("readSeq").GetInt64());
-        var current = await GetAsync(agent, AgentPath(id) + "/reception?topOrgId=org-a");
+        var current = await GetAsync(agent, AgentPath(id) + "/reception");
         Assert.AreEqual("ACTIVE", current.GetProperty("status").GetString());
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/resolve?topOrgId=org-a", new { requestId = "resolve", expectedVersion = current.GetProperty("version").GetInt64() });
-        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/resolve", new { requestId = "resolve", expectedVersion = current.GetProperty("version").GetInt64() });
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "late", content = "新消息" }, HttpStatusCode.Conflict);
     }
 
@@ -217,15 +216,15 @@ public sealed partial class WorkflowTests
         using var second = application.Client("agent-b");
         var id = await SessionAsync(visitor);
         await RequestAsync(visitor, id);
-        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 });
+        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "claim", expectedVersion = 1 });
         var transfer = new { requestId = "transfer", expectedVersion = 2, targetAccountId = "agent-b" };
-        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer, HttpStatusCode.Conflict);
-        await SendAsync(second, HttpMethod.Post, "/api/customer-service/agents/availability?topOrgId=org-a&assistantConfigId=assistant-a", new { status = "ONLINE" });
-        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer);
-        var replay = await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer);
+        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer", transfer, HttpStatusCode.Conflict);
+        await SendAsync(second, HttpMethod.Post, "/api/customer-service/agents/availability?assistantConfigId=assistant-a", new { status = "ONLINE" });
+        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer", transfer);
+        var replay = await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer", transfer);
         Assert.IsTrue(replay.GetProperty("replayed").GetBoolean());
-        await GetAsync(first, AgentPath(id) + "/messages?topOrgId=org-a", HttpStatusCode.Forbidden);
-        await GetAsync(second, AgentPath(id) + "/messages?topOrgId=org-a");
+        await GetAsync(first, AgentPath(id) + "/messages", HttpStatusCode.Forbidden);
+        await GetAsync(second, AgentPath(id) + "/messages");
         var latest = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
         Assert.AreEqual("VISITOR_DIRECT_REQUEST", latest.GetProperty("episode").GetProperty("triggerSource").GetString());
     }
@@ -238,10 +237,10 @@ public sealed partial class WorkflowTests
     {
         await application.ConfigureAsync();
         using var agent = application.Client("agent-a");
-        const string path = "/api/customer-service/agents/availability?topOrgId=org-a&assistantConfigId=assistant-a";
+        const string path = "/api/customer-service/agents/availability?assistantConfigId=assistant-a";
         var online = await SendAsync(agent, HttpMethod.Post, path, new { status = "ONLINE" });
         await SendAsync(agent, HttpMethod.Post, path, new { status = "OFFLINE" });
-        await SendAsync(agent, HttpMethod.Post, "/api/customer-service/agents/availability/heartbeat?topOrgId=org-a&assistantConfigId=assistant-a",
+        await SendAsync(agent, HttpMethod.Post, "/api/customer-service/agents/availability/heartbeat?assistantConfigId=assistant-a",
             new { version = online.GetProperty("version").GetInt64() }, HttpStatusCode.Conflict);
     }
 
@@ -288,17 +287,17 @@ public sealed partial class WorkflowTests
         var form = await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/followup-form", body);
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/followup-form", body);
         var path = AgentPath(id) + "/followups/" + episode;
-        var summary = await GetAsync(agent, path + "/form?topOrgId=org-a");
+        var summary = await GetAsync(agent, path + "/form");
         Assert.IsFalse(summary.TryGetProperty("content", out _));
-        await GetAsync(agent, path + "?topOrgId=org-a", HttpStatusCode.Forbidden);
-        await SendAsync(agent, HttpMethod.Post, path + "/claim?topOrgId=org-a", new { requestId = "form-claim", expectedVersion = 1 });
-        await SendAsync(agent, HttpMethod.Post, path + "/reply?topOrgId=org-a",
+        await GetAsync(agent, path + "", HttpStatusCode.Forbidden);
+        await SendAsync(agent, HttpMethod.Post, path + "/claim", new { requestId = "form-claim", expectedVersion = 1 });
+        await SendAsync(agent, HttpMethod.Post, path + "/reply",
             new { requestId = "reply", expectedVersion = 1, subject = "咨询回复", content = "请携带证件前往服务台。" });
-        await SendAsync(agent, HttpMethod.Post, path + "/close?topOrgId=org-a", new { requestId = "close", expectedVersion = 2 }, HttpStatusCode.Conflict);
+        await SendAsync(agent, HttpMethod.Post, path + "/close", new { requestId = "close", expectedVersion = 2 }, HttpStatusCode.Conflict);
         await RunWorkerAsync();
-        var sent = await GetAsync(agent, path + "?topOrgId=org-a");
+        var sent = await GetAsync(agent, path + "");
         Assert.AreEqual("SENT", sent.GetProperty("state").GetString());
-        await SendAsync(agent, HttpMethod.Post, path + "/close?topOrgId=org-a", new { requestId = "close", expectedVersion = sent.GetProperty("version").GetInt64() });
+        await SendAsync(agent, HttpMethod.Post, path + "/close", new { requestId = "close", expectedVersion = sent.GetProperty("version").GetInt64() });
         Assert.IsTrue(application.Notification.Accepted.Contains("reply:" + form.GetProperty("ticketId").GetString()));
     }
 
@@ -396,8 +395,8 @@ public sealed partial class WorkflowTests
         await using (var scope = application.Services.CreateAsyncScope())
         {
             var runtime = scope.ServiceProvider.GetRequiredService<ConversationRuntime>();
-            bound = (await runtime.VisitorAsync(new("tenant-a", "visitor", "trace"), id, default)).Scope;
-            turn = await runtime.BeginAsync(new("tenant-a", "visitor", "trace"), bound, "请问如何办理？", default);
+            bound = (await runtime.VisitorAsync(new("visitor", "trace"), id, default)).Scope;
+            turn = await runtime.BeginAsync(new("visitor", "trace"), bound, "请问如何办理？", default);
         }
         await RequestAsync(visitor, id);
         await using (var scope = application.Services.CreateAsyncScope())
@@ -440,7 +439,7 @@ public sealed partial class WorkflowTests
         await RequestAsync(visitor, id);
         var client = application.Server.CreateWebSocketClient();
         using var socket = await client.ConnectAsync(new Uri("ws://localhost/api/customer-service/realtime/ws"), default);
-        await socket.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, topOrgId = "org-a", assistantConfigId = "assistant-a", afterSeq = 0 }), WebSocketMessageType.Text, true, default);
+        await socket.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, assistantConfigId = "assistant-a", afterSeq = 0 }), WebSocketMessageType.Text, true, default);
         var buffer = new byte[16384];
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         var result = await socket.ReceiveAsync(buffer.AsMemory(), timeout.Token);
@@ -450,14 +449,14 @@ public sealed partial class WorkflowTests
         await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
         var queryToken = Uri.EscapeDataString("Bearer " + Token("visitor"));
         using var querySocket = await client.ConnectAsync(
-            new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={queryToken}&agent=false&conversationId={Uri.EscapeDataString(id)}&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"),
+            new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={queryToken}&agent=false&conversationId={Uri.EscapeDataString(id)}&assistantConfigId=assistant-a&afterSeq=0"),
             default);
         var queryResult = await querySocket.ReceiveAsync(buffer.AsMemory(), timeout.Token);
         using var querySnapshot = JsonDocument.Parse(buffer.AsMemory(0, queryResult.Count));
         Assert.AreEqual("snapshot", querySnapshot.RootElement.GetProperty("type").GetString());
         await querySocket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "测试完成", timeout.Token);
         using var invalid = await client.ConnectAsync(new Uri("ws://localhost/api/customer-service/realtime/ws"), default);
-        await invalid.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, afterSeq = 0, tenantId = "fake" }), WebSocketMessageType.Text, true, default);
+        await invalid.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, afterSeq = 0, forgedField = "fake" }), WebSocketMessageType.Text, true, default);
         var close = await invalid.ReceiveAsync(buffer.AsMemory(), timeout.Token);
         Assert.AreEqual(WebSocketMessageType.Close, close.MessageType);
         Assert.AreEqual(WebSocketCloseStatus.PolicyViolation, invalid.CloseStatus);

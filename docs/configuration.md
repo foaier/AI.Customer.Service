@@ -10,14 +10,11 @@
 | `Authentication:Issuer`       | 空；精确 JWT issuer                | 全应用；本地签名校验时必填，必须与登录平台一致             |
 | `Authentication:Audience`     | 空；精确 audience                  | 全应用；未配正确受众不能访问业务 API                       |
 | `Authentication:SigningKey`   | 空；可选 HS256 密钥，至少 32 字节  | 全应用；仅已有登录系统使用共享签名时配置，不用于签发新身份 |
-| `Authentication:TenantClaim`  | `tenantId`；非空声明名             | 身份解析；缺失声明拒绝，最长 64 字符                       |
 | `Authentication:AccountClaim` | `accountId`；非空声明名            | 身份解析；缺失声明拒绝，最长 128 字符                      |
 | `Authentication:ClientId`     | 空；正式 OIDC 客户端 ID            | 浏览器登录；为空时显示未配置，不自动赋身份                 |
 | `Authentication:Scope`        | `openid profile`；平台许可的 scope | 浏览器登录；不从此字段推导客服组权限                       |
 | `Assistants:Items`            | 空数组                             | 全应用可信注册表；未知助手拒绝，不能由请求或模型补造       |
-| `Assistants:Items:*:Id`       | 必填，非空 ≤128 字符               | 助手引用，同租户唯一                                       |
-| `Assistants:Items:*:TenantId` | 必填，非空 ≤64 字符                | 助手的数据租户，必须匹配签名主体                           |
-| `Assistants:Items:*:TopOrgId` | 必填，非空 ≤64 字符                | 助手的唯一所属组织                                         |
+| `Assistants:Items:*:Id`       | 必填，非空 ≤128 字符               | 助手引用，全应用唯一                                       |
 | `Assistants:Items:*:BventId`  | null；非空时 ≤128 字符             | 可选大会引用，空表示组织助手                               |
 | `Assistants:Items:*:Name`     | `智能客服`                         | 助手展示名，不参与权限                                     |
 | `Assistants:Items:*:Language` | `zh-CN`                            | 返回给页面的默认语言，不改变身份                           |
@@ -43,31 +40,30 @@ API 和 WebSocket 均验证 issuer、audience、签名和 exp，时钟容差为 
 
 | 方法和路径                                                     | 请求/响应关键约定                                                                |
 | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| POST `/api/AccountUser/v1/Info`                                | `{accountId}`；验证 returnObj 的 accountId/tenantId                              |
-| GET `/api/Organization/v1/GetOrgAccountLiteList?accountId=...` | returnObj 中 orgId 匹配且 status=1（兼容 `ENABLED`）                             |
-| POST `/api/accountGroup/v1/list`                               | `OrgId=null, OrganizationId, Search, PageIndex, PageSize, Skip`，保留 PascalCase |
+| POST `/api/AccountUser/v1/Info`                                | `{accountId}`；验证 returnObj 的 accountId                                      |
+| POST `/api/accountGroup/v1/list`                               | `Search, PageIndex, PageSize, Skip`，保留 PascalCase |
 | POST `/api/accountGroup/v1/accountDetails`                     | `AccountGroupId, Search, PageIndex, PageSize, Skip`，先核验组归属                |
 
-四接口要求 `isSuccess=true` 和非空 `returnObj`。目录 pager 必须提供 pageIndex/pageSize/totalPage，游标绑定租户、组织、组、关键词和页大小，拒绝跨范围复用。外部账号组与本地四类客服业务组是不同事实，本地不修改用户中心数据。
+上述接口要求 `isSuccess=true` 和非空 `returnObj`。目录 pager 必须提供 pageIndex/pageSize/totalPage，游标绑定组、关键词和页大小，拒绝跨范围复用。外部账号组与本地四类客服业务组是不同事实，本地不修改用户中心数据。
 
 主题分类单次最多等待 5 秒，置信度达到 0.75 才采用分类，否则 OTHER。`TimeoutSeconds` 覆盖本次 Agent 运行的全部工具续轮，不是每次 HTTP 单独计时。框架工具循环固定最多 4 次模型响应，最多 8 个工具调用，单工具参数最多 4000 字符；不并行执行工具。SDK 自动重试关闭，业务可靠恢复沿用已有任务机制。
 
-每次模型响应都必须明确 stop 或 tool_calls，Agent 最终必须 stop；缺失结束、length、content_filter 或工具循环耗尽不能伪装成功。AI 输入/回答长度见接口 DTO 和领域校验，不接受模型携带身份或组信息。生成及所有工具续轮出站携带 session/turn/trace 和租户组织大会上下文；独立分类携带完整会话范围。无密钥时不发送占位 Authorization。
+每次模型响应都必须明确 stop 或 tool_calls，Agent 最终必须 stop；缺失结束、length、content_filter 或工具循环耗尽不能伪装成功。AI 输入/回答长度见接口 DTO 和领域校验，不接受模型携带身份或组信息。生成及所有工具续轮出站携带 session/turn/trace、助手和大会上下文；独立分类携带完整会话范围。无密钥时不发送占位 Authorization。
 
 ## 客服规则和营业日历
 
 | 键                                         | 默认值 / 范围                       | 作用域和缺省行为                           |
 | ------------------------------------------ | ----------------------------------- | ------------------------------------------ |
-| `CustomerService:Capacity`                 | 5 个；整数 1—100                    | 同租户组织客服跨助手总并发；不自动上线     |
+| `CustomerService:Capacity`                 | 5 个；整数 1—100                    | 客服跨助手总并发；不自动上线     |
 | `CustomerService:ProposalTtlMinutes`       | 10 分钟；1—1440                     | 建议卡有效期，查询和确认时核验             |
 | `CustomerService:SurveyTtlMinutes`         | 30 分钟；1—1440                     | 未答调查有效期，过期不计为满意             |
 | `CustomerService:Calendar:CalendarVersion` | `cn-office-v1`；非空 ≤64 字符       | 部署缺省日历业务版本；修改规则必须升级版本 |
-| `CustomerService:Calendar:Zone`            | `Asia/Shanghai`；合法系统/IANA 时区 | 解释组织本地营业时间，期限保存为 UTC       |
+| `CustomerService:Calendar:Zone`            | `Asia/Shanghai`；合法系统/IANA 时区 | 解释本地营业时间，期限保存为 UTC       |
 | `CustomerService:Calendar:Opens`           | `10:00`；HH:mm 或 HH:mm:ss          | 含开始边界，同日必须早于 closes            |
 | `CustomerService:Calendar:Closes`          | `17:00`；HH:mm 或 HH:mm:ss          | 不含结束边界，不支持跨日营业区间           |
 | `CustomerService:Calendar:Overrides`       | 空字典；最多 1000 项，ISO日期→布尔  | 日期覆盖优先，未覆盖时周一至周五营业       |
 
-正式 `/configuration/calendar` 保存的组织日历优先于部署默认，只影响新周期；等待按首次申请时刻冻结窗口。未来最多查找三年营业日，无营业日配置拒绝。等待 T+5 兼容标记/T+10 繁忙提示、在线租约 45 秒、客户端在线心跳 15 秒、任务租约 30 秒均为当前实现固定规则，不是可由访客配置的字段。
+正式 `/configuration/calendar` 保存的日历优先于部署默认，只影响新周期；等待按首次申请时刻冻结窗口。未来最多查找三年营业日，无营业日配置拒绝。等待 T+5 兼容标记/T+10 繁忙提示、在线租约 45 秒、客户端在线心跳 15 秒、任务租约 30 秒均为当前实现固定规则，不是可由访客配置的字段。
 
 ## 数据源
 
@@ -87,7 +83,7 @@ Kingbase: Host=YOUR-HOST;Port=54321;Database=ai_customer_service;Username=YOUR-U
 
 MySQL 使用官方 EF Provider，建议 UTF8MB4 和区分大小写的标识符排序规则，版本需 8.0.16+ 强制 CHECK。Kingbase 需目标版本支持 PostgreSQL 协议、DDL 和 Npgsql 类型；默认端口只是示例。当前已生成两种方言脚本，尚未连接对应实库运行。
 
-所有会话事实的主键和 FK 包含 tenant_id/top_org_id；组织门闩与乐观 version 保护并发。表为物理保留，无默认删除任务；会话、邮件正文、邮箱与审计数据的保留周期由部署方设定，归档前必须保证任务终结和引用完整。各字段含义见 [字典](schema.md)。
+所有会话事实的主键和 FK 包含 assistant_config_id；并发门闩与乐观 version 保护并发。表为物理保留，无默认删除任务；会话、邮件正文、邮箱与审计数据的保留周期由部署方设定，归档前必须保证任务终结和引用完整。各字段含义见 [字典](schema.md)。
 
 ## 可靠通知
 
@@ -98,12 +94,12 @@ MySQL 使用官方 EF Provider，建议 UTF8MB4 和区分大小写的标识符�
 | `Notifications:EventsEnabled`  | false；布尔                   | 可选 EVENT 审计转发；不影响本地接待               |
 | `Notifications:EventsEndpoint` | 空；受控 HTTP(S) 事件网关     | 开启且有地址才领取 EVENT                          |
 
-HTTP 网关连接 2 秒、请求 5 秒。请求含 `Idempotency-Key: eventKey` 和 traceId，JSON 包含 eventKey、kind、sessionId、episodeId、tenantId、topOrgId、bventId、traceId、payload。网关必须持久去重并返回 `{"accepted":true}`；HTTP 200 本身不算受理。
+HTTP 网关连接 2 秒、请求 5 秒。请求含 `Idempotency-Key: eventKey` 和 traceId，JSON 包含 eventKey、kind、sessionId、episodeId、bventId、traceId、payload。网关必须持久去重并返回 `{"accepted":true}`；HTTP 200 本身不算受理。
 
-EMAIL 为建工单通知，payload 含 ticketId/conversationId，由网关根据组织路由找到内部接收者；EMAIL_REPLY 的 payload 含服务端原邮箱、subject、content、ticketId，网关按原邮箱发给访客；INTERNAL 为兼容的旧等待提醒，HANDOFF_NOTIFY 为新申请即时群通知；EVENT 为可选业务审计。不得把缺失接收人规则当成成功发信。
+EMAIL 为建工单通知，payload 含 ticketId/conversationId，由网关根据配置路由找到内部接收者；EMAIL_REPLY 的 payload 含服务端原邮箱、subject、content、ticketId，网关按原邮箱发给访客；INTERNAL 为兼容的旧等待提醒，HANDOFF_NOTIFY 为新申请即时群通知；EVENT 为可选业务审计。不得把缺失接收人规则当成成功发信。
 
 企微仅允许 `https://qyapi.weixin.qq.com/cgi-bin/webhook/send`，必须返回 `errcode=0`；官方机器人不保证事件键去重，可能重复提醒。需要严格去重时使用自有持久幂等网关。任务最多自动尝试 5 次，DEAD 需工作台人工恢复；关闭通道只暂停发送，不丢任务。
 
-组织持久通知配置的 `enabled` 统一控制 EMAIL、EMAIL_REPLY、INTERNAL、HANDOFF_NOTIFY，替代旧部署开关。
+持久通知配置的 `enabled` 统一控制 EMAIL、EMAIL_REPLY、INTERNAL、HANDOFF_NOTIFY，替代旧部署开关。
 
 助手定义支持 `AllowAnonymous`、`ExternalIdentityRequired`，默认均为 false。前者允许匿名创建，后者在新会话创建时冻结 AI 聊天前外部身份绑定要求；已有会话保持原策略。公开助手 ID 必须唯一。

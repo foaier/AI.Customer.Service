@@ -33,15 +33,13 @@ public sealed class ProtocolTests
             {
                 using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
                 Assert.AreEqual("account-a", body.RootElement.GetProperty("accountId").GetString());
-                return Json("""{"isSuccess":true,"returnObj":{"accountId":"account-a","tenantId":"tenant-a","fullName":"正式客服"}}""");
+                return Json("""{"isSuccess":true,"returnObj":{"accountId":"account-a","fullName":"正式客服"}}""");
             }
-            Assert.AreEqual("?accountId=account-a", request.RequestUri.Query);
-            return Json("""{"isSuccess":true,"returnObj":[{"orgId":"org-a","status":1}]}""");
+            Assert.Fail("账号信息请求不应访问额外的组织接口");
+            return Json("{}");
         }));
         var adapter = new UserCenterAdapter(http, Options.Create(new UserCenterOptions { BaseUrl = "https://directory.invalid" }));
-        Assert.AreEqual("正式客服", (await adapter.RequireAsync("tenant-a", "org-a", "account-a", default)).DisplayName);
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.RequireAsync("tenant-b", "org-a", "account-a", default));
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.RequireAsync("tenant-a", "org-b", "account-a", default));
+        Assert.AreEqual("正式客服", (await adapter.RequireAsync("account-a", default)).DisplayName);
     }
 
     /// <summary>
@@ -54,20 +52,17 @@ public sealed class ProtocolTests
         {
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
             var root = body.RootElement;
-            Assert.AreEqual("org-a", root.GetProperty("OrganizationId").GetString());
-            Assert.AreEqual(JsonValueKind.Null, root.GetProperty("OrgId").ValueKind);
             Assert.AreEqual("客服", root.GetProperty("Search").GetString());
             Assert.AreEqual(2, root.GetProperty("PageSize").GetInt32());
             Assert.IsFalse(root.TryGetProperty("pageSize", out _));
             var page = root.GetProperty("PageIndex").GetInt32();
             Assert.AreEqual((page - 1) * 2, root.GetProperty("Skip").GetInt32());
-            return Json(JsonSerializer.Serialize(new { isSuccess = true, returnObj = new[] { new { id = "group-a", orgId = "org-a", name = "客服组" } }, pager = new { pageIndex = page, pageSize = 2, totalPage = 2, totalCount = 3 } }));
+            return Json(JsonSerializer.Serialize(new { isSuccess = true, returnObj = new[] { new { id = "group-a", name = "客服组" } }, pager = new { pageIndex = page, pageSize = 2, totalPage = 2, totalCount = 3 } }));
         }));
         var adapter = new UserCenterAdapter(http, Options.Create(new UserCenterOptions { BaseUrl = "https://directory.invalid" }));
-        var first = await adapter.GroupsAsync("tenant-a", "org-a", "客服", null, 2, default);
+        var first = await adapter.GroupsAsync("客服", null, 2, default);
         Assert.IsTrue(first.HasMore);
-        Assert.IsFalse((await adapter.GroupsAsync("tenant-a", "org-a", "客服", first.NextCursor, 2, default)).HasMore);
-        await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.GroupsAsync("tenant-a", "org-b", "客服", first.NextCursor, 2, default));
+        Assert.IsFalse((await adapter.GroupsAsync("客服", first.NextCursor, 2, default)).HasMore);
     }
 
     /// <summary>
@@ -103,7 +98,7 @@ public sealed class ProtocolTests
         }));
         var adapter = Model(http);
         var deltas = new List<ModelDelta>();
-        await foreach (var delta in adapter.StreamAsync(new(new("tenant-a", "org-a", "session-a", "assistant-a", null), "turn-a", "trace-a", [], "请问怎么入场？"), default))
+        await foreach (var delta in adapter.StreamAsync(new(new("session-a", "assistant-a", null), "turn-a", "trace-a", [], "请问怎么入场？"), default))
         {
             deltas.Add(delta);
         }
@@ -123,7 +118,7 @@ public sealed class ProtocolTests
         using var truncatedHttp = new HttpClient(new ProtocolHandler(_ => Task.FromResult(AgentFrameworkTests.Stream("""{"index":0,"delta":{"role":"assistant","content":"半句"}}"""))));
         await Assert.ThrowsExactlyAsync<BusinessException>(async () =>
         {
-            await foreach (var delta in Model(truncatedHttp).StreamAsync(new(new("t", "o", "c", "a", null), "turn", "trace", [], "问题"), default))
+            await foreach (var delta in Model(truncatedHttp).StreamAsync(new(new("c", "a", null), "turn", "trace", [], "问题"), default))
             {
                 Assert.AreEqual("半句", delta.Text);
             }
@@ -131,13 +126,13 @@ public sealed class ProtocolTests
         using var limitedHttp = new HttpClient(new ProtocolHandler(_ => Task.FromResult(AgentFrameworkTests.Stream("""{"index":0,"delta":{},"finish_reason":"length"}"""))));
         await Assert.ThrowsExactlyAsync<BusinessException>(async () =>
         {
-            await foreach (var delta in Model(limitedHttp).StreamAsync(new(new("t", "o", "c", "a", null), "turn", "trace", [], "问题"), default))
+            await foreach (var delta in Model(limitedHttp).StreamAsync(new(new("c", "a", null), "turn", "trace", [], "问题"), default))
             {
                 Assert.Fail("被截断的回答不能产生成功增量");
             }
         });
         using var classificationHttp = new HttpClient(new ProtocolHandler(_ => Task.FromResult(AgentFrameworkTests.ClassificationResponse("""{"category":"EXHIBITOR","confidence":0.74}"""))));
-        Assert.AreEqual(Category.OTHER, (await Model(classificationHttp).ClassifyAsync(new("t", "o", "c", "a", null), "展位", default)).Category);
+        Assert.AreEqual(Category.OTHER, (await Model(classificationHttp).ClassifyAsync(new("c", "a", null), "展位", default)).Category);
     }
 
     /// <summary>
@@ -155,11 +150,11 @@ public sealed class ProtocolTests
         await using var application = new TestApplication();
         await using var scope = application.Services.CreateAsyncScope();
         var config = scope.ServiceProvider.GetRequiredService<IConfigurationRepository>();
-        config.AddChatNotification(new ChatNotificationConfiguration { Id = "chat", TenantId = "tenant-a", TopOrgId = "org-a", Enabled = true });
+        config.AddChatNotification(new ChatNotificationConfiguration { Id = "chat", Enabled = true });
         await scope.ServiceProvider.GetRequiredService<AI.Customer.Service.Infrastructure.Persistence.CustomerServiceDbContext>().SaveChangesAsync();
         var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Endpoint = "https://gateway.invalid" }),
             scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>(), application.Clock);
-        var task = new ReliableTask { TenantId = "tenant-a", TopOrgId = "org-a", Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
+        var task = new ReliableTask { Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
         await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         accepted = true;
         await adapter.SendAsync(task, default);

@@ -17,8 +17,8 @@ public static class HandoffNotificationText
         if (root.Length > 256 || !Uri.TryCreate(root, UriKind.Absolute, out var uri) || uri.Scheme != "https" ||
             uri.Host.Length == 0 || uri.UserInfo.Length > 0 || uri.Query.Length > 0 || uri.Fragment.Length > 0)
             throw new NotificationDeliveryException("CONFIG_PUBLIC_URL_INVALID", false);
-        var url = root.TrimEnd('/') + "/b/inbox?topOrgId=" + Uri.EscapeDataString(task.TopOrgId) +
-            "&assistantConfigId=" + Uri.EscapeDataString(task.AssistantConfigId) + "&conversationId=" + Uri.EscapeDataString(task.ConversationId);
+        var url = root.TrimEnd('/') + "/b/inbox?assistantConfigId=" + Uri.EscapeDataString(task.AssistantConfigId) +
+            "&conversationId=" + Uri.EscapeDataString(task.ConversationId);
         var category = snapshot.NotificationCategory switch
         {
             "SALES" => "参展咨询/展位销售（SALES）等展商相关",

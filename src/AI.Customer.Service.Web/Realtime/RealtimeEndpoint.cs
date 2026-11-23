@@ -58,7 +58,7 @@ public static class RealtimeEndpoint
                     await using var credentialScope = scopes.CreateAsyncScope();
                     var grant = await credentialScope.ServiceProvider.GetRequiredService<ConversationAccessService>()
                         .AuthorizeAsync(first.Credential, first.ConversationId, firstTimeout.Token);
-                    actor = new(grant.TenantId, grant.PrincipalId, context.TraceIdentifier, grant.ConversationId);
+                    actor = new(grant.PrincipalId, context.TraceIdentifier, grant.ConversationId);
                     expires = grant.ExpiresAt;
                 }
                 else
@@ -67,7 +67,7 @@ public static class RealtimeEndpoint
                     actor = RequestAccess.Resolve(authenticated.Principal, context.TraceIdentifier, authentication.Value);
                     expires = authenticated.Expires;
                 }
-                var subscription = new Subscription(first.Agent, first.ConversationId, first.TopOrgId, first.AssistantConfigId);
+                var subscription = new Subscription(first.Agent, first.ConversationId, first.AssistantConfigId);
                 await CheckExternalAsync(scopes, actor, subscription, context.RequestAborted);
                 var checkedAt = DateTime.UtcNow;
                 var sentAt = DateTime.UtcNow;
@@ -120,7 +120,7 @@ public static class RealtimeEndpoint
                         if (subscription.Agent && string.IsNullOrWhiteSpace(subscription.ConversationId))
                         {
                             var summary = await scope.ServiceProvider.GetRequiredService<InboxService>()
-                                .SummaryAsync(actor, subscription.TopOrgId!, subscription.AssistantConfigId, stop.Token);
+                                .SummaryAsync(actor, subscription.AssistantConfigId, stop.Token);
                             if (summary.ChangeToken != previousInboxToken)
                             {
                                 await SendAsync(socket, new { type = "inbox.notifications", data = summary }, stop.Token);
@@ -200,7 +200,7 @@ public static class RealtimeEndpoint
     {
         var allowed = new HashSet<string>(StringComparer.Ordinal)
         {
-            "authorization", "credential", "agent", "conversationId", "topOrgId", "assistantConfigId", "afterSeq"
+            "authorization", "credential", "agent", "conversationId", "assistantConfigId", "afterSeq"
         };
         if (query.Keys.Any(key => !allowed.Contains(key)))
         {
@@ -219,7 +219,6 @@ public static class RealtimeEndpoint
             authorization,
             agent,
             OptionalQuery(query, "conversationId"),
-            OptionalQuery(query, "topOrgId"),
             OptionalQuery(query, "assistantConfigId"),
             afterSeq,
             OptionalQuery(query, "credential"));
@@ -281,20 +280,16 @@ public static class RealtimeEndpoint
         var access = scope.ServiceProvider.GetRequiredService<AccessService>();
         if (subscription.Agent)
         {
-            if (string.IsNullOrWhiteSpace(subscription.TopOrgId) || string.IsNullOrWhiteSpace(subscription.AssistantConfigId))
-            {
-                throw BusinessException.Invalid("客服订阅缺少组织或助手");
-            }
-            await access.RequireAgentAsync(actor, subscription.TopOrgId, subscription.AssistantConfigId, ct);
+            if (string.IsNullOrWhiteSpace(subscription.AssistantConfigId)) throw BusinessException.Invalid("客服订阅缺少助手");
+            await access.RequireAgentAsync(actor, subscription.AssistantConfigId, ct);
         }
         else
         {
             var conversation = await access.VisitorAsync(actor, Guard.Text(subscription.ConversationId, "会话"), ct);
-            if ((subscription.TopOrgId is not null && subscription.TopOrgId != conversation.TopOrgId) ||
-                (subscription.AssistantConfigId is not null && subscription.AssistantConfigId != conversation.AssistantConfigId))
+            if (subscription.AssistantConfigId is not null && subscription.AssistantConfigId != conversation.AssistantConfigId)
                 throw BusinessException.Forbidden("订阅范围与会话不一致");
             if (actor.GuestConversationId is null)
-                await access.RequireAccountAsync(actor, conversation.TopOrgId, ct);
+                await access.RequireAccountAsync(actor, ct);
         }
     }
 
@@ -308,20 +303,20 @@ public static class RealtimeEndpoint
         var messaging = provider.GetRequiredService<MessagingService>();
         if (sub.Agent)
         {
-            await access.GroupsAsync(actor, sub.TopOrgId!, ct);
+            await access.GroupsAsync(actor, ct);
             var reception = provider.GetRequiredService<ReceptionService>();
             var inbox = provider.GetRequiredService<InboxService>();
             var followups = provider.GetRequiredService<FollowupService>();
             if (string.IsNullOrWhiteSpace(sub.ConversationId))
             {
-                var queue = JsonSerializer.SerializeToElement(await inbox.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options);
+                var queue = JsonSerializer.SerializeToElement(await inbox.QueueAsync(actor, sub.AssistantConfigId!, ct), JsonDefaults.Options);
                 return new
                 {
                     queue = queue.GetProperty("episodes"),
-                    followups = JsonSerializer.SerializeToElement(await followups.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options).GetProperty("followups")
+                    followups = JsonSerializer.SerializeToElement(await followups.QueueAsync(actor, sub.AssistantConfigId!, ct), JsonDefaults.Options).GetProperty("followups")
                 };
             }
-            var scope = await access.AgentScopeAsync(actor, sub.TopOrgId!, sub.ConversationId,
+            var scope = await access.AgentScopeAsync(actor, sub.ConversationId,
                 provider.GetRequiredService<IConversationRepository>(), ct);
             if (scope.AssistantConfigId != sub.AssistantConfigId)
             {
@@ -405,9 +400,6 @@ public static class RealtimeEndpoint
     /// <param name="ConversationId">
     /// 可空，客服为空时订阅队列。
     /// </param>
-    /// <param name="TopOrgId">
-    /// 客服待核验组织。
-    /// </param>
     /// <param name="AssistantConfigId">
     /// 客服待核验助手。
     /// </param>
@@ -418,10 +410,10 @@ public static class RealtimeEndpoint
     /// 匿名会话凭据，不能与登录令牌混用。
     /// </param>
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-    private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
+    private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
 
     /// <summary>
     /// 去除令牌后保留的固定订阅参数，不保存认证凭据
     /// </summary>
-    private sealed record Subscription(bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId);
+    private sealed record Subscription(bool Agent, string? ConversationId, string? AssistantConfigId);
 }

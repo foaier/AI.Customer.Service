@@ -41,7 +41,7 @@ public sealed partial class WorkflowTests
         var other = await SessionAsync(owner);
         await GetAsync(guest, "/api/agent/history_detail?sessionId=" + other, HttpStatusCode.Forbidden);
         await GetAsync(owner, "/api/agent/history_detail?sessionId=" + id, HttpStatusCode.Forbidden);
-        await GetAsync(guest, "/api/customer-service/agents/queue?topOrgId=org-a&assistantConfigId=assistant-a", HttpStatusCode.Forbidden);
+        await GetAsync(guest, "/api/customer-service/agents/queue?assistantConfigId=assistant-a", HttpStatusCode.Forbidden);
         await GetAsync(guest, ChatConfigPath, HttpStatusCode.Forbidden);
         await SendAsync(anonymous, HttpMethod.Post, "/api/agent/anonymous/session", new { assistantConfigId = "unknown" }, HttpStatusCode.Forbidden);
         await using (var scope = application.Services.CreateAsyncScope())
@@ -105,8 +105,6 @@ public sealed partial class WorkflowTests
         var path = "/api/agent/session/" + id + "/external-identity";
         using var other = app.Client("agent-a");
         await SendAsync(other, HttpMethod.Post, path, new { cookieId = cookie }, HttpStatusCode.Forbidden);
-        using var otherTenant = app.Client("visitor", "tenant-b");
-        await SendAsync(otherTenant, HttpMethod.Post, path, new { cookieId = cookie }, HttpStatusCode.Forbidden);
         var bound = await SendAsync(visitor, HttpMethod.Post, path, new { cookieId = cookie });
         Assert.IsFalse(bound.GetRawText().Contains(cookie, StringComparison.Ordinal));
         await SendAsync(visitor, HttpMethod.Post, path, new { cookieId = cookie });

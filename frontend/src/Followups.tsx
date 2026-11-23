@@ -27,7 +27,7 @@ type ReplyState = { version: number; state: string; subject?: string; content?: 
 
 export default function Followups({ assistant }: { assistant: Assistant }) {
     const assistantId = assistant.assistantConfigId || assistant.configId || assistant.id;
-    const query = `topOrgId=${encodeURIComponent(assistant.topOrgId)}&assistantConfigId=${encodeURIComponent(assistantId)}`;
+    const query = `assistantConfigId=${encodeURIComponent(assistantId)}`;
     const [items, setItems] = useState<Followup[]>([]);
     const [selected, setSelected] = useState<Followup | null>(null);
     const [form, setForm] = useState<FollowupFormState | undefined>(undefined);
@@ -78,7 +78,6 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
                     realtimeUrl({
                         authorization: `Bearer ${token}`,
                         agent: true,
-                        topOrgId: assistant.topOrgId,
                         assistantConfigId: assistantId,
                         afterSeq: 0,
                     }),
@@ -113,7 +112,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
             window.clearTimeout(refresh);
             socket?.close();
         };
-    }, [assistant.topOrgId, assistantId, loadItems]);
+    }, [assistantId, loadItems]);
 
     useEffect(() => {
         const updateVisibility = () => setPageVisible(document.visibilityState === "visible");
@@ -127,7 +126,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         if (seenReceipts.current.has(key)) return;
         seenReceipts.current.add(key);
         post(
-            `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/receipts?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+            `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/receipts`,
             { kind: "SEEN", ticketId: selected.ticketId },
         )
             .then(() => {
@@ -143,7 +142,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
             .catch(() => {
                 seenReceipts.current.delete(key);
             });
-    }, [assistant.topOrgId, form?.content, pageVisible, selected]);
+    }, [form?.content, pageVisible, selected]);
 
     const select = async (item: Followup) => {
         const generation = ++selectionGeneration.current;
@@ -156,8 +155,8 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         try {
             const path = `/customer-service/agents/conversations/${encodeURIComponent(item.scope.conversationId)}/followups/${encodeURIComponent(item.episodeId)}`;
             const [formResult, replyResult] = await Promise.all([
-                request<FollowupFormState>(`${path}/form?topOrgId=${encodeURIComponent(assistant.topOrgId)}`),
-                request<ReplyState>(`${path}?topOrgId=${encodeURIComponent(assistant.topOrgId)}`).catch(() => null),
+                request<FollowupFormState>(`${path}/form`),
+                request<ReplyState>(path).catch(() => null),
             ]);
             if (generation !== selectionGeneration.current) return;
             setForm(formResult);
@@ -175,7 +174,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         setBusy(true);
         try {
             const claimed = await post<{ state: string; version: number; assignedTo: string }>(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/claim?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/claim`,
                 {
                     requestId: `form_claim_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: form.version || selected.version,
@@ -202,7 +201,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         setBusy(true);
         try {
             const result = await post<ReplyState>(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/reply?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/reply`,
                 {
                     requestId: `reply_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: reply?.version || 1,
@@ -224,7 +223,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         setBusy(true);
         try {
             const result = await post<ReplyState>(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/close?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/close`,
                 {
                     requestId: `close_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: reply.version,
@@ -245,7 +244,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
         setBusy(true);
         try {
             const result = await post<ReplyState>(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/retry?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/followups/${encodeURIComponent(selected.episodeId)}/retry`,
                 {
                     requestId: `retry_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: reply.version,

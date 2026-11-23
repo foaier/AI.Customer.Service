@@ -49,10 +49,10 @@ public sealed class FollowupController(RequestAccess request, WaitingService wai
     /// 有资格组的跟进摘要列表，不包含邮箱和正文
     /// </summary>
     [HttpGet("agents/followups")]
-    public async Task<object> Queue(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<object> Queue(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        var result = await followups.QueueAsync(Actor, topOrgId, assistantConfigId, ct);
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        var result = await followups.QueueAsync(Actor, assistantConfigId, ct);
         return Success(JsonSerializer.SerializeToElement(result, JsonDefaults.Options).GetProperty("followups"));
     }
 
@@ -60,62 +60,62 @@ public sealed class FollowupController(RequestAccess request, WaitingService wai
     /// 当前客服对原周期留言保存首次查看回执
     /// </summary>
     [HttpPost("agents/conversations/{id}/followups/{episode}/receipts")]
-    public async Task<object> Seen(string id, string episode, string topOrgId, FollowupReceiptCommand command, CancellationToken ct) =>
-        Success(await followups.SeenAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+    public async Task<object> Seen(string id, string episode, FollowupReceiptCommand command, CancellationToken ct) =>
+        Success(await followups.SeenAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, command, ct));
 
     /// <summary>
     /// 原组客服读取原周期等待和通知状态，不返回邮箱
     /// </summary>
     [HttpGet("agents/conversations/{id}/waiting")]
-    public async Task<object> AgentWaiting(string id, string topOrgId, CancellationToken ct, string? episodeId = null) =>
-        Success(await waiting.GetAgentAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episodeId, ct));
+    public async Task<object> AgentWaiting(string id, CancellationToken ct, string? episodeId = null) =>
+        Success(await waiting.GetAgentAsync(Actor, await RequestAccess.AgentAsync(id, ct), episodeId, ct));
 
     /// <summary>
     /// 原组客服显式恢复失败通知，原事件键保持不变
     /// </summary>
     [HttpPost("agents/conversations/{id}/notifications/retry")]
-    public async Task<object> RetryNotifications(string id, string topOrgId, CancellationToken ct, string? episodeId = null) =>
-        Success(await waiting.RetryNotificationsAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episodeId, ct));
+    public async Task<object> RetryNotifications(string id, CancellationToken ct, string? episodeId = null) =>
+        Success(await waiting.RetryNotificationsAsync(Actor, await RequestAccess.AgentAsync(id, ct), episodeId, ct));
 
     /// <summary>
     /// 固定原周期读取表单，认领前只有摘要
     /// </summary>
     [HttpGet("agents/conversations/{id}/followups/{episode}/form")]
-    public async Task<object> AgentForm(string id, string episode, string topOrgId, CancellationToken ct) =>
-        Success(await followups.GetFormAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, true, ct));
+    public async Task<object> AgentForm(string id, string episode, CancellationToken ct) =>
+        Success(await followups.GetFormAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, true, ct));
 
     /// <summary>
     /// 原业务组客服原子认领留言
     /// </summary>
     [HttpPost("agents/conversations/{id}/followups/{episode}/claim")]
-    public async Task<object> Claim(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
-        Success(await followups.ClaimAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+    public async Task<object> Claim(string id, string episode, StateCommand command, CancellationToken ct) =>
+        Success(await followups.ClaimAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, command, ct));
 
     /// <summary>
     /// 当前认领者读取最终回复生命周期
     /// </summary>
     [HttpGet("agents/conversations/{id}/followups/{episode}")]
-    public async Task<object> GetResponse(string id, string episode, string topOrgId, CancellationToken ct) =>
-        Success(await followups.GetResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, ct));
+    public async Task<object> GetResponse(string id, string episode, CancellationToken ct) =>
+        Success(await followups.GetResponseAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, ct));
 
     /// <summary>
     /// 保存最终正文及可靠任务，不能从客户端指定收件人
     /// </summary>
     [HttpPost("agents/conversations/{id}/followups/{episode}/reply")]
-    public async Task<object> Reply(string id, string episode, string topOrgId, ReplyCommand command, CancellationToken ct) =>
-        Success(await followups.ReplyAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+    public async Task<object> Reply(string id, string episode, ReplyCommand command, CancellationToken ct) =>
+        Success(await followups.ReplyAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, command, ct));
 
     /// <summary>
     /// 最终失败后人工恢复原投递任务
     /// </summary>
     [HttpPost("agents/conversations/{id}/followups/{episode}/retry")]
-    public async Task<object> Retry(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
-        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, false, ct));
+    public async Task<object> Retry(string id, string episode, StateCommand command, CancellationToken ct) =>
+        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, command, false, ct));
 
     /// <summary>
     /// 网关已受理后显式结案，不把待发送当作处理完成
     /// </summary>
     [HttpPost("agents/conversations/{id}/followups/{episode}/close")]
-    public async Task<object> Close(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
-        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, true, ct));
+    public async Task<object> Close(string id, string episode, StateCommand command, CancellationToken ct) =>
+        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(id, ct), episode, command, true, ct));
 }

@@ -25,13 +25,13 @@ public sealed class MetricsService(IReceptionMetricsQuery reception, ISurveyMetr
     /// <summary>
     /// 调用者先核验正式组织及助手权限，时间范围不接受外部输入。
     /// </summary>
-    public Task<MetricsSnapshot> ReadAsync(Actor actor, string org, string assistant, CancellationToken ct) =>
-        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+    public Task<MetricsSnapshot> ReadAsync(Actor actor, string assistant, CancellationToken ct) =>
+        transactions.ExecuteAsync(async () =>
         {
             var through = clock.GetUtcNow().UtcDateTime;
             var from = through.AddHours(-24);
-            return new MetricsSnapshot(from, through, await reception.ReadAsync(actor.TenantId, org, assistant, from, through, ct),
-                await surveys.CountAsync(actor.TenantId, org, assistant, from, through, ct));
+            return new MetricsSnapshot(from, through, await reception.ReadAsync(assistant, from, through, ct),
+                await surveys.CountAsync(assistant, from, through, ct));
         }, ct);
 
     /// <summary>

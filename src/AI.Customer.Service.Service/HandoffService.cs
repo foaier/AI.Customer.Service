@@ -56,7 +56,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
     {
         var contactEmail = source == TriggerSource.SYSTEM_POLICY || email is null ? null : Guard.Email(email);
         var classification = await PrepareAsync(scope, ct);
-        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        return await transactions.ExecuteAsync(async () =>
         {
             var input = new { requestId = request, source, reason, email = contactEmail };
             var prior = await journal.ReplayAsync(scope, actor, "REQUEST", request, input, ct);
@@ -105,7 +105,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         }
         var email = command.Decision == "CONFIRM" ? Guard.Email(command.Email) : null;
         var classification = await PrepareAsync(scope, ct);
-        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        return await transactions.ExecuteAsync(async () =>
         {
             var prior = await journal.ReplayAsync(scope, actor, "PROPOSAL:" + proposalId, command.RequestId, command, ct);
             if (prior is not null)
@@ -147,7 +147,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         {
             return Task.FromResult<Proposal?>(null);
         }
-        return transactions.ExecuteAsync<Proposal?>(scope.TenantId, scope.TopOrgId, async () =>
+        return transactions.ExecuteAsync<Proposal?>(async () =>
         {
             var conversation = await runtime.RequireAsync(scope, ct);
             if (conversation.HumanEpisodeId is not null || conversation.Epoch != epoch)
@@ -185,7 +185,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
     public async Task<Episode> CreateInTransactionAsync(Scope scope, string principal, TriggerSource source, ReasonCode reason,
         Classification classification, string trace, CancellationToken ct, string? email = null)
     {
-        var config = await configuration.RoutingAsync(scope.TenantId, scope.TopOrgId, ct);
+        var config = await configuration.RoutingAsync(ct);
         var route = config?.Routes.SingleOrDefault(r => r.AssistantConfigId == scope.AssistantConfigId);
         if (route is null || !route.Groups.TryGetValue(classification.Category, out var group) || !config!.Groups.Any(g => g.Id == group))
         {

@@ -45,7 +45,7 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
             await SendGatewayAsync(task, options.Value.EventsEndpoint, ct);
             return;
         }
-        var settings = await configuration.ChatNotificationAsync(task.TenantId, task.TopOrgId, ct);
+        var settings = await configuration.ChatNotificationAsync(ct);
         if (settings?.Enabled != true) throw new NotificationDeliveryException("CONFIG_DISABLED", true);
         if (task.Kind is "EMAIL" or "EMAIL_REPLY")
         {
@@ -109,8 +109,6 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
             task.Kind,
             sessionId = task.ConversationId,
             task.EpisodeId,
-            task.TenantId,
-            task.TopOrgId,
             task.BventId,
             task.TraceId,
             payload = JsonSerializer.Deserialize<JsonElement>(task.Payload)

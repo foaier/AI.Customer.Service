@@ -3,12 +3,6 @@ namespace AI.Customer.Service.Domain.Models;
 /// <summary>
 /// 由认证和持久会话绑定的可信业务范围，客户端不得覆盖归属。
 /// </summary>
-/// <param name="TenantId">
-/// 认证租户。
-/// </param>
-/// <param name="TopOrgId">
-/// 服务端核验的组织。
-/// </param>
 /// <param name="ConversationId">
 /// AI 与人工共享的会话标识。
 /// </param>
@@ -18,14 +12,11 @@ namespace AI.Customer.Service.Domain.Models;
 /// <param name="BventId">
 /// 可空的大会引用。
 /// </param>
-public sealed record Scope(string TenantId, string TopOrgId, string ConversationId, string AssistantConfigId, string? BventId);
+public sealed record Scope(string ConversationId, string AssistantConfigId, string? BventId);
 
 /// <summary>
 /// 经 JWT 和用户中心确认的请求主体，不保存令牌。
 /// </summary>
-/// <param name="TenantId">
-/// 认证租户。
-/// </param>
 /// <param name="AccountId">
 /// 认证账号。
 /// </param>
@@ -35,7 +26,7 @@ public sealed record Scope(string TenantId, string TopOrgId, string Conversation
 /// <param name="GuestConversationId">
 /// 匿名凭据限定的唯一会话；登录账号为空。
 /// </param>
-public sealed record Actor(string TenantId, string AccountId, string TraceId, string? GuestConversationId = null);
+public sealed record Actor(string AccountId, string TraceId, string? GuestConversationId = null);
 
 /// <summary>
 /// 全部持久聚合共同具备的隔离范围及并发版本，不包含伪造审计字段。
@@ -43,19 +34,9 @@ public sealed record Actor(string TenantId, string AccountId, string TraceId, st
 public abstract class Aggregate
 {
     /// <summary>
-    /// owner 内唯一业务标识，与租户、组织共同构成数据库主键。
+    /// owner 内唯一业务标识。
     /// </summary>
     public string Id { get; set; } = "";
-
-    /// <summary>
-    /// 服务端确定的租户，参与每次读写条件。
-    /// </summary>
-    public string TenantId { get; set; } = "";
-
-    /// <summary>
-    /// 服务端核验的组织，参与每次读写条件。
-    /// </summary>
-    public string TopOrgId { get; set; } = "";
 
     /// <summary>
     /// 从一递增的乐观并发版本，幂等重放不得递增。
@@ -91,5 +72,5 @@ public abstract class ConversationAggregate : Aggregate
     /// <summary>
     /// 取得跨 owner 端口使用的不可变完整范围。
     /// </summary>
-    public Scope Scope => new(TenantId, TopOrgId, ConversationId, AssistantConfigId, BventId);
+    public Scope Scope => new(ConversationId, AssistantConfigId, BventId);
 }

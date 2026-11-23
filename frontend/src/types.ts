@@ -3,7 +3,6 @@ export type Assistant = {
     assistantConfigId?: string;
     configId?: string;
     name: string;
-    topOrgId: string;
     bventId?: string | null;
 };
 

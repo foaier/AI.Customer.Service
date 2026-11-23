@@ -16,10 +16,10 @@ namespace AI.Customer.Service.Tests;
 
 public sealed partial class WorkflowTests
 {
-    private const string ChatConfigPath = "/api/customer-service/configuration/chat-notifications?topOrgId=org-a";
+    private const string ChatConfigPath = "/api/customer-service/configuration/chat-notifications";
 
     /// <summary>
-    /// 正式 HTTP 覆盖范围权限、首次保存、兼容键、版本冲突及非法地址，读取不泄露认证参数。
+    /// 正式 HTTP 覆盖首次保存、兼容键、版本冲突及非法地址，读取不泄露认证参数。
     /// </summary>
     [TestMethod]
     public async Task ChatNotificationConfigurationIsScopedAndVersioned()
@@ -44,9 +44,8 @@ public sealed partial class WorkflowTests
         await SendAsync(manager, HttpMethod.Put, ChatConfigPath, new { version = 1, chatGroup = groups }, HttpStatusCode.BadRequest);
         var reloaded = await GetAsync(manager, ChatConfigPath);
         Assert.AreEqual(saved.GetRawText(), reloaded.GetRawText());
-        using var otherTenant = application.Client("agent-a", "tenant-b");
-        await GetAsync(otherTenant, ChatConfigPath, HttpStatusCode.Forbidden);
-        await GetAsync(manager, ChatConfigPath.Replace("org-a", "org-b"), HttpStatusCode.Forbidden);
+        using var sameAccount = application.Client("agent-a");
+        await GetAsync(sameAccount, ChatConfigPath);
         application.DirectoryPort.Disabled.Add("agent-a");
         await SendAsync(manager, HttpMethod.Put, ChatConfigPath, new { version = 1, chatGroup = groups }, HttpStatusCode.Forbidden);
     }
@@ -78,8 +77,6 @@ public sealed partial class WorkflowTests
         {
             Id = "test-chat-task",
             PrincipalId = episode.PrincipalId,
-            TenantId = episode.TenantId,
-            TopOrgId = episode.TopOrgId,
             ConversationId = id,
             AssistantConfigId = episode.AssistantConfigId,
             BventId = episode.BventId,
@@ -118,8 +115,6 @@ public sealed partial class WorkflowTests
         await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         settings.Enabled = true;
         await db.SaveChangesAsync();
-        task.TopOrgId = "org-b";
-        await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         Assert.AreEqual(2, sent);
         db.Remove(await db.Set<ChatNotificationConfiguration>().SingleAsync());
         await db.SaveChangesAsync();

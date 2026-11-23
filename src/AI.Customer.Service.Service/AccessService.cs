@@ -25,26 +25,26 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
     /// <summary>
     /// 即时核验用户中心账号和组织启用，设置权限不等于接单资格。
     /// </summary>
-    public Task<Member> RequireAccountAsync(Actor actor, string org, CancellationToken ct) =>
+    public Task<Member> RequireAccountAsync(Actor actor, CancellationToken ct) =>
         actor.GuestConversationId is not null ? throw BusinessException.Forbidden("匿名访客不能操作客服管理接口") :
-        accounts.RequireAsync(actor.TenantId, Guard.Text(org, "组织", 64), actor.AccountId, ct);
+        accounts.RequireAsync(actor.AccountId, ct);
 
     /// <summary>
     /// 事务外核验客服外部资格及可信助手归属。
     /// </summary>
-    public async Task RequireAgentAsync(Actor actor, string org, string assistant, CancellationToken ct)
+    public async Task RequireAgentAsync(Actor actor, string assistant, CancellationToken ct)
     {
-        RequireAssistant(actor, org, assistant);
-        await RequireAccountAsync(actor, org, ct);
-        _ = await GroupsAsync(actor, org, ct);
+        RequireAssistant(actor, assistant);
+        await RequireAccountAsync(actor, ct);
+        _ = await GroupsAsync(actor, ct);
     }
 
     /// <summary>
     /// 每次业务操作读取本地成员，配置撤销后下一次读写立即拒绝。
     /// </summary>
-    public async Task<HashSet<string>> GroupsAsync(Actor actor, string org, CancellationToken ct)
+    public async Task<HashSet<string>> GroupsAsync(Actor actor, CancellationToken ct)
     {
-        var current = await configuration.RoutingAsync(actor.TenantId, org, ct);
+        var current = await configuration.RoutingAsync(ct);
         var groups = current?.Groups.Where(g => g.Members.Any(m => m.AccountId == actor.AccountId)).Select(g => g.Id).ToHashSet() ?? [];
         if (groups.Count == 0)
         {
@@ -58,7 +58,7 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
     /// </summary>
     public async Task RequireGroupAsync(Actor actor, Episode episode, CancellationToken ct)
     {
-        if (actor.TenantId != episode.TenantId || !(await GroupsAsync(actor, episode.TopOrgId, ct)).Contains(episode.GroupId))
+        if (!(await GroupsAsync(actor, ct)).Contains(episode.GroupId))
         {
             throw BusinessException.Forbidden("该接待不属于当前客服组");
         }
@@ -67,13 +67,9 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
     /// <summary>
     /// 校验助手的可信租户和目标组织，不信任 URL 中的组织字段。
     /// </summary>
-    public AssistantDefinition RequireAssistant(Actor actor, string org, string assistant)
+    public AssistantDefinition RequireAssistant(Actor actor, string assistant)
     {
-        var value = assistants.Require(actor.TenantId, assistant);
-        if (value.TopOrgId != org)
-        {
-            throw BusinessException.Forbidden("助手不属于目标组织");
-        }
+        var value = assistants.Require(assistant);
         return value;
     }
 
@@ -86,14 +82,14 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
     /// <summary>
     /// 客服按目标组织读取持久范围，后续仍需冻结组及认领校验。
     /// </summary>
-    public async Task<Scope> AgentScopeAsync(Actor actor, string org, string conversation, IConversationRepository conversations, CancellationToken ct)
+    public async Task<Scope> AgentScopeAsync(Actor actor, string conversation, IConversationRepository conversations, CancellationToken ct)
     {
-        var value = await conversations.FindAsync(actor.TenantId, conversation, ct);
-        if (value is null || value.TopOrgId != org)
+        var value = await conversations.FindAsync(conversation, ct);
+        if (value is null)
         {
-            throw BusinessException.Forbidden("会话不存在或不属于目标组织");
+            throw BusinessException.Forbidden("会话不存在");
         }
-        RequireAssistant(actor, org, value.AssistantConfigId);
+        RequireAssistant(actor, value.AssistantConfigId);
         return value.Scope;
     }
 }

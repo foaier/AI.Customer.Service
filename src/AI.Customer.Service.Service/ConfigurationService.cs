@@ -32,35 +32,35 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>
     /// 未保存只读返回四个稳定组，不创建成员或授予权限。
     /// </summary>
-    public async Task<RoutingConfiguration> GetAsync(Actor actor, string org, CancellationToken ct) =>
-        await repository.RoutingAsync(actor.TenantId, org, ct) ?? Defaults(actor.TenantId, org);
+    public async Task<RoutingConfiguration> GetAsync(Actor actor, CancellationToken ct) =>
+        await repository.RoutingAsync(ct) ?? Defaults();
 
     /// <summary>
     /// 核验全部外部账号后，在短事务内整体 CAS 保存组及路由。
     /// </summary>
-    public async Task<RoutingConfiguration> SaveAsync(Actor actor, string org, RoutingCommand command, CancellationToken ct)
+    public async Task<RoutingConfiguration> SaveAsync(Actor actor, RoutingCommand command, CancellationToken ct)
     {
-        ValidateRouting(actor, org, command);
+        ValidateRouting(actor, command);
         var verified = new List<ReceptionGroup>();
         foreach (var group in command.Groups)
         {
             var members = new List<Member>();
             foreach (var member in group.Members)
             {
-                members.Add(await accounts.RequireAsync(actor.TenantId, org, Guard.Text(member.AccountId, "账号"), ct));
+                members.Add(await accounts.RequireAsync(Guard.Text(member.AccountId, "账号"), ct));
             }
             verified.Add(group with { Members = members });
         }
-        return await transactions.ExecuteAsync(actor.TenantId, org, async () =>
+        return await transactions.ExecuteAsync(async () =>
         {
-            var value = await repository.RoutingAsync(actor.TenantId, org, ct);
+            var value = await repository.RoutingAsync(ct);
             if ((value?.Version ?? 0) != command.Version)
             {
                 throw BusinessException.Conflict("分组路由配置版本已变化");
             }
             if (value is null)
             {
-                value = new RoutingConfiguration { Id = "routing", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+                value = new RoutingConfiguration { Id = "routing", Version = 0 };
                 repository.AddRouting(value);
             }
             value.Groups = verified;
@@ -73,17 +73,15 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>
     /// 读取正式日历，不存在时取得部署默认的独立副本。
     /// </summary>
-    public async Task<CalendarPolicy> CalendarAsync(string tenant, string org, CancellationToken ct)
+    public async Task<CalendarPolicy> CalendarAsync(CancellationToken ct)
     {
-        var value = await repository.CalendarAsync(tenant, org, ct);
+        var value = await repository.CalendarAsync(ct);
         if (value is not null)
         {
             return value;
         }
         var fallback = JsonSerializer.Deserialize<CalendarPolicy>(JsonSerializer.Serialize(options.Value.Calendar, JsonDefaults.Options), JsonDefaults.Options)!;
         fallback.Id = "calendar";
-        fallback.TenantId = tenant;
-        fallback.TopOrgId = org;
         fallback.Version = 0;
         return fallback;
     }
@@ -91,13 +89,13 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>
     /// 整体保存组织日历，改变业务规则时强制更换业务版本。
     /// </summary>
-    public Task<CalendarPolicy> SaveCalendarAsync(Actor actor, string org, CalendarCommand command, CancellationToken ct)
+    public Task<CalendarPolicy> SaveCalendarAsync(Actor actor, CalendarCommand command, CancellationToken ct)
     {
         var draft = ToCalendar(command);
         draft.Validate();
-        return transactions.ExecuteAsync(actor.TenantId, org, async () =>
+        return transactions.ExecuteAsync(async () =>
         {
-            var current = await repository.CalendarAsync(actor.TenantId, org, ct);
+            var current = await repository.CalendarAsync(ct);
             if ((current?.Version ?? 0) != command.Version)
             {
                 throw BusinessException.Conflict("营业日历版本已变化");
@@ -110,7 +108,7 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
             }
             if (current is null)
             {
-                current = new CalendarPolicy { Id = "calendar", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+                current = new CalendarPolicy { Id = "calendar", Version = 0 };
                 repository.AddCalendar(current);
             }
             current.CalendarVersion = draft.CalendarVersion;
@@ -132,22 +130,20 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>
     /// 创建同组织稳定默认组，读操作无数据库副作用。
     /// </summary>
-    public static RoutingConfiguration Defaults(string tenant, string org) =>
+    public static RoutingConfiguration Defaults() =>
         new()
         {
             Id = "routing",
-            TenantId = tenant,
-            TopOrgId = org,
             Version = 0,
             Groups = Enum.GetValues<Category>().Select(c => new ReceptionGroup(
-                "group_" + Guard.Fingerprint(tenant + "|" + org + "|" + (c == Category.FINANCE ? "MEDIA" : c.ToString()))[..24], c,
+                "group_" + Guard.Fingerprint(c == Category.FINANCE ? "MEDIA" : c.ToString())[..24], c,
                 c switch { Category.EXHIBITOR => "展商组", Category.VISITOR => "客服组", Category.FINANCE => "财务客服", _ => "其他组" }, [])).ToList()
         };
 
     /// <summary>
     /// 完整检查四类、成员唯一性、助手归属及映射，不允许外部组越权成为本地组。
     /// </summary>
-    private void ValidateRouting(Actor actor, string org, RoutingCommand command)
+    private void ValidateRouting(Actor actor, RoutingCommand command)
     {
         if (command.Version < 0 || command.Groups is null || command.Routes is null || command.Groups.Count != 4 ||
             command.Groups.Any(g => g is null || g.Members is null) ||
@@ -172,7 +168,7 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
         }
         foreach (var route in command.Routes)
         {
-            access.RequireAssistant(actor, org, route.AssistantConfigId);
+            access.RequireAssistant(actor, route.AssistantConfigId);
             if (route.Groups is null || route.Groups.Count != 4 || Enum.GetValues<Category>().Any(c =>
                 !route.Groups.TryGetValue(c, out var group) || !command.Groups.Any(g => g.Id == group && g.Category == c)))
             {

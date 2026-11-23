@@ -60,7 +60,7 @@ public sealed partial class WorkflowTests
             Assert.AreEqual(DeliveryState.DEAD, task.State);
             Assert.AreEqual(1, task.Attempts);
         }
-        var retryPath = AgentPath(id) + "/notifications/retry?topOrgId=org-a";
+        var retryPath = AgentPath(id) + "/notifications/retry";
         await SendAsync(agent, HttpMethod.Post, retryPath, new { });
         application.Notification.Failure = new("ADSALE_HTTP_REJECTED", true);
         await RunWorkerAsync();
@@ -162,7 +162,7 @@ public sealed partial class WorkflowTests
     [TestMethod]
     public void NotificationTextRetainsCompleteLinksAndUnicode()
     {
-        var task = new ReliableTask { TopOrgId = "org-a", AssistantConfigId = "assistant-a", ConversationId = "conversation-a" };
+        var task = new ReliableTask { AssistantConfigId = "assistant-a", ConversationId = "conversation-a" };
         var text = HandoffNotificationText.Render(task, new("WECOM_ROBOT", "FINANCE", null,
             "https://hub.adsaleinfo.com/open-api", "https://support.example.com", DateTime.UtcNow.AddMinutes(-3), "zh-CN",
             string.Concat(Enumerable.Repeat("发票😀", 1000)), new string('答', 2000)), DateTime.UtcNow);
@@ -170,7 +170,7 @@ public sealed partial class WorkflowTests
         Assert.IsFalse(text.Contains('\uFFFD'));
         StringAssert.Contains(text, "FINANCE");
         StringAssert.Contains(text, "😀");
-        Assert.AreEqual(2, text.Split("https://support.example.com/b/inbox?topOrgId=org-a&assistantConfigId=assistant-a&conversationId=conversation-a").Length - 1);
+        Assert.AreEqual(2, text.Split("https://support.example.com/b/inbox?assistantConfigId=assistant-a&conversationId=conversation-a").Length - 1);
     }
 
     /// <summary>
@@ -180,10 +180,10 @@ public sealed partial class WorkflowTests
     public async Task FinanceIsCanonicalAndOldCategoryIsRejected()
     {
         using var agent = application.Client("agent-a");
-        var value = await GetAsync(agent, "/api/customer-service/configuration?topOrgId=org-a");
+        var value = await GetAsync(agent, "/api/customer-service/configuration");
         Assert.IsTrue(value.GetProperty("groups").EnumerateArray().Any(x => x.GetProperty("category").GetString() == "FINANCE"));
         var stale = value.GetRawText().Replace("FINANCE", "MEDIA", StringComparison.Ordinal);
         using var body = JsonDocument.Parse(stale);
-        await SendAsync(agent, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a", body.RootElement, HttpStatusCode.BadRequest);
+        await SendAsync(agent, HttpMethod.Put, "/api/customer-service/configuration", body.RootElement, HttpStatusCode.BadRequest);
     }
 }

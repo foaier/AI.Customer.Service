@@ -23,21 +23,13 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
     /// <summary>
     /// 实时核验用户中心账号、租户和目标组织启用关系，并返回权威展示名称。
     /// </summary>
-    public async Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct)
+    public async Task<Member> RequireAsync(string account, CancellationToken ct)
     {
         var info = await SendAsync(HttpMethod.Post, "/api/AccountUser/v1/Info", new { accountId = account }, ct);
         var item = info.GetProperty("returnObj");
-        if (item.GetProperty("accountId").GetString() != account || item.GetProperty("tenantId").GetString() != tenant)
+        if (item.GetProperty("accountId").GetString() != account)
         {
-            throw BusinessException.Forbidden("用户中心账号租户核验失败");
-        }
-        var relations = await SendAsync(HttpMethod.Get, "/api/Organization/v1/GetOrgAccountLiteList?accountId=" + Uri.EscapeDataString(account), null, ct);
-        var enabled = relations.GetProperty("returnObj").EnumerateArray().Any(x =>
-            x.GetProperty("orgId").GetString() == org && x.TryGetProperty("status", out var status) &&
-            (status.ValueKind == JsonValueKind.Number ? status.GetInt32() == 1 : status.GetString() == "ENABLED"));
-        if (!enabled)
-        {
-            throw BusinessException.Forbidden("账号未在目标组织启用");
+            throw BusinessException.Forbidden("用户中心账号核验失败");
         }
         var name = item.TryGetProperty("fullName", out var display) ? display.GetString() : null;
         return new(account, string.IsNullOrWhiteSpace(name) ? account : name[..Math.Min(name.Length, 128)]);
@@ -46,18 +38,14 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
     /// <summary>
     /// 按绑定租户、组织、关键词和页大小的游标查询人员组，拒绝跨组织记录。
     /// </summary>
-    public async Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string tenant, string org, string? keyword, string? cursor, int limit, CancellationToken ct)
+    public async Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string? keyword, string? cursor, int limit, CancellationToken ct)
     {
-        var scope = CursorScope(tenant, org, "", keyword, limit);
+        var scope = CursorScope("", keyword, limit);
         var page = Decode(cursor, scope);
         var json = await SendAsync(HttpMethod.Post, "/api/accountGroup/v1/list",
-            new { OrgId = (string?)null, OrganizationId = org, Search = keyword ?? "", PageIndex = page, PageSize = limit, Skip = (page - 1) * limit }, ct);
+            new { Search = keyword ?? "", PageIndex = page, PageSize = limit, Skip = (page - 1) * limit }, ct);
         var items = json.GetProperty("returnObj").EnumerateArray().Select(x =>
         {
-            if (x.GetProperty("orgId").GetString() != org)
-            {
-                throw BusinessException.Unavailable("用户中心目录包含跨组织记录");
-            }
             return new DirectoryGroup(x.GetProperty("id").GetString()!, x.GetProperty("name").GetString()!);
         }).ToArray();
         return Page(json, page, limit, scope, items);
@@ -66,13 +54,13 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
     /// <summary>
     /// 先确认人员组属于目标组织，再按绑定范围的游标分页读取最小账号候选。
     /// </summary>
-    public async Task<DirectoryPage<Member>> AccountsAsync(string tenant, string org, string group, string? keyword, string? cursor, int limit, CancellationToken ct)
+    public async Task<DirectoryPage<Member>> AccountsAsync(string group, string? keyword, string? cursor, int limit, CancellationToken ct)
     {
         var verified = false;
         string? groupCursor = null;
         for (var scan = 0; scan < 100; scan++)
         {
-            var groups = await GroupsAsync(tenant, org, null, groupCursor, 1000, ct);
+            var groups = await GroupsAsync(null, groupCursor, 1000, ct);
             if (groups.Items.Any(x => x.GroupId == group))
             {
                 verified = true;
@@ -88,7 +76,7 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         {
             throw BusinessException.Forbidden("人员候选组不属于当前组织");
         }
-        var scope = CursorScope(tenant, org, group, keyword, limit);
+        var scope = CursorScope(group, keyword, limit);
         var page = Decode(cursor, scope);
         var json = await SendAsync(HttpMethod.Post, "/api/accountGroup/v1/accountDetails",
             new { AccountGroupId = group, Search = keyword ?? "", PageIndex = page, PageSize = limit, Skip = (page - 1) * limit }, ct);
@@ -156,13 +144,13 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
     /// <summary>
     /// 游标绑定租户、组织、外部组、关键词和页大小。
     /// </summary>
-    private static string CursorScope(string tenant, string org, string group, string? keyword, int limit)
+    private static string CursorScope(string group, string? keyword, int limit)
     {
         if (limit is < 1 or > 1000)
         {
             throw BusinessException.Invalid("目录页大小无效");
         }
-        return Guard.Fingerprint(string.Join("\n", tenant, org, group, keyword ?? "", limit.ToString()));
+        return Guard.Fingerprint(string.Join("\n", group, keyword ?? "", limit.ToString()));
     }
 
     /// <summary>

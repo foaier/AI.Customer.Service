@@ -23,8 +23,8 @@ function readGroups(value: ChatConfiguration) {
     );
 }
 
-export default function ChatNotifications({ topOrgId }: { topOrgId: string }) {
-    const path = `/customer-service/configuration/chat-notifications?topOrgId=${encodeURIComponent(topOrgId)}`;
+export default function ChatNotifications() {
+    const path = `/customer-service/configuration/chat-notifications`;
     const [saved, setSaved] = useState<ChatConfiguration | null>(null);
     const [draft, setDraft] = useState<Record<string, string>>({});
     const [enabled, setEnabled] = useState(false);

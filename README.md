@@ -25,9 +25,9 @@ dotnet run --project src/AI.Customer.Service.Web
 - `/customer-service/debug.html`：选择助手后进入各业务页面。
 - `/customer-service/visitor.html?assistantConfigId=助手ID`：访客聊天。
 - `/customer-service/agent.html?assistantConfigId=助手ID`：客服工作台。
-- `/customer-service/routing.html?topOrgId=组织ID&assistantConfigId=助手ID`：分组、路由、营业时间和聊天导出。
+- `/customer-service/routing.html?assistantConfigId=助手ID`：分组、路由、营业时间和聊天导出。
 
-页面复用统一 OIDC 登录；在登录平台登记 `/auth/callback.html` 和 `/auth/silent.html` 回调。首次由具备组织启用关系的账号保存四类分组、成员和助手映射后，关联客服可直接手动接单；显示在线只用于在线展示及接收同事改派。
+页面复用统一 OIDC 登录；在登录平台登记 `/auth/callback.html` 和 `/auth/silent.html` 回调。管理员保存四类分组、成员和助手映射后，关联客服可直接手动接单；显示在线只用于在线展示及接收同事改派。
 
 ## 项目结构
 
@@ -53,7 +53,7 @@ dotnet run --project tools/AI.Customer.Service.Schema -- data/sql
 npm --prefix frontend run format:sql
 ```
 
-数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库依次执行 `001_initial.sql`、`002_inbox_auto_close.sql`、`003_chat_notifications.sql`、`004_backend_contracts.sql`，已有库只执行尚未应用的增量，再设置 `Database:Initialize=false`。字段和 owner 说明见[数据库字典](docs/schema.md)及[配置说明](docs/configuration.md)。`EnsureCreated` 仅初始化空库，不升级旧表。
+数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库执行当前生成的 `001_initial.sql`，再设置 `Database:Initialize=false`。其余历史增量脚本已随范围模型移除；`EnsureCreated` 仅初始化空库，不升级旧表。字段和 owner 说明见[数据库字典](docs/schema.md)及[配置说明](docs/configuration.md)。
 
 ## 验证
 

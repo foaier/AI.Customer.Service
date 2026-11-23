@@ -84,10 +84,10 @@ public sealed class AgentFrameworkTests
     }
 
     /// <summary>
-    /// 模型多带租户字段、未知工具、损坏 JSON 或过大参数时必须在自动绑定之前拒绝。
+    /// 模型多带未知字段、未知工具、损坏 JSON 或过大参数时必须在自动绑定之前拒绝。
     /// </summary>
     [TestMethod]
-    [DataRow("proposeResolution", "{\"confidence\":0.95,\"tenantId\":\"other\"}")]
+    [DataRow("proposeResolution", "{\"confidence\":0.95,\"forgedField\":\"other\"}")]
     [DataRow("deleteConversation", "{}")]
     [DataRow("proposeResolution", "{")]
     [DataRow("proposeResolution", "{\"confidence\":\"forged\"}")]
@@ -133,7 +133,6 @@ public sealed class AgentFrameworkTests
         using var http = new HttpClient(new ProtocolHandler(async request =>
         {
             var session = request.Headers.GetValues("X-Session-Id").Single();
-            Assert.AreEqual("tenant-" + session, request.Headers.GetValues("X-Tenant-Id").Single());
             Assert.AreEqual("turn-" + session, request.Headers.GetValues("X-Turn-Id").Single());
             Assert.AreEqual("trace-" + session, request.Headers.GetValues("X-Trace-Id").Single());
             Assert.AreEqual("event-" + session, request.Headers.GetValues("X-Bvent-Id").Single());
@@ -150,11 +149,9 @@ public sealed class AgentFrameworkTests
         var model = Model(http);
         await Task.WhenAll(new[] { "a", "b" }.Select(async session =>
         {
-            var scope = new Scope("tenant-" + session, "org-a", session, "assistant-a", "event-" + session);
+            var scope = new Scope(session, "assistant-a", "event-" + session);
             var valid = new AiTurn
             {
-                TenantId = scope.TenantId,
-                TopOrgId = scope.TopOrgId,
                 ConversationId = session,
                 AssistantConfigId = scope.AssistantConfigId,
                 BventId = scope.BventId,
@@ -165,8 +162,6 @@ public sealed class AgentFrameworkTests
             var foreign = new AiTurn { Status = "SUCCEEDED", UserContent = "foreign-secret", AssistantContent = "secret" };
             var failed = new AiTurn
             {
-                TenantId = scope.TenantId,
-                TopOrgId = scope.TopOrgId,
                 ConversationId = session,
                 AssistantConfigId = scope.AssistantConfigId,
                 BventId = scope.BventId,
@@ -194,7 +189,7 @@ public sealed class AgentFrameworkTests
         var result = await Model(http).ClassifyAsync(Input().Scope, "展位咨询", default);
         Assert.AreEqual(Category.EXHIBITOR, result.Category);
         Assert.AreEqual(.9, result.Confidence);
-        content = """{"category":"MEDIA","confidence":0.99,"topOrgId":"forged"}""";
+        content = """{"category":"MEDIA","confidence":0.99,"forgedField":"forged"}""";
         Assert.AreEqual(Category.OTHER, (await Model(http).ClassifyAsync(Input().Scope, "展位咨询", default)).Category);
     }
 
@@ -351,7 +346,7 @@ public sealed class AgentFrameworkTests
     /// <summary>
     /// 固定可信会话输入，模型不能修改这些归属字段。
     /// </summary>
-    private static ModelRequest Input() => new(new("tenant-a", "org-a", "session-a", "assistant-a", null), "turn-a", "trace-a", [], "请问怎么入场？");
+    private static ModelRequest Input() => new(new("session-a", "assistant-a", null), "turn-a", "trace-a", [], "请问怎么入场？");
 
     /// <summary>
     /// 完整枚举框架增量以覆盖最终完成与候选释放门禁。

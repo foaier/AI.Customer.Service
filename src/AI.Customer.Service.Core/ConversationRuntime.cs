@@ -22,19 +22,19 @@ namespace AI.Customer.Service.Core;
 public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock, IConversationAccessRepository access)
 {
     /// <summary>
-    /// 正式创建会话，组织和大会来自受信助手注册表
+    /// 正式创建会话，助手定义来自受信助手注册表
     /// </summary>
     public Task<Conversation> CreateAsync(Actor actor, AssistantDefinition assistant, string id, CancellationToken ct,
         string? guestCredentialHash = null, DateTime? guestExpiresAt = null) =>
-        transactions.ExecuteAsync(actor.TenantId, assistant.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             if (actor.GuestConversationId is not null && actor.GuestConversationId != id)
                 throw BusinessException.Forbidden("匿名凭据不能创建或访问其它会话");
-            var existing = await conversations.FindAsync(actor.TenantId, id, ct);
+            var existing = await conversations.FindAsync(id, ct);
             if (existing is not null)
             {
                 RequireVisitor(existing, actor);
-                if (existing.AssistantConfigId != assistant.Id || existing.TopOrgId != assistant.TopOrgId)
+                if (existing.AssistantConfigId != assistant.Id || existing.BventId != assistant.BventId)
                 {
                     throw BusinessException.Forbidden("会话已绑定其它助手");
                 }
@@ -45,8 +45,6 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
             {
                 Id = Guard.Text(id, "会话标识"),
                 ConversationId = id,
-                TenantId = actor.TenantId,
-                TopOrgId = assistant.TopOrgId,
                 AssistantConfigId = assistant.Id,
                 BventId = assistant.BventId,
                 PrincipalId = actor.AccountId,
@@ -71,7 +69,7 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     /// </summary>
     public async Task<Conversation> VisitorAsync(Actor actor, string id, CancellationToken ct)
     {
-        var value = await conversations.FindAsync(actor.TenantId, id, ct) ?? throw BusinessException.Forbidden("会话不存在或不可访问");
+        var value = await conversations.FindAsync(id, ct) ?? throw BusinessException.Forbidden("会话不存在或不可访问");
         RequireVisitor(value, actor);
         await RequireGuestAsync(value, actor, ct);
         return value;
@@ -81,7 +79,7 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     /// 短事务登记 AI 轮次，不把网络生成放进事务
     /// </summary>
     public Task<AiTurn> BeginAsync(Actor actor, Scope scope, string input, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var conversation = await RequireAsync(scope, ct);
             RequireVisitor(conversation, actor);
@@ -123,7 +121,7 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     /// 完整成功回答只能在原代次提交；迟到内容标记 FENCED 且不进入展示历史
     /// </summary>
     public Task<bool> FinishAsync(Scope scope, string turnId, long epoch, string? content, string state, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var conversation = await RequireAsync(scope, ct);
             var turn = await conversations.TurnAsync(scope, turnId, ct) ?? throw BusinessException.Conflict("AI 轮次不存在");
@@ -159,8 +157,8 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
     /// </summary>
     public async Task<Conversation> RequireAsync(Scope scope, CancellationToken ct)
     {
-        var value = await conversations.FindAsync(scope.TenantId, scope.ConversationId, ct);
-        if (value is null || value.TopOrgId != scope.TopOrgId || value.AssistantConfigId != scope.AssistantConfigId || value.BventId != scope.BventId)
+        var value = await conversations.FindAsync(scope.ConversationId, ct);
+        if (value is null || value.AssistantConfigId != scope.AssistantConfigId || value.BventId != scope.BventId)
         {
             throw BusinessException.Forbidden("会话范围不一致");
         }
@@ -206,8 +204,6 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         new()
         {
             Id = id,
-            TenantId = scope.TenantId,
-            TopOrgId = scope.TopOrgId,
             ConversationId = scope.ConversationId,
             AssistantConfigId = scope.AssistantConfigId,
             BventId = scope.BventId,
@@ -215,11 +211,11 @@ public sealed class ConversationRuntime(IConversationRepository conversations, I
         };
 
     /// <summary>
-    /// 校验认证租户和原会话主体
+    /// 校验原会话主体
     /// </summary>
     private static void RequireVisitor(Conversation value, Actor actor)
     {
-        if (value.TenantId != actor.TenantId || value.PrincipalId != actor.AccountId ||
+        if (value.PrincipalId != actor.AccountId ||
             (actor.GuestConversationId is not null && actor.GuestConversationId != value.Id))
         {
             throw BusinessException.Forbidden("当前账号不是原会话访客");

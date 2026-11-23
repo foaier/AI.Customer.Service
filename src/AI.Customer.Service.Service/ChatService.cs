@@ -110,8 +110,8 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
                 {
                     await RegisterFailureAsync(actor, scope, turn, cleanup.Token);
                 }
-                logger.LogWarning("AI轮次失败 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Failure={Failure}",
-                    scope.ConversationId, turn.Id, actor.TraceId, scope.TopOrgId, scope.BventId, failure?.GetType().Name ?? "EMPTY");
+                logger.LogWarning("AI轮次失败 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} BventId={BventId} Failure={Failure}",
+                    scope.ConversationId, turn.Id, actor.TraceId, scope.BventId, failure?.GetType().Name ?? "EMPTY");
                 yield return new("error", new { code = "DEPENDENCY_UNAVAILABLE", message = "AI 暂不可用，人工恢复任务已登记", turnId = turn.Id });
                 yield break;
             }
@@ -162,8 +162,8 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         }
         catch (Exception error)
         {
-            logger.LogWarning("取消轮次待租约恢复 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Failure={Failure}",
-                scope.ConversationId, turn.Id, actor.TraceId, scope.TopOrgId, scope.BventId, error.GetType().Name);
+            logger.LogWarning("取消轮次待租约恢复 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} BventId={BventId} Failure={Failure}",
+                scope.ConversationId, turn.Id, actor.TraceId, scope.BventId, error.GetType().Name);
         }
     }
 
@@ -215,7 +215,7 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
     /// 可信最终故障在短事务内登记任务，Worker 恢复时再尝试人工申请。
     /// </summary>
     private Task<bool> RegisterFailureAsync(Actor actor, Scope scope, AiTurn turn, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             await journal.EnqueueAsync(scope, turn.PrincipalId, "", "SYSTEM_HANDOFF", "system:" + turn.Id,
                 new { type = "AI_FINAL_FAILURE", turnId = turn.Id, epoch = turn.Epoch }, actor.TraceId, ct);

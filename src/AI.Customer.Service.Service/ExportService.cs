@@ -21,13 +21,13 @@ public sealed class ExportService(IConversationRepository conversations, ISurvey
     /// <summary>
     /// 按组织、助手和页码导出安全文本，一页不是全部数据。
     /// </summary>
-    public async Task<object> ExportAsync(Actor actor, string org, string assistant, int page, int size, CancellationToken ct)
+    public async Task<object> ExportAsync(Actor actor, string assistant, int page, int size, CancellationToken ct)
     {
         if (page is < 1 or > 100000 || size is < 1 or > 100)
         {
             throw BusinessException.Invalid("导出页码或页大小无效");
         }
-        var values = await conversations.PageAsync(actor.TenantId, org, assistant, page, size, ct);
+        var values = await conversations.PageAsync(assistant, page, size, ct);
         var output = new List<object>();
         foreach (var value in values)
         {
@@ -51,7 +51,7 @@ public sealed class ExportService(IConversationRepository conversations, ISurvey
                 respondedAt = survey?.RespondedAt
             });
         }
-        return new { exportedAt = clock.GetUtcNow(), topOrgId = org, assistantConfigId = assistant, page, size, hasMore = values.Count == size, conversations = output };
+        return new { exportedAt = clock.GetUtcNow(), assistantConfigId = assistant, page, size, hasMore = values.Count == size, conversations = output };
     }
 
 }

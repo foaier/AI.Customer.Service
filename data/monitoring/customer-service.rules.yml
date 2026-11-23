@@ -1,6 +1,6 @@
 # .NET 客服 Prometheus 告警样例，默认未部署；指标接口始终启用且需要正式客服身份。
-# 采集目标使用 /api/customer-service/agents/metrics/prometheus?topOrgId=...&assistantConfigId=...。
-# 正式 Bearer 凭据通过采集器 Secret 文件提供，禁止写入此文件；组织/助手作为固定目标标签。
+# 采集目标使用 /api/customer-service/agents/metrics/prometheus?assistantConfigId=...。
+# 正式 Bearer 凭据通过采集器 Secret 文件提供，禁止写入此文件；助手作为固定目标标签。
 groups:
   - name: customer-service
     interval: 30s # 采样周期，默认建议 30 秒，合法值由 Prometheus 决定。

@@ -2,7 +2,7 @@
 (function () {
     const current = new URL(location.href),
         query = new URLSearchParams();
-    for (const key of ["assistantConfigId", "topOrgId"])
+    for (const key of ["assistantConfigId"])
         if (current.searchParams.get(key)) query.set(key, current.searchParams.get(key));
     document.querySelectorAll("[data-cs-navigation]").forEach((link) => {
         const target = new URL(link.href, current);

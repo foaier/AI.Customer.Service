@@ -44,7 +44,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
     /// 读取时初始化并按需补算期限，响应不包含邮箱。
     /// </summary>
     public Task<object?> GetAsync(Actor actor, Scope scope, CancellationToken ct) =>
-        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object?>(async () =>
         {
             var episode = await repository.LatestAsync(scope, ct);
             if (episode is null)
@@ -59,7 +59,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
     /// 访客继续等待、保存邮箱或转邮件，使用独立等待版本。
     /// </summary>
     public Task<object> ChooseAsync(Actor actor, Scope scope, WaitingChoice command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var episode = await repository.LatestAsync(scope, ct) ?? throw BusinessException.Forbidden();
             var waiting = await RefreshInTransactionAsync(episode, actor.TraceId, ct);
@@ -97,7 +97,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
     /// 客服按原周期恢复等待与安全通知摘要，仍需当前原组权限。
     /// </summary>
     public Task<object?> GetAgentAsync(Actor actor, Scope scope, string? episodeId, CancellationToken ct) =>
-        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object?>(async () =>
         {
             var episode = episodeId is null ? await repository.LatestAsync(scope, ct) : await repository.EpisodeAsync(scope, episodeId, ct);
             if (episode is null)
@@ -112,7 +112,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
     /// 只恢复原周期 DEAD 邮件或转人工通知，保留首次 eventKey 和冻结载荷。
     /// </summary>
     public Task<object> RetryNotificationsAsync(Actor actor, Scope scope, string? episodeId, CancellationToken ct) =>
-        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object>(async () =>
         {
             var episode = episodeId is null ? await repository.LatestAsync(scope, ct) : await repository.EpisodeAsync(scope, episodeId, ct);
             if (episode is null)
@@ -141,7 +141,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         var now = clock.GetUtcNow().UtcDateTime;
         if (waiting is null)
         {
-            var calendar = await configuration.CalendarAsync(episode.TenantId, episode.TopOrgId, ct);
+            var calendar = await configuration.CalendarAsync(ct);
             var window = calendar.Evaluate(episode.RequestedAt);
             waiting = ConversationRuntime.Bind<Waiting>(episode.Scope, episode.PrincipalId, episode.Id);
             waiting.EpisodeId = episode.Id;
@@ -274,7 +274,7 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         var result = new List<ReliableTask>();
         foreach (var key in new[] { "handoff-requested:" + waiting.EpisodeId, "remind:" + waiting.EpisodeId, "followup:" + waiting.TicketId })
         {
-            var value = await tasks.FindAsync(waiting.TenantId, waiting.TopOrgId, key, ct);
+            var value = await tasks.FindAsync(key, ct);
             if (value is not null && value.ConversationId == waiting.ConversationId && value.EpisodeId == waiting.EpisodeId && value.Kind is "EMAIL" or "INTERNAL" or "HANDOFF_NOTIFY")
             {
                 result.Add(value);

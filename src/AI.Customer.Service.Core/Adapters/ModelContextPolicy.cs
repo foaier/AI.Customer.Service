@@ -43,8 +43,6 @@ internal sealed class ModelContextPolicy(Scope scope, string? turnId, string? tr
     /// </summary>
     private void AddHeaders(PipelineRequestHeaders headers)
     {
-        headers.Set("X-Tenant-Id", scope.TenantId);
-        headers.Set("X-Top-Org-Id", scope.TopOrgId);
         headers.Set("X-Session-Id", scope.ConversationId);
         headers.Set("X-Assistant-Config-Id", scope.AssistantConfigId);
         if (scope.BventId is not null)

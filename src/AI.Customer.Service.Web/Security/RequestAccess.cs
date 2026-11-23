@@ -40,15 +40,11 @@ public sealed class RequestAccess(IHttpContextAccessor accessor, IOptions<Authen
         {
             throw new BusinessException("UNAUTHENTICATED", "需要正式登录", 401);
         }
-        var tenant = principal.FindFirstValue(options.TenantClaim);
         var account = principal.FindFirstValue(options.AccountClaim);
-        if (string.IsNullOrWhiteSpace(tenant) || string.IsNullOrWhiteSpace(account))
-        {
-            throw new BusinessException("UNAUTHENTICATED", "登录声明缺少租户或账号", 401);
-        }
+        if (string.IsNullOrWhiteSpace(account)) throw new BusinessException("UNAUTHENTICATED", "登录声明缺少账号", 401);
         var guestSession = principal.Identity.AuthenticationType == ConversationCredentialHandler.SchemeName
             ? principal.FindFirstValue("conversation_id") : null;
-        return new(Guard.Text(tenant, "认证租户", 64), Guard.Text(account, "认证账号"), trace, guestSession);
+        return new(Guard.Text(account, "认证账号"), trace, guestSession);
     }
 
     /// <summary>
@@ -59,19 +55,19 @@ public sealed class RequestAccess(IHttpContextAccessor accessor, IOptions<Authen
     /// <summary>
     /// 每次客服 HTTP 即时核验外部账号组织，再解析完整会话范围。
     /// </summary>
-    public async Task<Scope> AgentAsync(string org, string id, CancellationToken ct)
+    public async Task<Scope> AgentAsync(string id, CancellationToken ct)
     {
-        await access.RequireAccountAsync(Actor, org, ct);
-        return await access.AgentScopeAsync(Actor, org, id, conversations, ct);
+        await access.RequireAccountAsync(Actor, ct);
+        return await access.AgentScopeAsync(Actor, id, conversations, ct);
     }
 
     /// <summary>
     /// 队列及在线操作核验外部账号、助手归属及本地成员。
     /// </summary>
-    public Task AgentListAsync(string org, string assistant, CancellationToken ct) => access.RequireAgentAsync(Actor, org, assistant, ct);
+    public Task AgentListAsync(string assistant, CancellationToken ct) => access.RequireAgentAsync(Actor, assistant, ct);
 
     /// <summary>
     /// 配置管理员按目标组织外部关系授权，不以客户端页面角色授权。
     /// </summary>
-    public Task<Member> ManagerAsync(string org, CancellationToken ct) => access.RequireAccountAsync(Actor, org, ct);
+    public Task<Member> ManagerAsync(CancellationToken ct) => access.RequireAccountAsync(Actor, ct);
 }

@@ -29,9 +29,9 @@ foreach (var provider in new[] { "Sqlite", "MySql", "Kingbase" })
     sql.AppendLine("-- 前提：全新空库、独占建库权限、已备份目标；禁止在已有业务表的数据库执行。");
     sql.AppendLine("-- 兼容：Kingbase 要求 PostgreSQL 兼容模式。");
     sql.AppendLine("-- 回滚：失败时回滚 DDL 事务（数据库支持时）；否则仅清理本次新建的独立空库后重新部署。");
-    sql.AppendLine("-- 隔离：tenant_id 来自签名身份，top_org_id 来自可信助手/用户中心；复合主键和 FK 同时约束归属。");
+    sql.AppendLine("-- 范围：会话绑定服务端注册的助手，复合主键和 FK 约束业务引用。");
     sql.AppendLine("-- 约束：NOT NULL 禁止缺失必需事实，UNIQUE 保证幂等，CHECK 约束状态/租约/版本，FK 禁止跨组织引用。");
-    sql.AppendLine("-- 删除：全部物理保留，不做逻辑删除；按组织停写后依赖顺序归档清理，不删除未终结工单或待投递任务。");
+    sql.AppendLine("-- 删除：全部物理保留，不做逻辑删除；按依赖顺序归档清理，不删除未终结工单或待投递任务。");
     foreach (var entity in db.Model.GetEntityTypes().OrderBy(x => x.GetTableName()))
     {
         var table = entity.GetTableName()!;

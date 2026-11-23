@@ -14,16 +14,16 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
     /// <summary>
     /// 完整权限范围计算稳定摘要；页面分页不影响角标及变化检测。
     /// </summary>
-    public async Task<InboxSummary> SummaryAsync(Actor actor, string org, string? assistant, CancellationToken ct)
+    public async Task<InboxSummary> SummaryAsync(Actor actor, string? assistant, CancellationToken ct)
     {
-        var groups = await access.GroupsAsync(actor, org, ct);
-        if (assistant is not null) access.RequireAssistant(actor, org, assistant);
-        var episodes = await reception.InboxEpisodesAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
-        var stats = await conversations.InboxMessageStatsAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
-        var forms = await followups.InboxAsync(actor.TenantId, org, assistant, groups, ct);
+        var groups = await access.GroupsAsync(actor, ct);
+        if (assistant is not null) access.RequireAssistant(actor, assistant);
+        var episodes = await reception.InboxEpisodesAsync(assistant, groups, actor.AccountId, ct);
+        var stats = await conversations.InboxMessageStatsAsync(assistant, groups, actor.AccountId, ct);
+        var forms = await followups.InboxAsync(assistant, groups, ct);
         var ids = forms.Select(x => x.EpisodeId).ToArray();
-        var seen = await followups.SeenEpisodeIdsAsync(actor.TenantId, org, ids, actor.AccountId, ct);
-        var closed = await followups.ClosedEpisodeIdsAsync(actor.TenantId, org, ids, ct);
+        var seen = await followups.SeenEpisodeIdsAsync(ids, actor.AccountId, ct);
+        var closed = await followups.ClosedEpisodeIdsAsync(ids, ct);
         var visibleForms = forms.Where(x => x.State == "OPEN" || x.AssignedTo == actor.AccountId)
             .Select(x => new
             {
@@ -41,7 +41,6 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
         var pending = episodes.Where(x => x.Status == EpisodeStatus.REQUESTED).ToArray();
         var projection = new
         {
-            org,
             assistant,
             actor.AccountId,
             unread = stats.OrderBy(x => x.EpisodeId).Select(x => new { x.EpisodeId, x.UnreadCount, x.LastVisitorSeq, x.ReadSeq, x.LastVisitorMessageAt }),
@@ -56,11 +55,11 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
     /// <summary>
     /// 返回分页队列当前已加载周期的真实消息水位，不返回正文。
     /// </summary>
-    public async Task<object> QueueAsync(Actor actor, string org, string assistant, CancellationToken ct)
+    public async Task<object> QueueAsync(Actor actor, string assistant, CancellationToken ct)
     {
-        var groups = await access.GroupsAsync(actor, org, ct);
-        var episodes = await reception.QueueAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
-        var stats = (await conversations.InboxMessageStatsAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct))
+        var groups = await access.GroupsAsync(actor, ct);
+        var episodes = await reception.QueueAsync(assistant, groups, actor.AccountId, ct);
+        var stats = (await conversations.InboxMessageStatsAsync(assistant, groups, actor.AccountId, ct))
             .ToDictionary(x => x.EpisodeId, StringComparer.Ordinal);
         var queue = episodes.Select(x =>
         {

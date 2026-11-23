@@ -34,7 +34,6 @@ public sealed class ConversationCredentialHandler(IOptionsMonitor<Authentication
         {
             var grant = await access.AuthorizeAsync(values[0]!, null, Context.RequestAborted);
             var identity = new ClaimsIdentity([
-                new Claim(claims.Value.TenantClaim, grant.TenantId),
                 new Claim(claims.Value.AccountClaim, grant.PrincipalId),
                 new Claim("conversation_id", grant.ConversationId)
             ], SchemeName);

@@ -23,26 +23,19 @@
                 <h2>配置范围</h2>
                 <div class="form-grid">
                     <div>
-                        <label for="org">组织 ID</label><input id="org" autocomplete="off" /><button
-                            id="load"
-                            class="secondary"
-                            type="button"
-                        >
-                            加载分组配置</button
-                        ><button id="load-assistants" class="secondary" type="button">读取助手列表</button>
-                    </div>
-                    <div>
                         <label for="assistant-list">选择要配置的 AI 助手</label
                         ><select id="assistant-list">
                             <option value="">请先读取助手列表</option></select
                         ><label for="assistant">助手 ID</label><input id="assistant" autocomplete="off" />
+                        <button id="load-assistants" class="secondary" type="button">读取助手列表</button>
+                        <button id="load" class="secondary" type="button">加载分组配置</button>
                     </div>
                 </div>
-                <p id="status" role="status" aria-live="polite">登录后加载组织配置。</p>
+                <p id="status" role="status" aria-live="polite">登录后加载配置。</p>
             </section>
             <section class="panel">
                 <h2>用户中心客服组</h2>
-                <p class="hint">候选账号来自当前组织已有的用户中心分组。这里仅读取成员，不修改用户中心分组或账号。</p>
+                <p class="hint">候选账号来自当前授权范围已有的用户中心分组。这里仅读取成员，不修改用户中心分组或账号。</p>
                 <div class="directory-toolbar">
                     <label for="directory-keyword">搜索客服组</label
                     ><input id="directory-keyword" type="search" maxlength="128" /><button
@@ -61,7 +54,7 @@
                 <fieldset id="routing-fields" disabled>
                     <h2>默认业务分组与客服成员</h2>
                     <p class="hint">
-                        选择用户中心分组并加载其中账号，再将客服加入展商、观众、财务或其他业务组。同一账号可加入多个业务组；保存时会再次核验组织启用状态。
+                        选择用户中心分组并加载其中账号，再将客服加入展商、观众、财务或其他业务组。同一账号可加入多个业务组；保存时会再次核验授权状态。
                     </p>
                     <div id="groups" class="config-grid"></div>
                     <section class="panel routing-section">
@@ -80,7 +73,7 @@
             </form>
             <section class="panel">
                 <h2>客服工作时间</h2>
-                <p>保存到当前组织，重启保留；已申请的等待截止时间保持原值。</p>
+                <p>保存到当前客服配置，重启保留；已申请的等待截止时间保持原值。</p>
                 <label for="calendar-version">日历版本</label><input id="calendar-version" maxlength="64" />
                 <label for="calendar-zone">时区</label><input id="calendar-zone" value="Asia/Shanghai" />
                 <label for="calendar-opens">上班时间</label><input id="calendar-opens" type="time" />

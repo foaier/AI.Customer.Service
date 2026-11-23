@@ -48,7 +48,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     /// 在成功轮次后按真实历史创建一次性调查，不根据沉默或人工结束创建。
     /// </summary>
     public Task<Survey?> EvaluateAsync(Scope scope, CancellationToken ct) =>
-        transactions.ExecuteAsync<Survey?>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<Survey?>(async () =>
         {
             var current = await repository.FindAsync(scope, ct);
             var conversation = await runtime.RequireAsync(scope, ct);
@@ -79,7 +79,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     /// 只恢复及过期已有调查，读取不创建或代填展示回执。
     /// </summary>
     public Task<object?> GetAsync(Scope scope, CancellationToken ct) =>
-        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync<object?>(async () =>
         {
             var value = await repository.FindAsync(scope, ct);
             var conversation = await runtime.RequireAsync(scope, ct);
@@ -100,7 +100,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     /// 评价同参数重放安全，反向修改已提交答案冲突；不满意只打开选择，不直接转人工。
     /// </summary>
     public Task<object> AnswerAsync(Actor actor, Scope scope, string id, SurveyAnswer command, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var survey = await RequireAsync(scope, id, ct);
             var request = id + ":answer";
@@ -133,7 +133,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     {
         var email = command.Choice == HandoffChoice.OPTED_IN ? Guard.Email(command.Email) : null;
         var classification = await handoff.PrepareAsync(scope, ct);
-        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        return await transactions.ExecuteAsync(async () =>
         {
             var survey = await RequireAsync(scope, id, ct);
             var request = id + ":choice";
@@ -164,7 +164,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
     /// 页面实际显示后显式登记，重复回执安全且不推进评价版本。
     /// </summary>
     public Task<object> ReceiptAsync(Scope scope, string id, CancellationToken ct) =>
-        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+        transactions.ExecuteAsync(async () =>
         {
             var value = await RequireAsync(scope, id, ct);
             value.DisplayedAt ??= clock.GetUtcNow().UtcDateTime;
@@ -189,7 +189,7 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
         {
             return Task.FromResult<ResolutionEvidence?>(null);
         }
-        return transactions.ExecuteAsync<ResolutionEvidence?>(scope.TenantId, scope.TopOrgId, async () =>
+        return transactions.ExecuteAsync<ResolutionEvidence?>(async () =>
         {
             var conversation = await runtime.RequireAsync(scope, ct);
             if (conversation.HumanEpisodeId is not null || conversation.Epoch != turn.Epoch)

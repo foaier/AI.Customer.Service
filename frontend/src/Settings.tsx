@@ -25,7 +25,6 @@ const categories = [
 
 export default function Settings({ assistant }: { assistant: Assistant }) {
     const assistantId = assistant.assistantConfigId || assistant.configId || assistant.id;
-    const orgQuery = `topOrgId=${encodeURIComponent(assistant.topOrgId)}`;
     const [routing, setRouting] = useState<Routing | null>(null);
     const [calendar, setCalendar] = useState<Calendar | null>(null);
     const [routeDraft, setRouteDraft] = useState<Record<string, string>>({});
@@ -48,8 +47,8 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         setLoading(true);
         try {
             const [routingState, calendarState] = await Promise.all([
-                request<Routing>(`/customer-service/configuration?${orgQuery}`),
-                request<Calendar>(`/customer-service/configuration/calendar?${orgQuery}`),
+                request<Routing>(`/customer-service/configuration`),
+                request<Calendar>(`/customer-service/configuration/calendar`),
             ]);
             setRouting({
                 ...routingState,
@@ -77,7 +76,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         } finally {
             setLoading(false);
         }
-    }, [assistantId, orgQuery]);
+    }, [assistantId]);
 
     useEffect(() => {
         void load();
@@ -86,7 +85,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
     const loadDirectoryGroups = async () => {
         setSaving(true);
         try {
-            const query = new URLSearchParams({ topOrgId: assistant.topOrgId, limit: "100" });
+            const query = new URLSearchParams({ limit: "100" });
             if (directorySearch.trim()) query.set("keyword", directorySearch.trim());
             const result = await request<{ groups: { id: string; name: string }[]; status: string }>(
                 `/customer-service/configuration/directory/groups?${query}`,
@@ -106,7 +105,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         if (!directoryGroupId) return;
         setSaving(true);
         try {
-            const query = new URLSearchParams({ topOrgId: assistant.topOrgId, groupId: directoryGroupId, limit: "50" });
+            const query = new URLSearchParams({ groupId: directoryGroupId, limit: "50" });
             const result = await request<{ candidates: { accountId: string; displayName: string }[]; status: string }>(
                 `/customer-service/configuration/directory/accounts?${query}`,
             );
@@ -151,7 +150,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
             const routes = routing.routes.some((item) => item.assistantConfigId === assistantId)
                 ? routing.routes.map((item) => (item.assistantConfigId === assistantId ? route : item))
                 : [...routing.routes, route];
-            const result = await put<Routing>(`/customer-service/configuration?${orgQuery}`, {
+            const result = await put<Routing>(`/customer-service/configuration`, {
                 version: routing.version,
                 groups: routing.groups,
                 routes,
@@ -171,7 +170,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         setSaving(true);
         setError("");
         try {
-            const result = await put<Calendar>(`/customer-service/configuration/calendar?${orgQuery}`, calendar);
+            const result = await put<Calendar>(`/customer-service/configuration/calendar`, calendar);
             setCalendar(result);
             setNotice("营业日历已保存，新等待周期将使用此规则。");
         } catch (reason) {
@@ -194,7 +193,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                 classification: { category: string; confidence: number; source: string };
                 groupId?: string;
                 configVersion: number;
-            }>(`/customer-service/configuration/preview?${orgQuery}`, {
+            }>(`/customer-service/configuration/preview`, {
                 assistantConfigId: assistantId,
                 context: previewText,
             });
@@ -421,7 +420,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                         </div>
                     </form>
 
-                    <ChatNotifications key={assistant.topOrgId} topOrgId={assistant.topOrgId} />
+                    <ChatNotifications key={assistantId} />
 
                     <section className="settings-section route-preview-section">
                         <div className="settings-section-heading">

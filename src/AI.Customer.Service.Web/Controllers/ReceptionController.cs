@@ -26,10 +26,10 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
     /// 查询有资格组的待接单和本人接待。
     /// </summary>
     [HttpGet("agents/queue")]
-    public async Task<object> Queue(string topOrgId, string assistantConfigId, CancellationToken ct)
+    public async Task<object> Queue(string assistantConfigId, CancellationToken ct)
     {
-        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
-        return Success(await inbox.QueueAsync(Actor, topOrgId, assistantConfigId, ct));
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        return Success(await inbox.QueueAsync(Actor, assistantConfigId, ct));
     }
 
     /// <summary>
@@ -43,9 +43,9 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
     /// 客服读取冻结组内接待摘要。
     /// </summary>
     [HttpGet("agents/conversations/{id}/reception")]
-    public async Task<object> AgentReception(string id, string topOrgId, CancellationToken ct)
+    public async Task<object> AgentReception(string id, CancellationToken ct)
     {
-        var episode = await reception.RequireAsync(await RequestAccess.AgentAsync(topOrgId, id, ct), null, ct);
+        var episode = await reception.RequireAsync(await RequestAccess.AgentAsync(id, ct), null, ct);
         await access.RequireGroupAsync(Actor, episode, ct);
         return Success(ReceptionView(episode));
     }
@@ -54,15 +54,15 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
     /// 客服在容量内直接手动接单。
     /// </summary>
     [HttpPost("agents/conversations/{id}/claim")]
-    public async Task<object> Claim(string id, string topOrgId, StateCommand command, CancellationToken ct) =>
-        Success(await reception.ClaimAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), command, ct));
+    public async Task<object> Claim(string id, StateCommand command, CancellationToken ct) =>
+        Success(await reception.ClaimAsync(Actor, await RequestAccess.AgentAsync(id, ct), command, ct));
 
     /// <summary>
     /// 原认领客服明确结束接待。
     /// </summary>
     [HttpPost("agents/conversations/{id}/resolve")]
-    public async Task<object> Resolve(string id, string topOrgId, StateCommand command, CancellationToken ct) =>
-        Success(await reception.FinishAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), command, false, ct));
+    public async Task<object> Resolve(string id, StateCommand command, CancellationToken ct) =>
+        Success(await reception.FinishAsync(Actor, await RequestAccess.AgentAsync(id, ct), command, false, ct));
 
     /// <summary>
     /// 原访客取消尚未被客服认领的申请。

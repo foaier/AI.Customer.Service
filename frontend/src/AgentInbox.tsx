@@ -41,7 +41,7 @@ const activeStatuses = ["CLAIMED", "ACTIVE"];
 
 export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const assistantId = assistant.assistantConfigId || assistant.configId || assistant.id;
-    const query = `topOrgId=${encodeURIComponent(assistant.topOrgId)}&assistantConfigId=${encodeURIComponent(assistantId)}`;
+    const query = `assistantConfigId=${encodeURIComponent(assistantId)}`;
     const [episodes, setEpisodes] = useState<Episode[]>([]);
     const [selected, setSelected] = useState<Episode | null>(null);
     const [messages, setMessages] = useState<AgentMessage[]>([]);
@@ -66,7 +66,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const pendingRead = useRef("");
     const openedLink = useRef("");
     const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
-    const previews = useEpisodePreviews(episodes, assistant.topOrgId);
+    const previews = useEpisodePreviews(episodes);
 
     const syncSelection = useCallback((queue: Episode[]) => {
         const current = selectedRef.current;
@@ -154,10 +154,10 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             try {
                 const [timeline, history] = await Promise.all([
                     request<{ messages: HumanMessage[] }>(
-                        `/customer-service/agents/conversations/${encodeURIComponent(episode.scope.conversationId)}/messages?topOrgId=${encodeURIComponent(assistant.topOrgId)}&afterSeq=0&limit=100`,
+                        `/customer-service/agents/conversations/${encodeURIComponent(episode.scope.conversationId)}/messages?afterSeq=0&limit=100`,
                     ),
                     request<{ id: string; role: string; content: string }[]>(
-                        `/customer-service/agents/conversations/${encodeURIComponent(episode.scope.conversationId)}/history?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                        `/customer-service/agents/conversations/${encodeURIComponent(episode.scope.conversationId)}/history`,
                     ),
                 ]);
                 if (generation !== selectionGeneration.current) return;
@@ -175,7 +175,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     setError(reason instanceof Error ? reason.message : "会话读取失败");
             }
         },
-        [assistant.topOrgId, receiveTimeline],
+        [receiveTimeline],
     );
 
     useEffect(() => {
@@ -183,8 +183,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         const conversationId = params.get("conversationId");
         if (
             !conversationId ||
-            params.get("assistantConfigId") !== assistantId ||
-            params.get("topOrgId") !== assistant.topOrgId
+            params.get("assistantConfigId") !== assistantId
         )
             return;
         const linkKey = `${query}&conversationId=${conversationId}`;
@@ -193,7 +192,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         if (!episode) return;
         openedLink.current = linkKey;
         void loadConversation(episode);
-    }, [episodes, assistantId, assistant.topOrgId, query, loadConversation]);
+    }, [episodes, assistantId, query, loadConversation]);
 
     useEffect(() => {
         void loadQueue();
@@ -206,7 +205,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     }, [loadQueue]);
 
     useEffect(() => {
-        if (!assistant.topOrgId || !assistantId) return;
+        if (!assistantId) return;
         let closed = false;
         let timer = 0;
         let socket: WebSocket | null = null;
@@ -220,7 +219,6 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     realtimeUrl({
                         authorization: `Bearer ${token}`,
                         agent: true,
-                        topOrgId: assistant.topOrgId,
                         assistantConfigId: assistantId,
                         afterSeq: 0,
                     }),
@@ -286,7 +284,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             queueRefreshTimer.current = 0;
             socket?.close();
         };
-    }, [assistant.topOrgId, assistantId, syncSelection, loadQueue]);
+    }, [assistantId, syncSelection, loadQueue]);
 
     useEffect(() => {
         if (!selected || readyEpisodeId !== selected.episodeId || !activeStatuses.includes(selected.status)) return;
@@ -303,7 +301,6 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                         authorization: `Bearer ${token}`,
                         agent: true,
                         conversationId: selected.scope.conversationId,
-                        topOrgId: assistant.topOrgId,
                         assistantConfigId: assistantId,
                         afterSeq: lastSeq.current,
                     }),
@@ -344,7 +341,6 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         selected?.scope.conversationId,
         selected?.status,
         readyEpisodeId,
-        assistant.topOrgId,
         assistantId,
         receiveTimeline,
     ]);
@@ -375,7 +371,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         const generation = selectionGeneration.current;
         pendingRead.current = requestKey;
         post(
-            `/customer-service/agents/conversations/${encodeURIComponent(conversationId)}/receipts?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+            `/customer-service/agents/conversations/${encodeURIComponent(conversationId)}/receipts`,
             { kind: "READ", seq },
         )
             .then(() => {
@@ -387,7 +383,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             .finally(() => {
                 if (pendingRead.current === requestKey) pendingRead.current = "";
             });
-    }, [assistant.topOrgId, loadQueue, messages, pageVisible, selected]);
+    }, [loadQueue, messages, pageVisible, selected]);
 
     useEffect(() => {
         if (availability?.status !== "ONLINE") return;
@@ -419,7 +415,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         setError("");
         try {
             await post(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/claim?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/claim`,
                 {
                     requestId: `claim_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: selected.version,
@@ -448,7 +444,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         setMessages((current) => [...current, { id: optimistic, senderRole: "AGENT", content }]);
         try {
             const saved = await post<HumanMessage>(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/messages?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/messages`,
                 { clientMsgId: id, content },
             );
             setMessages((current) =>
@@ -480,7 +476,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         setBusy(true);
         try {
             await post(
-                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/resolve?topOrgId=${encodeURIComponent(assistant.topOrgId)}`,
+                `/customer-service/agents/conversations/${encodeURIComponent(selected.scope.conversationId)}/resolve`,
                 {
                     requestId: `resolve_${crypto.randomUUID().replaceAll("-", "")}`,
                     expectedVersion: selected.version,
@@ -507,7 +503,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         <main className="agent-page">
             <div className="agent-page-header">
                 <div>
-                    <p className="eyebrow">SERVICE OPERATIONS / {assistant.topOrgId}</p>
+                    <p className="eyebrow">SERVICE OPERATIONS / INBOX</p>
                     <h1>在线接待</h1>
                     <p className="page-subtitle">新申请由有权限的客服认领；接待回复会同步回访客会话。</p>
                 </div>

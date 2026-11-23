@@ -33,7 +33,7 @@ const external = createServer(async (request, response) => {
         if (request.url.endsWith("/Info")) {
             result = {
                 isSuccess: true,
-                returnObj: { accountId: body.accountId, tenantId: "tenant-a", fullName: "浏览器客服" },
+                returnObj: { accountId: body.accountId, fullName: "浏览器客服" },
             };
         } else if (request.url.startsWith("/api/Organization/")) {
             result = { isSuccess: true, returnObj: [{ orgId: "org-a", status: 1 }] };
@@ -104,7 +104,6 @@ function token(account) {
             aud: "browser-tests",
             exp: now + 1800,
             nbf: now - 1,
-            tenantId: "tenant-a",
             accountId: account,
         });
     return unsigned + "." + createHmac("sha256", key).update(unsigned).digest("base64url");
@@ -130,8 +129,6 @@ try {
                 Authentication__Audience: "browser-tests",
                 Authentication__SigningKey: key,
                 Assistants__Items__0__Id: "assistant-a",
-                Assistants__Items__0__TenantId: "tenant-a",
-                Assistants__Items__0__TopOrgId: "org-a",
                 UserCenter__BaseUrl: dependency,
                 Model__BaseUrl: dependency + "/v1",
                 Model__Model: "browser-test",
@@ -170,19 +167,19 @@ try {
         assert.equal(response.status, 200, JSON.stringify(json));
         return json.data ?? json.returnObj;
     }
-    const config = await api("/api/customer-service/configuration?topOrgId=org-a");
+    const config = await api("/api/customer-service/configuration");
     const groups = config.groups.map((group) => ({
         ...group,
         members: [{ accountId: "agent-a", displayName: "不可信页面名称" }],
     }));
-    await api("/api/customer-service/configuration?topOrgId=org-a", "PUT", {
+    await api("/api/customer-service/configuration", "PUT", {
         version: config.version,
         groups,
         routes: [
             { assistantConfigId: "assistant-a", groups: Object.fromEntries(groups.map((g) => [g.category, g.id])) },
         ],
     });
-    await api("/api/customer-service/configuration/chat-notifications?topOrgId=org-a", "PUT", {
+    await api("/api/customer-service/configuration/chat-notifications", "PUT", {
         version: 0,
         enabled: true,
         publicBaseUrl: "https://support.example.com",
@@ -199,7 +196,7 @@ try {
         month: "2-digit",
         day: "2-digit",
     }).format(new Date());
-    await api("/api/customer-service/configuration/calendar?topOrgId=org-a", "PUT", {
+    await api("/api/customer-service/configuration/calendar", "PUT", {
         version: 0,
         calendarVersion: "browser-v1",
         zone: "Asia/Shanghai",
@@ -279,7 +276,7 @@ try {
     await visitor.screenshot({ path: path.join(artifacts, "visitor.png"), fullPage: true });
     await agent.screenshot({ path: path.join(artifacts, "agent.png"), fullPage: true });
     const routing = await pageFor("agent-a");
-    await routing.goto(base + "/customer-service/routing.html?topOrgId=org-a&assistantConfigId=assistant-a");
+    await routing.goto(base + "/customer-service/routing.html?assistantConfigId=assistant-a");
     await routing.locator("#reload").click();
     await routing.locator("#groups input").first().waitFor();
     await routing.locator("#calendar-load").click();
