@@ -9,7 +9,9 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Infrastructure.Adapters;
 
-/// <summary>官方企微、雅式及邮件网关的独立协议适配，通知开关只读取共享持久配置。</summary>
+/// <summary>
+/// 官方企微、雅式及邮件网关的独立协议适配，通知开关只读取共享持久配置。
+/// </summary>
 public sealed class NotificationHttpAdapter(HttpClient http, IOptions<NotificationOptions> options,
     IConfigurationRepository configuration, IReceptionRepository reception, ISecretCipher cipher, TimeProvider clock) : INotificationPort
 {
@@ -88,7 +90,9 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
         else throw new NotificationDeliveryException("CONFIG_PROVIDER_INVALID", false);
     }
 
-    /// <summary>邮件及审计网关仍由部署提供地址和认证，JSON 受理必须明确为 true。</summary>
+    /// <summary>
+    /// 邮件及审计网关仍由部署提供地址和认证，JSON 受理必须明确为 true。
+    /// </summary>
     private Task SendGatewayAsync(ReliableTask task, string endpoint, CancellationToken ct)
     {
         if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) || uri.Scheme is not ("https" or "http") || uri.UserInfo.Length > 0)
@@ -107,7 +111,9 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
         }, "GATEWAY", options.Value.Authorization, ct);
     }
 
-    /// <summary>发送到已验证地址且不跟随跳转，响应正文和凭据不进入异常或日志。</summary>
+    /// <summary>
+    /// 发送到已验证地址且不跟随跳转，响应正文和凭据不进入异常或日志。
+    /// </summary>
     private async Task PostAsync(ReliableTask task, Uri endpoint, object payload, string provider, string? authorization, CancellationToken ct)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -148,7 +154,9 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
             throw new NotificationDeliveryException("GATEWAY_NOT_ACCEPTED", true);
     }
 
-    /// <summary>仅保留安全格式的 request_id，忽略响应中的其它供应商信息。</summary>
+    /// <summary>
+    /// 仅保留安全格式的 request_id，忽略响应中的其它供应商信息。
+    /// </summary>
     private static string? RequestId(JsonElement value)
     {
         if (!value.TryGetProperty("request_id", out var id) && value.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object)

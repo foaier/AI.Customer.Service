@@ -10,19 +10,39 @@ using Microsoft.Extensions.Logging;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>AI 文本生成编排，网络调用在事务外，受限工具不得直接覆盖人工事实。</summary>
-/// <param name="runtime">会话 owner 的轮次围栏。</param>
-/// <param name="conversations">真实历史读取端口。</param>
-/// <param name="model">模型协议端口。</param>
-/// <param name="handoff">受限人工申请工具应用端口。</param>
-/// <param name="surveys">真实结束证据门禁。</param>
-/// <param name="journal">系统故障任务登记。</param>
-/// <param name="transactions">短事务。</param>
-/// <param name="logger">结构化日志。</param>
+/// <summary>
+/// AI 文本生成编排，网络调用在事务外，受限工具不得直接覆盖人工事实。
+/// </summary>
+/// <param name="runtime">
+/// 会话 owner 的轮次围栏。
+/// </param>
+/// <param name="conversations">
+/// 真实历史读取端口。
+/// </param>
+/// <param name="model">
+/// 模型协议端口。
+/// </param>
+/// <param name="handoff">
+/// 受限人工申请工具应用端口。
+/// </param>
+/// <param name="surveys">
+/// 真实结束证据门禁。
+/// </param>
+/// <param name="journal">
+/// 系统故障任务登记。
+/// </param>
+/// <param name="transactions">
+/// 短事务。
+/// </param>
+/// <param name="logger">
+/// 结构化日志。
+/// </param>
 public sealed class ChatService(ConversationRuntime runtime, IConversationRepository conversations, IChatModel model,
     HandoffService handoff, SurveyService surveys, CommandJournal journal, IUnitOfWork transactions, ILogger<ChatService> logger)
 {
-    /// <summary>同会话生成 AI SSE 事件，失败有明确事件及可靠系统恢复，不写入迟到正文。</summary>
+    /// <summary>
+    /// 同会话生成 AI SSE 事件，失败有明确事件及可靠系统恢复，不写入迟到正文。
+    /// </summary>
     public async IAsyncEnumerable<ChatEvent> StreamAsync(Actor actor, Scope scope, string input, [EnumeratorCancellation] CancellationToken ct)
     {
         await runtime.RequireChatIdentityAsync(scope, ct);
@@ -130,7 +150,9 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         }
     }
 
-    /// <summary>客户端断流或提前释放迭代器时独立清理轮次，不把主动取消登记为系统转人工。</summary>
+    /// <summary>
+    /// 客户端断流或提前释放迭代器时独立清理轮次，不把主动取消登记为系统转人工。
+    /// </summary>
     private async Task AbandonTurnAsync(Actor actor, Scope scope, AiTurn turn)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -145,7 +167,9 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         }
     }
 
-    /// <summary>工具严格字段白名单，非法工具或非法参数仅忽略候选，不破坏成功主回答。</summary>
+    /// <summary>
+    /// 工具严格字段白名单，非法工具或非法参数仅忽略候选，不破坏成功主回答。
+    /// </summary>
     private async Task<Proposal?> ApplyToolAsync(Scope scope, AiTurn turn, ModelDelta tool, CancellationToken ct)
     {
         if (tool.ToolName is "proposeResolution" or "propose_resolution")
@@ -187,7 +211,9 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         }
     }
 
-    /// <summary>可信最终故障在短事务内登记任务，Worker 恢复时再尝试人工申请。</summary>
+    /// <summary>
+    /// 可信最终故障在短事务内登记任务，Worker 恢复时再尝试人工申请。
+    /// </summary>
     private Task<bool> RegisterFailureAsync(Actor actor, Scope scope, AiTurn turn, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -196,7 +222,9 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
             return true;
         }, ct);
 
-    /// <summary>按前端协议投影卡片可公开的安全字段。</summary>
+    /// <summary>
+    /// 按前端协议投影卡片可公开的安全字段。
+    /// </summary>
     public static object ProposalView(Proposal proposal) => new
     {
         proposalId = proposal.Id,
@@ -209,7 +237,13 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
     };
 }
 
-/// <summary>与传输协议无关的 AI 流事件。</summary>
-/// <param name="Event">message、card、error 或 complete。</param>
-/// <param name="Data">由 Web SSE Adapter 序列化的业务投影。</param>
+/// <summary>
+/// 与传输协议无关的 AI 流事件。
+/// </summary>
+/// <param name="Event">
+/// message、card、error 或 complete。
+/// </param>
+/// <param name="Data">
+/// 由 Web SSE Adapter 序列化的业务投影。
+/// </param>
 public sealed record ChatEvent(string Event, object Data);

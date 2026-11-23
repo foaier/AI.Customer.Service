@@ -4,10 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AI.Customer.Service.Web.Controllers;
 
-/// <summary>客服收件箱全范围提醒汇总 HTTP Adapter。</summary>
+/// <summary>
+/// 客服收件箱全范围提醒汇总 HTTP Adapter。
+/// </summary>
 public sealed class InboxController(RequestAccess request, AccessService access, InboxService inbox) : CustomerServiceControllerBase(request)
 {
-    /// <summary>查询本人当前组权限内的消息、留言和待接待提醒。</summary>
+    /// <summary>
+    /// 查询本人当前组权限内的消息、留言和待接待提醒。
+    /// </summary>
     [HttpGet("agents/inbox/summary")]
     public async Task<object> Summary(string topOrgId, CancellationToken ct, string? assistantConfigId = null)
     {

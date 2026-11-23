@@ -18,7 +18,9 @@ public sealed partial class WorkflowTests
 {
     private const string ChatConfigPath = "/api/customer-service/configuration/chat-notifications?topOrgId=org-a";
 
-    /// <summary>正式 HTTP 覆盖范围权限、首次保存、兼容键、版本冲突及非法地址，读取不泄露认证参数。</summary>
+    /// <summary>
+    /// 正式 HTTP 覆盖范围权限、首次保存、兼容键、版本冲突及非法地址，读取不泄露认证参数。
+    /// </summary>
     [TestMethod]
     public async Task ChatNotificationConfigurationIsScopedAndVersioned()
     {
@@ -49,7 +51,9 @@ public sealed partial class WorkflowTests
         await SendAsync(manager, HttpMethod.Put, ChatConfigPath, new { version = 1, chatGroup = groups }, HttpStatusCode.Forbidden);
     }
 
-    /// <summary>保存的财务群真正用于 INTERNAL 投递；总开关、回执和租户边界不能绕过。</summary>
+    /// <summary>
+    /// 保存的财务群真正用于 INTERNAL 投递；总开关、回执和租户边界不能绕过。
+    /// </summary>
     [TestMethod]
     public async Task SavedChatGroupRoutesNotificationAndRequiresWeComReceipt()
     {

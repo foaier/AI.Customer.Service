@@ -25,7 +25,9 @@ public sealed partial class WorkflowTests
         ["EMP"] = "other-hook-123"
     };
 
-    /// <summary>即时登记一次；关闭不耗次数；永久失败可按原周期人工恢复；取消后旧命令不能重放。</summary>
+    /// <summary>
+    /// 即时登记一次；关闭不耗次数；永久失败可按原周期人工恢复；取消后旧命令不能重放。
+    /// </summary>
     [TestMethod]
     public async Task ImmediateNotificationIsIdempotentPausedAndManuallyRecoverable()
     {
@@ -79,7 +81,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(2, await finalScope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<ReliableTask>().CountAsync(x => x.Kind == "HANDOFF_NOTIFY"));
     }
 
-    /// <summary>真实配置接口保护密钥，省略保留、显式清除；雅式遵循固定地址、认证头和严格回执。</summary>
+    /// <summary>
+    /// 真实配置接口保护密钥，省略保留、显式清除；雅式遵循固定地址、认证头和严格回执。
+    /// </summary>
     [TestMethod]
     public async Task AdsaleTokenAndReceiptFollowProviderContract()
     {
@@ -152,7 +156,9 @@ public sealed partial class WorkflowTests
         Assert.IsFalse((await GetAsync(agent, ChatConfigPath)).GetProperty("apiTokenConfigured").GetBoolean());
     }
 
-    /// <summary>中文和 emoji 摘要裁剪遵守 UTF-8 字节上限，完整链接始终保留。</summary>
+    /// <summary>
+    /// 中文和 emoji 摘要裁剪遵守 UTF-8 字节上限，完整链接始终保留。
+    /// </summary>
     [TestMethod]
     public void NotificationTextRetainsCompleteLinksAndUnicode()
     {
@@ -167,7 +173,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(2, text.Split("https://support.example.com/b/inbox?topOrgId=org-a&assistantConfigId=assistant-a&conversationId=conversation-a").Length - 1);
     }
 
-    /// <summary>财务是正式枚举，拒绝旧类别写回；默认组引用保持历史散列不变。</summary>
+    /// <summary>
+    /// 财务是正式枚举，拒绝旧类别写回；默认组引用保持历史散列不变。
+    /// </summary>
     [TestMethod]
     public async Task FinanceIsCanonicalAndOldCategoryIsRejected()
     {

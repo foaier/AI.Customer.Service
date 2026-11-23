@@ -7,19 +7,39 @@ using Microsoft.Extensions.Logging;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>可靠任务领取、事务外投递及租约确认，崩溃重启后保持至少一次恢复。</summary>
-/// <param name="tasks">任务 owner。</param>
-/// <param name="followups">最终回复 owner。</param>
-/// <param name="transactions">短事务边界。</param>
-/// <param name="notification">出站协议端口。</param>
-/// <param name="handoff">系统转人工应用端口。</param>
-/// <param name="conversations">系统故障来源轮次核验。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="logger">不记录载荷的结构化日志。</param>
+/// <summary>
+/// 可靠任务领取、事务外投递及租约确认，崩溃重启后保持至少一次恢复。
+/// </summary>
+/// <param name="tasks">
+/// 任务 owner。
+/// </param>
+/// <param name="followups">
+/// 最终回复 owner。
+/// </param>
+/// <param name="transactions">
+/// 短事务边界。
+/// </param>
+/// <param name="notification">
+/// 出站协议端口。
+/// </param>
+/// <param name="handoff">
+/// 系统转人工应用端口。
+/// </param>
+/// <param name="conversations">
+/// 系统故障来源轮次核验。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="logger">
+/// 不记录载荷的结构化日志。
+/// </param>
 public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupRepository followups, IUnitOfWork transactions,
     INotificationPort notification, HandoffService handoff, IConversationRepository conversations, TimeProvider clock, ILogger<ReliableTaskProcessor> logger)
 {
-    /// <summary>每轮仅领取支持通道及内部系统任务，有限批次避免阻塞关闭流程。</summary>
+    /// <summary>
+    /// 每轮仅领取支持通道及内部系统任务，有限批次避免阻塞关闭流程。
+    /// </summary>
     public async Task RunOnceAsync(CancellationToken ct)
     {
         var kinds = notification.SupportedKinds.Append("SYSTEM_HANDOFF").ToArray();
@@ -55,7 +75,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
         }
     }
 
-    /// <summary>只允许最终失败任务人工恢复，内容、原始来源和稳定投递键保持。</summary>
+    /// <summary>
+    /// 只允许最终失败任务人工恢复，内容、原始来源和稳定投递键保持。
+    /// </summary>
     public Task<object> RetrySystemAsync(Actor actor, Scope scope, string eventKey, CancellationToken ct) =>
         transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -68,7 +90,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             return new { value.EventKey, value.State, value.Version };
         }, ct);
 
-    /// <summary>持久租约原子领取，失败达到五次后进入死信，过期租约也计入次数。</summary>
+    /// <summary>
+    /// 持久租约原子领取，失败达到五次后进入死信，过期租约也计入次数。
+    /// </summary>
     private Task<ReliableTask?> ClaimAsync(ReliableTask candidate, CancellationToken ct) =>
         transactions.ExecuteAsync<ReliableTask?>(candidate.TenantId, candidate.TopOrgId, async () =>
         {
@@ -97,7 +121,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             return value;
         }, ct);
 
-    /// <summary>仅匹配当前租约才能确认，失败按 5、10、20、40 秒退避并最多尝试五次。</summary>
+    /// <summary>
+    /// 仅匹配当前租约才能确认，失败按 5、10、20、40 秒退避并最多尝试五次。
+    /// </summary>
     private Task<bool> CompleteAsync(ReliableTask lease, string? error, bool retryable, CancellationToken ct) =>
         transactions.ExecuteAsync(lease.TenantId, lease.TopOrgId, async () =>
         {
@@ -124,7 +150,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
             return true;
         }, ct);
 
-    /// <summary>最终回复投递状态与任务同事务推进，不以日志代替受理事实。</summary>
+    /// <summary>
+    /// 最终回复投递状态与任务同事务推进，不以日志代替受理事实。
+    /// </summary>
     private async Task SyncResponseAsync(ReliableTask task, CancellationToken ct)
     {
         if (task.Kind != "EMAIL_REPLY")
@@ -139,7 +167,9 @@ public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupReposi
         }
     }
 
-    /// <summary>核验真实失败轮次后使用稳定系统命令键，迟到旧任务不抢占后续轮次。</summary>
+    /// <summary>
+    /// 核验真实失败轮次后使用稳定系统命令键，迟到旧任务不抢占后续轮次。
+    /// </summary>
     private async Task ApplySystemAsync(ReliableTask task, CancellationToken ct)
     {
         using var payload = JsonDocument.Parse(task.Payload);

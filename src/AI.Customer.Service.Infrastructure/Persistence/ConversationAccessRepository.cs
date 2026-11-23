@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AI.Customer.Service.Infrastructure.Persistence;
 
-/// <summary>仅使用 ORM 保存会话授权，不跨 owner 访问用户中心主数据。</summary>
+/// <summary>
+/// 仅使用 ORM 保存会话授权，不跨 owner 访问用户中心主数据。
+/// </summary>
 public sealed class ConversationAccessRepository(CustomerServiceDbContext db) : IConversationAccessRepository
 {
     /// <inheritdoc />

@@ -10,21 +10,43 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>AI 成功结束资格、单次评价和不满意后明确 opt-in 的应用编排。</summary>
-/// <param name="repository">调查 owner。</param>
-/// <param name="conversations">真实成功历史。</param>
-/// <param name="runtime">回复权及会话范围。</param>
-/// <param name="handoff">客服申请应用端口。</param>
-/// <param name="transactions">共享事务。</param>
-/// <param name="journal">稳定回执。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="options">调查有效期。</param>
-/// <param name="reception">客服历史覆盖核验，不以当前 AI owner 代替从未转人工的事实。</param>
+/// <summary>
+/// AI 成功结束资格、单次评价和不满意后明确 opt-in 的应用编排。
+/// </summary>
+/// <param name="repository">
+/// 调查 owner。
+/// </param>
+/// <param name="conversations">
+/// 真实成功历史。
+/// </param>
+/// <param name="runtime">
+/// 回复权及会话范围。
+/// </param>
+/// <param name="handoff">
+/// 客服申请应用端口。
+/// </param>
+/// <param name="transactions">
+/// 共享事务。
+/// </param>
+/// <param name="journal">
+/// 稳定回执。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="options">
+/// 调查有效期。
+/// </param>
+/// <param name="reception">
+/// 客服历史覆盖核验，不以当前 AI owner 代替从未转人工的事实。
+/// </param>
 public sealed class SurveyService(ISurveyRepository repository, IConversationRepository conversations, ConversationRuntime runtime,
     HandoffService handoff, IUnitOfWork transactions, CommandJournal journal, TimeProvider clock, IOptions<CustomerServiceOptions> options,
     IReceptionRepository reception)
 {
-    /// <summary>在成功轮次后按真实历史创建一次性调查，不根据沉默或人工结束创建。</summary>
+    /// <summary>
+    /// 在成功轮次后按真实历史创建一次性调查，不根据沉默或人工结束创建。
+    /// </summary>
     public Task<Survey?> EvaluateAsync(Scope scope, CancellationToken ct) =>
         transactions.ExecuteAsync<Survey?>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -53,7 +75,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
             return survey;
         }, ct);
 
-    /// <summary>只恢复及过期已有调查，读取不创建或代填展示回执。</summary>
+    /// <summary>
+    /// 只恢复及过期已有调查，读取不创建或代填展示回执。
+    /// </summary>
     public Task<object?> GetAsync(Scope scope, CancellationToken ct) =>
         transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -72,7 +96,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
             return value is null ? null : View(value);
         }, ct);
 
-    /// <summary>评价同参数重放安全，反向修改已提交答案冲突；不满意只打开选择，不直接转人工。</summary>
+    /// <summary>
+    /// 评价同参数重放安全，反向修改已提交答案冲突；不满意只打开选择，不直接转人工。
+    /// </summary>
     public Task<object> AnswerAsync(Actor actor, Scope scope, string id, SurveyAnswer command, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -100,7 +126,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
             return journal.Save(scope, actor, survey.PrincipalId, "SURVEY_ANSWER", request, command, View(survey));
         }, ct);
 
-    /// <summary>只有评价不满意并明确 OPTED_IN 才创建同会话人工周期，选择与申请同事务。</summary>
+    /// <summary>
+    /// 只有评价不满意并明确 OPTED_IN 才创建同会话人工周期，选择与申请同事务。
+    /// </summary>
     public async Task<object> ChooseAsync(Actor actor, Scope scope, string id, SurveyChoice command, CancellationToken ct)
     {
         var email = command.Choice == HandoffChoice.OPTED_IN ? Guard.Email(command.Email) : null;
@@ -132,7 +160,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
         }, ct);
     }
 
-    /// <summary>页面实际显示后显式登记，重复回执安全且不推进评价版本。</summary>
+    /// <summary>
+    /// 页面实际显示后显式登记，重复回执安全且不推进评价版本。
+    /// </summary>
     public Task<object> ReceiptAsync(Scope scope, string id, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -141,14 +171,18 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
             return View(value);
         }, ct);
 
-    /// <summary>固定调查与完整会话范围，拒绝跨会话引用。</summary>
+    /// <summary>
+    /// 固定调查与完整会话范围，拒绝跨会话引用。
+    /// </summary>
     private async Task<Survey> RequireAsync(Scope scope, string id, CancellationToken ct)
     {
         var value = await repository.FindAsync(scope, ct);
         return value?.Id == id ? value : throw BusinessException.Forbidden("调查不存在或不可访问");
     }
 
-    /// <summary>模型候选只有置信度达到 0.85 才保存，候选本身不能产生问卷。</summary>
+    /// <summary>
+    /// 模型候选只有置信度达到 0.85 才保存，候选本身不能产生问卷。
+    /// </summary>
     public Task<ResolutionEvidence?> RecordCandidateAsync(Scope scope, AiTurn turn, double confidence, CancellationToken ct)
     {
         if (!double.IsFinite(confidence) || confidence is < .85 or > 1)
@@ -171,7 +205,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
         }, ct);
     }
 
-    /// <summary>同轮同参数恢复原证据，异参数冲突且不覆盖首次审计。</summary>
+    /// <summary>
+    /// 同轮同参数恢复原证据，异参数冲突且不覆盖首次审计。
+    /// </summary>
     private async Task<ResolutionEvidence> RecordEvidenceInTransactionAsync(Scope scope, AiTurn turn, string kind, double? confidence, string policy, CancellationToken ct)
     {
         var fingerprint = Guard.Fingerprint($"{turn.Id}|{turn.Epoch}|{kind}|{confidence?.ToString(CultureInfo.InvariantCulture)}|{policy}");
@@ -193,7 +229,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
         return evidence;
     }
 
-    /// <summary>已提交回执先重放；首次评价或选择必须仍处于原 AI 代次且没有人工历史。</summary>
+    /// <summary>
+    /// 已提交回执先重放；首次评价或选择必须仍处于原 AI 代次且没有人工历史。
+    /// </summary>
     private async Task RequireCurrentAsync(Scope scope, Survey survey, CancellationToken ct)
     {
         var conversation = await runtime.RequireAsync(scope, ct);
@@ -203,7 +241,9 @@ public sealed class SurveyService(ISurveyRepository repository, IConversationRep
         }
     }
 
-    /// <summary>安全调查投影不返回内部证据和原始模型结果。</summary>
+    /// <summary>
+    /// 安全调查投影不返回内部证据和原始模型结果。
+    /// </summary>
     public static object View(Survey survey) =>
         new { surveyId = survey.Id, survey.Status, survey.HandoffChoice, survey.Version, survey.ExpiresAt, survey.RespondedAt, replayed = false };
 }

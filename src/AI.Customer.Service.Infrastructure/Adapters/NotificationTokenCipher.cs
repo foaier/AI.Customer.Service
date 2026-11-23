@@ -7,7 +7,9 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Infrastructure.Adapters;
 
-/// <summary>AES-256-GCM 保护雅式令牌，随机 nonce；主密钥由所有实例共享的 Secret 注入。</summary>
+/// <summary>
+/// AES-256-GCM 保护雅式令牌，随机 nonce；主密钥由所有实例共享的 Secret 注入。
+/// </summary>
 public sealed class NotificationTokenCipher(IOptions<NotificationOptions> options) : ISecretCipher
 {
     /// <inheritdoc />
@@ -15,7 +17,9 @@ public sealed class NotificationTokenCipher(IOptions<NotificationOptions> option
     /// <inheritdoc />
     public string Unprotect(string ciphertext) => Transform(ciphertext, encrypt: false);
 
-    /// <summary>版本前缀及认证标签共同保护密文，错误不包含令牌或密文。</summary>
+    /// <summary>
+    /// 版本前缀及认证标签共同保护密文，错误不包含令牌或密文。
+    /// </summary>
     private string Transform(string value, bool encrypt)
     {
         byte[] key = [];

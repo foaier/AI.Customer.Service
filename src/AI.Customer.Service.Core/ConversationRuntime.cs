@@ -4,11 +4,21 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Core;
 
-/// <summary>Conversation owner 的应用端口，独占维护回复权、轮次和成功历史。</summary>
-/// <param name="conversations">本 owner 的仓储。</param>
-/// <param name="transactions">客服与会话共享的短事务。</param>
-/// <param name="clock">可替换的 UTC 时钟。</param>
-/// <param name="access">本 owner 的匿名授权与外部身份关系。</param>
+/// <summary>
+/// Conversation owner 的应用端口，独占维护回复权、轮次和成功历史。
+/// </summary>
+/// <param name="conversations">
+/// 本 owner 的仓储。
+/// </param>
+/// <param name="transactions">
+/// 客服与会话共享的短事务。
+/// </param>
+/// <param name="clock">
+/// 可替换的 UTC 时钟。
+/// </param>
+/// <param name="access">
+/// 本 owner 的匿名授权与外部身份关系。
+/// </param>
 public sealed class ConversationRuntime(IConversationRepository conversations, IUnitOfWork transactions, TimeProvider clock, IConversationAccessRepository access)
 {
     /// <summary>

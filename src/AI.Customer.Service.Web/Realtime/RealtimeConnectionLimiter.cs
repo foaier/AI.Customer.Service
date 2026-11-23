@@ -5,9 +5,13 @@ namespace AI.Customer.Service.Web.Realtime;
 /// </summary>
 public sealed class RealtimeConnectionLimiter : IDisposable
 {
-    /// <summary>节点固定连接上限。</summary>
+    /// <summary>
+    /// 节点固定连接上限。
+    /// </summary>
     public SemaphoreSlim Slots { get; } = new(64, 64);
 
-    /// <summary>应用停止时释放信号量。</summary>
+    /// <summary>
+    /// 应用停止时释放信号量。
+    /// </summary>
     public void Dispose() => Slots.Dispose();
 }

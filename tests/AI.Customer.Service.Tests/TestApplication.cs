@@ -26,27 +26,47 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>真实 MVC、JWT、SQLite 事务和 WebSocket 的隔离宿主，外部账号、模型和网关明确替身。</summary>
+/// <summary>
+/// 真实 MVC、JWT、SQLite 事务和 WebSocket 的隔离宿主，外部账号、模型和网关明确替身。
+/// </summary>
 public sealed class TestApplication : WebApplicationFactory<Program>
 {
-    /// <summary>测试专用临时数据库目录，绝不使用应用默认数据库。</summary>
+    /// <summary>
+    /// 测试专用临时数据库目录，绝不使用应用默认数据库。
+    /// </summary>
     private readonly string directory = Path.Combine(Path.GetTempPath(), "ai-customer-service-tests", Guid.NewGuid().ToString("N"));
-    /// <summary>只供测试签发和验证的密钥，不进入运行配置。</summary>
+    /// <summary>
+    /// 只供测试签发和验证的密钥，不进入运行配置。
+    /// </summary>
     private const string SigningKey = "tests-only-012345678901234567890123456789";
-    /// <summary>可控时钟从营业时间开始，不修改系统时钟。</summary>
+    /// <summary>
+    /// 可控时钟从营业时间开始，不修改系统时钟。
+    /// </summary>
     public TestClock Clock { get; } = new();
-    /// <summary>明确的模型替身，用于真实 SSE 管线及围栏测试。</summary>
+    /// <summary>
+    /// 明确的模型替身，用于真实 SSE 管线及围栏测试。
+    /// </summary>
     public TestModel Model { get; } = new();
-    /// <summary>框架端到端场景可注入真实 MAF 端口，仅替代外部 HTTP 传输；缺省使用可控模型替身。</summary>
+    /// <summary>
+    /// 框架端到端场景可注入真实 MAF 端口，仅替代外部 HTTP 传输；缺省使用可控模型替身。
+    /// </summary>
     public IChatModel? ModelPort { get; init; }
-    /// <summary>可模拟账号禁用的外部用户中心替身。</summary>
+    /// <summary>
+    /// 可模拟账号禁用的外部用户中心替身。
+    /// </summary>
     public TestDirectory DirectoryPort { get; } = new();
-    /// <summary>可模拟拒绝和受理的通知网关替身。</summary>
+    /// <summary>
+    /// 可模拟拒绝和受理的通知网关替身。
+    /// </summary>
     public TestNotification Notification { get; } = new();
-    /// <summary>隔离场景可配置新会话外部身份门禁。</summary>
+    /// <summary>
+    /// 隔离场景可配置新会话外部身份门禁。
+    /// </summary>
     public bool ExternalIdentityRequired { get; init; }
 
-    /// <summary>替换外部依赖和数据源，其余正式应用代码保持真实装配。</summary>
+    /// <summary>
+    /// 替换外部依赖和数据源，其余正式应用代码保持真实装配。
+    /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         Directory.CreateDirectory(directory);
@@ -105,7 +125,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         });
     }
 
-    /// <summary>创建携带正式签名 JWT 的 HTTP 客户端，账号不会从测试身份头注入。</summary>
+    /// <summary>
+    /// 创建携带正式签名 JWT 的 HTTP 客户端，账号不会从测试身份头注入。
+    /// </summary>
     public HttpClient Client(string account = "visitor", string tenant = "tenant-a")
     {
         var client = CreateClient();
@@ -113,7 +135,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         return client;
     }
 
-    /// <summary>按正式规则生成测试 JWT，支持租户和过期验证。</summary>
+    /// <summary>
+    /// 按正式规则生成测试 JWT，支持租户和过期验证。
+    /// </summary>
     public static string Token(string account, string tenant = "tenant-a", bool expired = false) =>
         new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
         {
@@ -126,7 +150,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey)), SecurityAlgorithms.HmacSha256)
         });
 
-    /// <summary>保存四类本地组并关联两个正式账号替身，未上线仍具备手动接单资格。</summary>
+    /// <summary>
+    /// 保存四类本地组并关联两个正式账号替身，未上线仍具备手动接单资格。
+    /// </summary>
     public async Task ConfigureAsync()
     {
         using var manager = Client("agent-a");
@@ -146,7 +172,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         });
     }
 
-    /// <summary>通过真实会话 HTTP 入口创建共享 conversation。</summary>
+    /// <summary>
+    /// 通过真实会话 HTTP 入口创建共享 conversation。
+    /// </summary>
     public static async Task<string> SessionAsync(HttpClient visitor)
     {
         using var response = await visitor.GetAsync("/api/agent/sessionId?assistantConfigId=assistant-a");
@@ -155,7 +183,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         return json.GetProperty("returnObj").GetProperty("sessionId").GetString()!;
     }
 
-    /// <summary>发送严格 JSON 命令并校验业务响应状态，失败输出只供测试诊断。</summary>
+    /// <summary>
+    /// 发送严格 JSON 命令并校验业务响应状态，失败输出只供测试诊断。
+    /// </summary>
     public static async Task<JsonElement> SendAsync(HttpClient client, HttpMethod method, string path, object input, HttpStatusCode expected = HttpStatusCode.OK)
     {
         using var request = new HttpRequestMessage(method, path) { Content = JsonContent.Create(input, options: JsonDefaults.Options) };
@@ -166,7 +196,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         return json.RootElement.TryGetProperty("data", out var data) ? data.Clone() : json.RootElement.Clone();
     }
 
-    /// <summary>读取真实 HTTP 安全业务投影。</summary>
+    /// <summary>
+    /// 读取真实 HTTP 安全业务投影。
+    /// </summary>
     public static async Task<JsonElement> GetAsync(HttpClient client, string path, HttpStatusCode expected = HttpStatusCode.OK)
     {
         using var response = await client.GetAsync(path);
@@ -176,7 +208,9 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         return json.RootElement.TryGetProperty("data", out var data) ? data.Clone() : json.RootElement.Clone();
     }
 
-    /// <summary>测试后只删除已校验的本测试临时目录，不访问工作区数据。</summary>
+    /// <summary>
+    /// 测试后只删除已校验的本测试临时目录，不访问工作区数据。
+    /// </summary>
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
@@ -188,25 +222,39 @@ public sealed class TestApplication : WebApplicationFactory<Program>
         }
     }
 
-    /// <summary>关闭测试 SQLite 连接池以释放 Windows 文件句柄。</summary>
+    /// <summary>
+    /// 关闭测试 SQLite 连接池以释放 Windows 文件句柄。
+    /// </summary>
     private static void SqliteClearPools() => SqliteConnection.ClearAllPools();
 }
 
-/// <summary>可推进的业务时钟，仅影响领域期限，不改变 JWT 的系统时钟。</summary>
+/// <summary>
+/// 可推进的业务时钟，仅影响领域期限，不改变 JWT 的系统时钟。
+/// </summary>
 public sealed class TestClock : TimeProvider
 {
-    /// <summary>初始为周一中国标准时间十一点，满足缺省营业区间。</summary>
+    /// <summary>
+    /// 初始为周一中国标准时间十一点，满足缺省营业区间。
+    /// </summary>
     private DateTimeOffset now = DateTimeOffset.Parse("2026-11-09T03:00:00Z");
-    /// <summary>取得测试 UTC 当前时刻。</summary>
+    /// <summary>
+    /// 取得测试 UTC 当前时刻。
+    /// </summary>
     public override DateTimeOffset GetUtcNow() => now;
-    /// <summary>推进业务期限以测试五分钟、十分钟及租约恢复。</summary>
+    /// <summary>
+    /// 推进业务期限以测试五分钟、十分钟及租约恢复。
+    /// </summary>
     public void Advance(TimeSpan interval) => now += interval;
 }
 
-/// <summary>外部账号系统替身，不注册任何本地生产测试后门。</summary>
+/// <summary>
+/// 外部账号系统替身，不注册任何本地生产测试后门。
+/// </summary>
 public sealed class TestDirectory : IAccountDirectory
 {
-    /// <summary>模拟外部账号禁用名单。</summary>
+    /// <summary>
+    /// 模拟外部账号禁用名单。
+    /// </summary>
     public HashSet<string> Disabled { get; } = [];
     /// <inheritdoc />
     public Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct) =>
@@ -221,14 +269,22 @@ public sealed class TestDirectory : IAccountDirectory
         Task.FromResult(new DirectoryPage<Member>("READY", [new("agent-a", "客服甲"), new("agent-b", "客服乙")], null, false));
 }
 
-/// <summary>明确的流式模型替身，可控制并发轮次暂停和最终失败。</summary>
+/// <summary>
+/// 明确的流式模型替身，可控制并发轮次暂停和最终失败。
+/// </summary>
 public sealed class TestModel : IChatModel
 {
-    /// <summary>模拟生成失败，禁止被视作真实模型验收。</summary>
+    /// <summary>
+    /// 模拟生成失败，禁止被视作真实模型验收。
+    /// </summary>
     public bool Fail { get; set; }
-    /// <summary>可控回复正文。</summary>
+    /// <summary>
+    /// 可控回复正文。
+    /// </summary>
     public string Reply { get; set; } = "请在展馆服务台办理。还有其他问题需要帮助吗？";
-    /// <summary>可控受限工具结果。</summary>
+    /// <summary>
+    /// 可控受限工具结果。
+    /// </summary>
     public ModelDelta? Tool { get; set; }
     /// <inheritdoc />
     public async IAsyncEnumerable<ModelDelta> StreamAsync(ModelRequest request, [EnumeratorCancellation] CancellationToken ct)
@@ -249,16 +305,26 @@ public sealed class TestModel : IChatModel
         Task.FromResult(new Classification(Category.OTHER, 0, "TEST_FALLBACK"));
 }
 
-/// <summary>可靠网关替身，记录受理键用于验证 Worker 幂等和重试。</summary>
+/// <summary>
+/// 可靠网关替身，记录受理键用于验证 Worker 幂等和重试。
+/// </summary>
 public sealed class TestNotification : INotificationPort
 {
-    /// <summary>模拟网关拒绝，任务应退避且最终 DEAD。</summary>
+    /// <summary>
+    /// 模拟网关拒绝，任务应退避且最终 DEAD。
+    /// </summary>
     public bool Reject { get; set; }
-    /// <summary>测试真实仓储的持久开关过滤。</summary>
+    /// <summary>
+    /// 测试真实仓储的持久开关过滤。
+    /// </summary>
     public bool UseConfiguredChatGroups { get; set; }
-    /// <summary>模拟供应商明确的可重试或永久失败。</summary>
+    /// <summary>
+    /// 模拟供应商明确的可重试或永久失败。
+    /// </summary>
     public NotificationDeliveryException? Failure { get; set; }
-    /// <summary>按稳定事件键记录受理事实。</summary>
+    /// <summary>
+    /// 按稳定事件键记录受理事实。
+    /// </summary>
     public HashSet<string> Accepted { get; } = [];
     /// <inheritdoc />
     public IReadOnlyCollection<string> SupportedKinds { get; set; } = ["EMAIL", "EMAIL_REPLY", "INTERNAL"];

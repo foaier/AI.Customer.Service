@@ -249,7 +249,10 @@ try {
     await visitor.locator("#user-input").fill("请帮我核实办证时间。");
     await visitor.locator("#send-message").click();
     await agent.getByText("请帮我核实办证时间。", { exact: true }).waitFor();
-    await agent.locator("#agent-resolve").click();
+    await Promise.all([
+        agent.waitForResponse((response) => response.url().includes("/resolve") && response.request().method() === "POST"),
+        agent.locator("#agent-resolve").click(),
+    ]);
     await visitor.getByText("接待已结束，可继续向 AI 咨询", { exact: true }).waitFor();
     checks.push("离线默认客服直接认领、WebSocket 双向消息、首响及结束恢复 AI");
     const emailVisitor = await pageFor("email-visitor");

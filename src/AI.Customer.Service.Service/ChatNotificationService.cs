@@ -6,14 +6,20 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>通知配置应用服务，组织 CAS 与令牌保留在一个事务中完成。</summary>
+/// <summary>
+/// 通知配置应用服务，组织 CAS 与令牌保留在一个事务中完成。
+/// </summary>
 public sealed class ChatNotificationService(IConfigurationRepository repository, IUnitOfWork transactions, ISecretCipher cipher)
 {
-    /// <summary>读取不存在的配置仅返回禁用草稿，不初始化持久行。</summary>
+    /// <summary>
+    /// 读取不存在的配置仅返回禁用草稿，不初始化持久行。
+    /// </summary>
     public async Task<ChatNotificationConfiguration> GetAsync(Actor actor, string org, CancellationToken ct) =>
         await repository.ChatNotificationAsync(actor.TenantId, org, ct) ?? new() { Id = "chat", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
 
-    /// <summary>保存完整群映射，旧页面未提交的新增设置沿用原值，密钥省略保留。</summary>
+    /// <summary>
+    /// 保存完整群映射，旧页面未提交的新增设置沿用原值，密钥省略保留。
+    /// </summary>
     public Task<ChatNotificationConfiguration> SaveAsync(Actor actor, string org, ChatNotificationCommand command, CancellationToken ct) =>
         transactions.ExecuteAsync(actor.TenantId, org, async () =>
         {
@@ -74,7 +80,9 @@ public sealed class ChatNotificationService(IConfigurationRepository repository,
             return saved;
         }, ct);
 
-    /// <summary>链接只接受无账号、查询和片段的 HTTPS 站点根地址。</summary>
+    /// <summary>
+    /// 链接只接受无账号、查询和片段的 HTTPS 站点根地址。
+    /// </summary>
     public static void ValidatePublicUrl(string value)
     {
         if (value.Length > 256 || !Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != "https" ||
@@ -82,7 +90,9 @@ public sealed class ChatNotificationService(IConfigurationRepository repository,
             throw BusinessException.Invalid("请填写有效 HTTPS 客服站点地址，不含账号、查询参数或片段");
     }
 
-    /// <summary>管理员可编辑的投影；主密钥、明文令牌及密文永不回显。</summary>
+    /// <summary>
+    /// 管理员可编辑的投影；主密钥、明文令牌及密文永不回显。
+    /// </summary>
     public static object View(ChatNotificationConfiguration value) => new
     {
         value.Version,

@@ -9,9 +9,15 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Infrastructure.Adapters;
 
-/// <summary>通过用户中心四个只读接口查询权威账号和组织关系。</summary>
-/// <param name="http">有超时且禁重定向的客户端。</param>
-/// <param name="options">受控根地址和服务间认证。</param>
+/// <summary>
+/// 通过用户中心四个只读接口查询权威账号和组织关系。
+/// </summary>
+/// <param name="http">
+/// 有超时且禁重定向的客户端。
+/// </param>
+/// <param name="options">
+/// 受控根地址和服务间认证。
+/// </param>
 public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOptions> options) : IAccountDirectory
 {
     /// <inheritdoc />
@@ -86,7 +92,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         return Page(json, page, limit, scope, items);
     }
 
-    /// <summary>严格验证上游成功信封，协议失败不伪装为空账号或空目录。</summary>
+    /// <summary>
+    /// 严格验证上游成功信封，协议失败不伪装为空账号或空目录。
+    /// </summary>
     private async Task<JsonElement> SendAsync(HttpMethod method, string path, object? body, CancellationToken ct)
     {
         if (!Uri.TryCreate(options.Value.BaseUrl, UriKind.Absolute, out var root) || root.Scheme is not "http" and not "https")
@@ -123,7 +131,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         }
     }
 
-    /// <summary>检查分页元数据并绑定下一页游标，拒绝不一致的页大小。</summary>
+    /// <summary>
+    /// 检查分页元数据并绑定下一页游标，拒绝不一致的页大小。
+    /// </summary>
     private static DirectoryPage<T> Page<T>(JsonElement json, int page, int limit, string scope, T[] items)
     {
         var pager = json.GetProperty("pager");
@@ -137,7 +147,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         return new("READY", items, more ? Convert.ToBase64String(Encoding.UTF8.GetBytes((page + 1) + "|" + scope)) : null, more);
     }
 
-    /// <summary>游标绑定租户、组织、外部组、关键词和页大小。</summary>
+    /// <summary>
+    /// 游标绑定租户、组织、外部组、关键词和页大小。
+    /// </summary>
     private static string CursorScope(string tenant, string org, string group, string? keyword, int limit)
     {
         if (limit is < 1 or > 1000)
@@ -147,7 +159,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         return Guard.Fingerprint(string.Join("\n", tenant, org, group, keyword ?? "", limit.ToString()));
     }
 
-    /// <summary>损坏或跨范围游标必须报错，不能静默重置第一页。</summary>
+    /// <summary>
+    /// 损坏或跨范围游标必须报错，不能静默重置第一页。
+    /// </summary>
     private static int Decode(string? cursor, string scope)
     {
         if (string.IsNullOrEmpty(cursor))

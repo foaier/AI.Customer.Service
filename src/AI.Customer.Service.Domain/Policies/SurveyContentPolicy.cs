@@ -3,10 +3,14 @@ using AI.Customer.Service.Domain.Models;
 
 namespace AI.Customer.Service.Domain.Policies;
 
-/// <summary>基于明确结束证据判定调查资格的保守规则，无网络及数据库操作。</summary>
+/// <summary>
+/// 基于明确结束证据判定调查资格的保守规则，无网络及数据库操作。
+/// </summary>
 public static class SurveyContentPolicy
 {
-    /// <summary>完整成功历史、真实业务问题和明确结束证据全部满足才返回证据类型。</summary>
+    /// <summary>
+    /// 完整成功历史、真实业务问题和明确结束证据全部满足才返回证据类型。
+    /// </summary>
     public static string? Assess(IReadOnlyList<AiTurn> turns)
     {
         if (turns.Count is < 2 or > 100 || turns.Any(t => t.Status != "SUCCEEDED" || t.AssistantContent is null))

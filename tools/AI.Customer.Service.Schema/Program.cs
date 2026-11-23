@@ -71,10 +71,14 @@ foreach (var provider in new[] { "Sqlite", "MySql", "Kingbase" })
 Directory.CreateDirectory(Path.Combine(output, "..", "..", "docs"));
 File.WriteAllText(Path.GetFullPath(Path.Combine(output, "..", "..", "docs", "schema.md")), dictionary.ToString(), new UTF8Encoding(false));
 
-/// <summary>从编译产出的中文说明恢复 schema 注释，保持模型、脚本和字典一致。</summary>
+/// <summary>
+/// 从编译产出的中文说明恢复 schema 注释，保持模型、脚本和字典一致。
+/// </summary>
 internal static class SchemaDocumentation
 {
-    /// <summary>加载领域及基础设施公开类型和字段的业务说明。</summary>
+    /// <summary>
+    /// 加载领域及基础设施公开类型和字段的业务说明。
+    /// </summary>
     public static Dictionary<string, string> Load()
     {
         var result = new Dictionary<string, string>();
@@ -92,7 +96,9 @@ internal static class SchemaDocumentation
         return result;
     }
 
-    /// <summary>列出唯一主写入 owner，同库事务不改变领域边界。</summary>
+    /// <summary>
+    /// 列出唯一主写入 owner，同库事务不改变领域边界。
+    /// </summary>
     public static string Owner(Type type) => type.Name switch
     {
         nameof(Conversation) or nameof(AiTurn) or nameof(HumanMessage) or nameof(MessageReceipt) or nameof(Survey) or nameof(ResolutionEvidence) => "Conversation",

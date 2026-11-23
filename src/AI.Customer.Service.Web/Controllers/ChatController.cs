@@ -11,24 +11,40 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AI.Customer.Service.Web.Controllers;
 
-/// <summary>AI 会话 Adapter，提供页面接口和 SSE 响应信封。</summary>
-/// <param name="request">正式登录身份。</param>
-/// <param name="assistants">可信助手注册表。</param>
-/// <param name="runtime">Conversation owner。</param>
-/// <param name="conversations">最小真实历史。</param>
-/// <param name="chat">模型与工具编排。</param>
+/// <summary>
+/// AI 会话 Adapter，提供页面接口和 SSE 响应信封。
+/// </summary>
+/// <param name="request">
+/// 正式登录身份。
+/// </param>
+/// <param name="assistants">
+/// 可信助手注册表。
+/// </param>
+/// <param name="runtime">
+/// Conversation owner。
+/// </param>
+/// <param name="conversations">
+/// 最小真实历史。
+/// </param>
+/// <param name="chat">
+/// 模型与工具编排。
+/// </param>
 [ApiController]
 [Authorize]
 [Route("api")]
 public sealed class ChatController(RequestAccess request, IAssistantRegistry assistants, ConversationRuntime runtime,
     IConversationRepository conversations, ChatService chat) : ControllerBase
 {
-    /// <summary>查询当前租户注册的助手，兼容设置页最小列表。</summary>
+    /// <summary>
+    /// 查询当前租户注册的助手，兼容设置页最小列表。
+    /// </summary>
     [HttpGet("assistant/config/list")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object List() => new { isSuccess = true, returnObj = assistants.List(request.Actor.TenantId).Select(x => new { id = x.Id, configId = x.Id, assistantConfigId = x.Id, name = x.Name, x.TopOrgId }) };
 
-    /// <summary>原设置页的助手选择列表，不按客户端身份头授权。</summary>
+    /// <summary>
+    /// 原设置页的助手选择列表，不按客户端身份头授权。
+    /// </summary>
     [HttpGet("assistant/config/listAssistants")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object ListAssistants() => new
@@ -38,7 +54,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         .Select(x => new { assistantConfigId = x.Id, buttonName = x.Name, x.TopOrgId })
     };
 
-    /// <summary>可信运行配置只来自服务端注册表。</summary>
+    /// <summary>
+    /// 可信运行配置只来自服务端注册表。
+    /// </summary>
     [HttpGet("assistant/config/getRuntimeConfig")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public object RuntimeConfig(string assistantConfigId)
@@ -58,7 +76,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         };
     }
 
-    /// <summary>生成服务端会话引用；显式给助手时立即持久绑定，否则首个聊天请求绑定。</summary>
+    /// <summary>
+    /// 生成服务端会话引用；显式给助手时立即持久绑定，否则首个聊天请求绑定。
+    /// </summary>
     [HttpGet("agent/sessionId")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public async Task<object> Session(CancellationToken ct, string? assistantConfigId = null)
@@ -71,7 +91,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         return new { isSuccess = true, returnObj = new { sessionId = id } };
     }
 
-    /// <summary>文本 SSE 不包含人工实时状态的第二套通道。</summary>
+    /// <summary>
+    /// 文本 SSE 不包含人工实时状态的第二套通道。
+    /// </summary>
     [HttpPost("agent/chatStream")]
     public async Task Stream(ChatCommand command, CancellationToken ct)
     {
@@ -99,7 +121,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         }
     }
 
-    /// <summary>沿用原匿名 SSE 路径，要求服务端签发的会话凭据。</summary>
+    /// <summary>
+    /// 沿用原匿名 SSE 路径，要求服务端签发的会话凭据。
+    /// </summary>
     [HttpPost("agent/anonymous/chatStream")]
     public Task StreamAnonymous(ChatCommand command, CancellationToken ct)
     {
@@ -107,7 +131,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         return Stream(command, ct);
     }
 
-    /// <summary>沿用原匿名历史 POST，临时主体不替代会话凭据。</summary>
+    /// <summary>
+    /// 沿用原匿名历史 POST，临时主体不替代会话凭据。
+    /// </summary>
     [HttpPost("agent/anonymous/history_detail")]
     public Task<object> HistoryAnonymous(AnonymousHistoryCommand command, CancellationToken ct)
     {
@@ -117,7 +143,9 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
         return History(command.SessionId, ct, command.AssistantConfigId);
     }
 
-    /// <summary>原访客恢复成功 AI 文本，不含系统提示词及失败回答。</summary>
+    /// <summary>
+    /// 原访客恢复成功 AI 文本，不含系统提示词及失败回答。
+    /// </summary>
     [HttpGet("agent/history_detail")]
     public async Task<object> History(string sessionId, CancellationToken ct, string? assistantConfigId = null)
     {

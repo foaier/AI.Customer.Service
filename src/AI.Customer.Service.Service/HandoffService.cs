@@ -8,23 +8,49 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>转人工申请和建议确认的应用编排，分类在事务外、路由冻结在事务内。</summary>
-/// <param name="repository">客服申请 owner。</param>
-/// <param name="configuration">本地路由 owner。</param>
-/// <param name="transactions">共享事务。</param>
-/// <param name="runtime">Conversation 回复权端口。</param>
-/// <param name="model">主题语义分类端口。</param>
-/// <param name="conversations">最小真实历史端口。</param>
-/// <param name="journal">幂等回执及可靠事件。</param>
-/// <param name="waitingService">同事务保存访客确认的联系方式。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="options">建议有效期规则。</param>
-/// <param name="notifications">新申请同事务登记即时通知。</param>
+/// <summary>
+/// 转人工申请和建议确认的应用编排，分类在事务外、路由冻结在事务内。
+/// </summary>
+/// <param name="repository">
+/// 客服申请 owner。
+/// </param>
+/// <param name="configuration">
+/// 本地路由 owner。
+/// </param>
+/// <param name="transactions">
+/// 共享事务。
+/// </param>
+/// <param name="runtime">
+/// Conversation 回复权端口。
+/// </param>
+/// <param name="model">
+/// 主题语义分类端口。
+/// </param>
+/// <param name="conversations">
+/// 最小真实历史端口。
+/// </param>
+/// <param name="journal">
+/// 幂等回执及可靠事件。
+/// </param>
+/// <param name="waitingService">
+/// 同事务保存访客确认的联系方式。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="options">
+/// 建议有效期规则。
+/// </param>
+/// <param name="notifications">
+/// 新申请同事务登记即时通知。
+/// </param>
 public sealed class HandoffService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, IChatModel model, IConversationRepository conversations, CommandJournal journal,
     WaitingService waitingService, TimeProvider clock, IOptions<CustomerServiceOptions> options, HandoffNotificationService notifications)
 {
-    /// <summary>访客明确申请不经过建议二次确认；同键重放不重复切换回复权。</summary>
+    /// <summary>
+    /// 访客明确申请不经过建议二次确认；同键重放不重复切换回复权。
+    /// </summary>
     public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
         CancellationToken ct, string? failedTurnId = null, string? email = null)
     {
@@ -53,7 +79,9 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         }, ct);
     }
 
-    /// <summary>读取最多二十张有效建议，不创建申请。</summary>
+    /// <summary>
+    /// 读取最多二十张有效建议，不创建申请。
+    /// </summary>
     public async Task<List<Proposal>> PendingAsync(Scope scope, CancellationToken ct)
     {
         var conversation = await runtime.RequireAsync(scope, ct);
@@ -61,10 +89,14 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
             .Where(p => conversation.HumanEpisodeId is null && p.Epoch == conversation.Epoch).ToList();
     }
 
-    /// <summary>读取最新人工周期，返回空时不产生写入。</summary>
+    /// <summary>
+    /// 读取最新人工周期，返回空时不产生写入。
+    /// </summary>
     public Task<Episode?> LatestAsync(Scope scope, CancellationToken ct) => repository.LatestAsync(scope, ct);
 
-    /// <summary>访客决定建议卡，确认才创建申请，拒绝只保存选择。</summary>
+    /// <summary>
+    /// 访客决定建议卡，确认才创建申请，拒绝只保存选择。
+    /// </summary>
     public async Task<object> DecideAsync(Actor actor, Scope scope, string proposalId, ProposalDecision command, CancellationToken ct)
     {
         if (command.Decision is not "CONFIRM" and not "DISMISS")
@@ -104,7 +136,9 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         }, ct);
     }
 
-    /// <summary>受限工具保存建议，绑定服务端轮次及 epoch；模型不能指定身份、组或接收者。</summary>
+    /// <summary>
+    /// 受限工具保存建议，绑定服务端轮次及 epoch；模型不能指定身份、组或接收者。
+    /// </summary>
     public Task<Proposal?> ProposeAsync(Scope scope, string turn, long epoch, ReasonCode reason, double confidence, string explanation, CancellationToken ct)
     {
         if (!Enum.IsDefined(reason) || reason is ReasonCode.SYSTEM_FAILURE or ReasonCode.SAFETY_OR_URGENT or ReasonCode.SURVEY_DISSATISFIED or ReasonCode.USER_REQUEST ||
@@ -145,7 +179,9 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         }, ct);
     }
 
-    /// <summary>共享事务内创建周期、冻结路由并原子取得回复权，供调查和系统任务编排复用。</summary>
+    /// <summary>
+    /// 共享事务内创建周期、冻结路由并原子取得回复权，供调查和系统任务编排复用。
+    /// </summary>
     public async Task<Episode> CreateInTransactionAsync(Scope scope, string principal, TriggerSource source, ReasonCode reason,
         Classification classification, string trace, CancellationToken ct, string? email = null)
     {
@@ -178,7 +214,9 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         return episode;
     }
 
-    /// <summary>事务外根据最近成功历史识别主题，模型失败只能降 OTHER，不阻断明确申请。</summary>
+    /// <summary>
+    /// 事务外根据最近成功历史识别主题，模型失败只能降 OTHER，不阻断明确申请。
+    /// </summary>
     public async Task<Classification> PrepareAsync(Scope scope, CancellationToken ct)
     {
         var turns = await conversations.TurnsAsync(scope, 10, ct);

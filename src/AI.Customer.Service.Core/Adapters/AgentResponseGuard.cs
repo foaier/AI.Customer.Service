@@ -8,7 +8,9 @@ namespace AI.Customer.Service.Core.Adapters;
 /// <summary>
 /// 在框架工具循环的每次模型响应边界校验完整性和参数白名单，失败不得提交候选
 /// </summary>
-/// <param name="innerClient">官方 OpenAI provider 的类型化聊天客户端。</param>
+/// <param name="innerClient">
+/// 官方 OpenAI provider 的类型化聊天客户端。
+/// </param>
 internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingChatClient(innerClient)
 {
     /// <summary>
@@ -49,7 +51,8 @@ internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingCh
     /// <summary>
     /// 仅 stop 和 tool_calls 表示完整服务响应；截断、过滤和缺失结束信号一律失败
     /// </summary>
-    /// <param name="reason"></param>
+    /// <param name="reason">
+    /// </param>
     private static void RequireComplete(ChatFinishReason? reason)
     {
         if (reason != ChatFinishReason.Stop && reason != ChatFinishReason.ToolCalls)

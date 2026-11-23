@@ -17,7 +17,9 @@ namespace AI.Customer.Service.Tests;
 
 public sealed partial class WorkflowTests
 {
-    /// <summary>真实匿名 HTTP 和 WebSocket 只能访问签发会话，凭据到期/撤销立即失效。</summary>
+    /// <summary>
+    /// 真实匿名 HTTP 和 WebSocket 只能访问签发会话，凭据到期/撤销立即失效。
+    /// </summary>
     [TestMethod]
     public async Task AnonymousCredentialIsHashedScopedAndRevocable()
     {
@@ -79,7 +81,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(HttpStatusCode.Unauthorized, expired.StatusCode);
     }
 
-    /// <summary>身份策略在创建时冻结；绑定只属于原访客，未绑定不写 AI 轮次，不能以 cookie 替代授权。</summary>
+    /// <summary>
+    /// 身份策略在创建时冻结；绑定只属于原访客，未绑定不写 AI 轮次，不能以 cookie 替代授权。
+    /// </summary>
     [TestMethod]
     public async Task ExternalIdentityIsFirstWriteOnlyAndPolicyIsFrozen()
     {

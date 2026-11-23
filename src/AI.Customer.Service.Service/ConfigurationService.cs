@@ -8,20 +8,36 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>本地业务分组及日历的配置编排，不维护用户中心账号主数据。</summary>
-/// <param name="repository">配置 owner。</param>
-/// <param name="transactions">共享本地事务。</param>
-/// <param name="accounts">事务外核验账号。</param>
-/// <param name="access">统一准入。</param>
-/// <param name="options">部署默认规则。</param>
+/// <summary>
+/// 本地业务分组及日历的配置编排，不维护用户中心账号主数据。
+/// </summary>
+/// <param name="repository">
+/// 配置 owner。
+/// </param>
+/// <param name="transactions">
+/// 共享本地事务。
+/// </param>
+/// <param name="accounts">
+/// 事务外核验账号。
+/// </param>
+/// <param name="access">
+/// 统一准入。
+/// </param>
+/// <param name="options">
+/// 部署默认规则。
+/// </param>
 public sealed class ConfigurationService(IConfigurationRepository repository, IUnitOfWork transactions,
     IAccountDirectory accounts, AccessService access, IOptions<CustomerServiceOptions> options)
 {
-    /// <summary>未保存只读返回四个稳定组，不创建成员或授予权限。</summary>
+    /// <summary>
+    /// 未保存只读返回四个稳定组，不创建成员或授予权限。
+    /// </summary>
     public async Task<RoutingConfiguration> GetAsync(Actor actor, string org, CancellationToken ct) =>
         await repository.RoutingAsync(actor.TenantId, org, ct) ?? Defaults(actor.TenantId, org);
 
-    /// <summary>核验全部外部账号后，在短事务内整体 CAS 保存组及路由。</summary>
+    /// <summary>
+    /// 核验全部外部账号后，在短事务内整体 CAS 保存组及路由。
+    /// </summary>
     public async Task<RoutingConfiguration> SaveAsync(Actor actor, string org, RoutingCommand command, CancellationToken ct)
     {
         ValidateRouting(actor, org, command);
@@ -54,7 +70,9 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
         }, ct);
     }
 
-    /// <summary>读取正式日历，不存在时取得部署默认的独立副本。</summary>
+    /// <summary>
+    /// 读取正式日历，不存在时取得部署默认的独立副本。
+    /// </summary>
     public async Task<CalendarPolicy> CalendarAsync(string tenant, string org, CancellationToken ct)
     {
         var value = await repository.CalendarAsync(tenant, org, ct);
@@ -70,7 +88,9 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
         return fallback;
     }
 
-    /// <summary>整体保存组织日历，改变业务规则时强制更换业务版本。</summary>
+    /// <summary>
+    /// 整体保存组织日历，改变业务规则时强制更换业务版本。
+    /// </summary>
     public Task<CalendarPolicy> SaveCalendarAsync(Actor actor, string org, CalendarCommand command, CancellationToken ct)
     {
         var draft = ToCalendar(command);
@@ -103,11 +123,15 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
         }, ct);
     }
 
-    /// <summary>把严格 HTTP 草稿映射到独立日历规则，不读取身份字段。</summary>
+    /// <summary>
+    /// 把严格 HTTP 草稿映射到独立日历规则，不读取身份字段。
+    /// </summary>
     public static CalendarPolicy ToCalendar(CalendarCommand command) =>
         new() { CalendarVersion = command.CalendarVersion, Zone = command.Zone, Opens = command.Opens, Closes = command.Closes, Overrides = command.Overrides };
 
-    /// <summary>创建同组织稳定默认组，读操作无数据库副作用。</summary>
+    /// <summary>
+    /// 创建同组织稳定默认组，读操作无数据库副作用。
+    /// </summary>
     public static RoutingConfiguration Defaults(string tenant, string org) =>
         new()
         {
@@ -120,7 +144,9 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
                 c switch { Category.EXHIBITOR => "展商组", Category.VISITOR => "客服组", Category.FINANCE => "财务客服", _ => "其他组" }, [])).ToList()
         };
 
-    /// <summary>完整检查四类、成员唯一性、助手归属及映射，不允许外部组越权成为本地组。</summary>
+    /// <summary>
+    /// 完整检查四类、成员唯一性、助手归属及映射，不允许外部组越权成为本地组。
+    /// </summary>
     private void ValidateRouting(Actor actor, string org, RoutingCommand command)
     {
         if (command.Version < 0 || command.Groups is null || command.Routes is null || command.Groups.Count != 4 ||

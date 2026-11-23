@@ -7,10 +7,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AI.Customer.Service.Infrastructure.Configuration;
 
-/// <summary>基础设施协议装配入口，数据库差异只存在于连接适配器。</summary>
+/// <summary>
+/// 基础设施协议装配入口，数据库差异只存在于连接适配器。
+/// </summary>
 public static class InfrastructureRegistration
 {
-    /// <summary>注册 ORM owner 仓储、用户中心和可靠通知协议。</summary>
+    /// <summary>
+    /// 注册 ORM owner 仓储、用户中心和可靠通知协议。
+    /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var database = configuration.GetSection("Database").Get<DatabaseOptions>() ?? new();

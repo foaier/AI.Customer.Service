@@ -14,10 +14,14 @@ using static AI.Customer.Service.Tests.TestApplication;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>补充旧代次隔离、历史人工排除、候选证据和正式邮件工作项回归。</summary>
+/// <summary>
+/// 补充旧代次隔离、历史人工排除、候选证据和正式邮件工作项回归。
+/// </summary>
 public sealed partial class WorkflowTests
 {
-    /// <summary>客户端读到首个增量后断开会清理生成占用，不自动创建系统人工申请。</summary>
+    /// <summary>
+    /// 客户端读到首个增量后断开会清理生成占用，不自动创建系统人工申请。
+    /// </summary>
     [TestMethod]
     public async Task DisposedAiStreamReleasesTurnWithoutSystemHandoff()
     {
@@ -35,7 +39,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(0, await db.Set<ReliableTask>().CountAsync(x => x.Kind == "SYSTEM_HANDOFF"));
     }
 
-    /// <summary>重复完成回调不能将已成功轮次改为失败或覆盖原展示正文。</summary>
+    /// <summary>
+    /// 重复完成回调不能将已成功轮次改为失败或覆盖原展示正文。
+    /// </summary>
     [TestMethod]
     public async Task CompletedAiTurnIsImmutableOnRepeatedCallback()
     {
@@ -54,7 +60,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(original, saved.AssistantContent);
     }
 
-    /// <summary>运营指标按完整助手范围和固定窗口对账，未发生首响不能补零秒样本。</summary>
+    /// <summary>
+    /// 运营指标按完整助手范围和固定窗口对账，未发生首响不能补零秒样本。
+    /// </summary>
     [TestMethod]
     public async Task MetricsUseFullWindowAndAuthenticatedPrometheus()
     {
@@ -81,7 +89,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(1L, old.GetProperty("reception").GetProperty("backlog").GetProperty("waiting_over_5m").GetInt64());
     }
 
-    /// <summary>数据库同时拒绝跨组织会话引用与非法版本，不能仅靠应用层约定隔离。</summary>
+    /// <summary>
+    /// 数据库同时拒绝跨组织会话引用与非法版本，不能仅靠应用层约定隔离。
+    /// </summary>
     [TestMethod]
     public async Task DatabaseRejectsCrossOrganizationAndInvalidVersions()
     {
@@ -101,7 +111,9 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>新用户轮次使旧建议失效，查询隐藏旧卡且确认不能创建人工周期。</summary>
+    /// <summary>
+    /// 新用户轮次使旧建议失效，查询隐藏旧卡且确认不能创建人工周期。
+    /// </summary>
     [TestMethod]
     public async Task NewTurnSupersedesUnconfirmedProposal()
     {
@@ -119,7 +131,9 @@ public sealed partial class WorkflowTests
             new { requestId = "stale", expectedProposalVersion = 1, decision = "CONFIRM", email = "visitor@example.com" }, HttpStatusCode.Conflict);
     }
 
-    /// <summary>新轮次关闭旧调查的未决选择；历史回答回执仍可恢复而不能创建新副作用。</summary>
+    /// <summary>
+    /// 新轮次关闭旧调查的未决选择；历史回答回执仍可恢复而不能创建新副作用。
+    /// </summary>
     [TestMethod]
     public async Task NewTurnSupersedesPendingSurveyChoice()
     {
@@ -141,7 +155,9 @@ public sealed partial class WorkflowTests
             new { expectedVersion = result.GetProperty("version").GetInt64(), choice = "OPTED_IN", email = "visitor@example.com" }, HttpStatusCode.Conflict);
     }
 
-    /// <summary>曾申请人工的会话在取消后恢复 AI，也不能进入纯 AI 满意度调查。</summary>
+    /// <summary>
+    /// 曾申请人工的会话在取消后恢复 AI，也不能进入纯 AI 满意度调查。
+    /// </summary>
     [TestMethod]
     public async Task CancelledHumanHistoryExcludesAiSurvey()
     {
@@ -156,7 +172,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(JsonValueKind.Null, (await GetAsync(visitor, VisitorPath(id) + "/survey")).GetProperty("survey").ValueKind);
     }
 
-    /// <summary>模型候选不是用户结束证据，同轮同参数幂等且不允许覆写首次置信度。</summary>
+    /// <summary>
+    /// 模型候选不是用户结束证据，同轮同参数幂等且不允许覆写首次置信度。
+    /// </summary>
     [TestMethod]
     public async Task ResolutionCandidateIsEvidenceOnlyAndImmutable()
     {
@@ -176,7 +194,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(1, await db.Set<ResolutionEvidence>().CountAsync());
     }
 
-    /// <summary>崩溃后的成功轮次可按持久游标重评估；没有用户结束证据时任意沉默都不建调查。</summary>
+    /// <summary>
+    /// 崩溃后的成功轮次可按持久游标重评估；没有用户结束证据时任意沉默都不建调查。
+    /// </summary>
     [TestMethod]
     public async Task SurveyRecoveryDoesNotUseIdleTime()
     {
@@ -196,7 +216,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(0, (await repository.SurveyCandidatesAsync(100, default)).Count);
     }
 
-    /// <summary>迟到系统故障任务不能接管随后已经成功的 AI 轮次。</summary>
+    /// <summary>
+    /// 迟到系统故障任务不能接管随后已经成功的 AI 轮次。
+    /// </summary>
     [TestMethod]
     public async Task OldSystemFailureCannotTakeNewTurn()
     {
@@ -212,7 +234,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(JsonValueKind.Null, (await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest")).GetProperty("episode").ValueKind);
     }
 
-    /// <summary>只留邮箱的正式工单可认领且正文保持为空；死信通知重试保留投递键。</summary>
+    /// <summary>
+    /// 只留邮箱的正式工单可认领且正文保持为空；死信通知重试保留投递键。
+    /// </summary>
     [TestMethod]
     public async Task EmailOnlyCreatesClaimableWorkAndNotificationCanRecover()
     {
@@ -254,7 +278,9 @@ public sealed partial class WorkflowTests
         Assert.IsNotNull(task.LastRetriedAt);
     }
 
-    /// <summary>收件箱汇总按真实访客消息、持久READ和独立留言SEEN回执变化。</summary>
+    /// <summary>
+    /// 收件箱汇总按真实访客消息、持久READ和独立留言SEEN回执变化。
+    /// </summary>
     [TestMethod]
     public async Task InboxSummaryTracksUnreadAndFollowupReceipts()
     {
@@ -313,7 +339,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(0, summary.GetProperty("newFollowupCount").GetInt32());
     }
 
-    /// <summary>客服回复启动访客超时结单，迟到新消息结案且原消息重试仍幂等。</summary>
+    /// <summary>
+    /// 客服回复启动访客超时结单，迟到新消息结案且原消息重试仍幂等。
+    /// </summary>
     [TestMethod]
     public async Task VisitorInactivityAutoClosesActiveReception()
     {

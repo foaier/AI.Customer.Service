@@ -3,10 +3,14 @@ using AI.Customer.Service.Domain.Models;
 
 namespace AI.Customer.Service.Infrastructure.Adapters;
 
-/// <summary>两个聊天通道共用固定纯文本模板，保留完整工作台链接，遵守 2048 UTF-8 字节上限。</summary>
+/// <summary>
+/// 两个聊天通道共用固定纯文本模板，保留完整工作台链接，遵守 2048 UTF-8 字节上限。
+/// </summary>
 public static class HandoffNotificationText
 {
-    /// <summary>只读取任务快照；缺失资料显示占位符，不推断或查询用户画像。</summary>
+    /// <summary>
+    /// 只读取任务快照；缺失资料显示占位符，不推断或查询用户画像。
+    /// </summary>
     public static string Render(ReliableTask task, HandoffNotificationSnapshot snapshot, DateTime now)
     {
         var root = snapshot.PublicBaseUrl;
@@ -34,10 +38,14 @@ public static class HandoffNotificationText
         return prefix + summary + middle + Shorten(reply, budget - Encoding.UTF8.GetByteCount(summary)) + suffix;
     }
 
-    /// <summary>缺失内容使用文档占位符。</summary>
+    /// <summary>
+    /// 缺失内容使用文档占位符。
+    /// </summary>
     private static string Value(string? text) => string.IsNullOrWhiteSpace(text) ? "[—]" : text;
 
-    /// <summary>按 Unicode 码点截断，避免破坏中文或 emoji；不截断完整 URL。</summary>
+    /// <summary>
+    /// 按 Unicode 码点截断，避免破坏中文或 emoji；不截断完整 URL。
+    /// </summary>
     private static string Shorten(string value, int budget)
     {
         if (Encoding.UTF8.GetByteCount(value) <= budget) return value;

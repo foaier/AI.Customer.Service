@@ -8,11 +8,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace AI.Customer.Service.Infrastructure.Persistence;
 
-/// <summary>两个本地业务 owner 共用的事务数据源，ORM 配置不进入领域层。</summary>
-/// <param name="options">由数据库协议适配器创建的上下文选项。</param>
+/// <summary>
+/// 两个本地业务 owner 共用的事务数据源，ORM 配置不进入领域层。
+/// </summary>
+/// <param name="options">
+/// 由数据库协议适配器创建的上下文选项。
+/// </param>
 public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbContext> options) : DbContext(options)
 {
-    /// <summary>映射本项目的数据库结构、索引和约束。</summary>
+    /// <summary>
+    /// 映射本项目的数据库结构、索引和约束。
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Ignore<Aggregate>();
@@ -110,7 +116,9 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         }
     }
 
-    /// <summary>每个聚合独立表及完整复合主键，组织字段同时参加引用完整性。</summary>
+    /// <summary>
+    /// 每个聚合独立表及完整复合主键，组织字段同时参加引用完整性。
+    /// </summary>
     private static void Configure<T>(ModelBuilder model, string table) where T : Aggregate
     {
         var entity = model.Entity<T>();
@@ -144,7 +152,9 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         }
     }
 
-    /// <summary>把同 owner 的不可变配置集合映射为 JSON，并为 ORM 提供结构比较。</summary>
+    /// <summary>
+    /// 把同 owner 的不可变配置集合映射为 JSON，并为 ORM 提供结构比较。
+    /// </summary>
     private static void Json<T>(PropertyBuilder<T> property)
     {
         property.HasConversion(
@@ -157,13 +167,21 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
     }
 }
 
-/// <summary>基础设施组织写入门闩，跨进程串行容量与本地撤权，不保存业务主数据。</summary>
+/// <summary>
+/// 基础设施组织写入门闩，跨进程串行容量与本地撤权，不保存业务主数据。
+/// </summary>
 internal sealed class OrganizationGate
 {
-    /// <summary>认证租户，复合主键组成部分。</summary>
+    /// <summary>
+    /// 认证租户，复合主键组成部分。
+    /// </summary>
     public string TenantId { get; set; } = "";
-    /// <summary>核验组织，复合主键组成部分。</summary>
+    /// <summary>
+    /// 核验组织，复合主键组成部分。
+    /// </summary>
     public string TopOrgId { get; set; } = "";
-    /// <summary>事务持有期间原子递增，用 ORM 类型化更新获取数据库写锁。</summary>
+    /// <summary>
+    /// 事务持有期间原子递增，用 ORM 类型化更新获取数据库写锁。
+    /// </summary>
     public long Version { get; set; }
 }

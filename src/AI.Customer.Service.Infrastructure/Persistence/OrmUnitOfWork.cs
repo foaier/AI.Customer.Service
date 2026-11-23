@@ -5,8 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AI.Customer.Service.Infrastructure.Persistence;
 
-/// <summary>通过组织级 ORM 写门闩建立共享事务，覆盖跨会话容量、撤权及 generation 围栏。</summary>
-/// <param name="db">当前请求唯一共享上下文。</param>
+/// <summary>
+/// 通过组织级 ORM 写门闩建立共享事务，覆盖跨会话容量、撤权及 generation 围栏。
+/// </summary>
+/// <param name="db">
+/// 当前请求唯一共享上下文。
+/// </param>
 public sealed class OrmUnitOfWork(CustomerServiceDbContext db) : IUnitOfWork
 {
     /// <inheritdoc />
@@ -43,7 +47,9 @@ public sealed class OrmUnitOfWork(CustomerServiceDbContext db) : IUnitOfWork
         }
     }
 
-    /// <summary>独立初始化门闩，唯一键竞争必须完整回滚后重新读取，绝不沿用失败事务。</summary>
+    /// <summary>
+    /// 独立初始化门闩，唯一键竞争必须完整回滚后重新读取，绝不沿用失败事务。
+    /// </summary>
     private async Task EnsureGateAsync(string tenant, string org, CancellationToken ct)
     {
         if (await db.Set<OrganizationGate>().AnyAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct))

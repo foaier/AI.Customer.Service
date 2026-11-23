@@ -7,20 +7,42 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>按当前会话访问恢复等待期限，禁止全库定时扫描隐式关闭无人访问的请求。</summary>
-/// <param name="repository">等待及周期 owner。</param>
-/// <param name="configuration">组织日历应用端口。</param>
-/// <param name="transactions">共享事务。</param>
-/// <param name="runtime">回复权端口。</param>
-/// <param name="journal">可靠提醒登记。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="followups">同客服 owner 的正式跟进工作项。</param>
-/// <param name="tasks">仅返回安全投递摘要。</param>
-/// <param name="access">客服原组权限核验。</param>
+/// <summary>
+/// 按当前会话访问恢复等待期限，禁止全库定时扫描隐式关闭无人访问的请求。
+/// </summary>
+/// <param name="repository">
+/// 等待及周期 owner。
+/// </param>
+/// <param name="configuration">
+/// 组织日历应用端口。
+/// </param>
+/// <param name="transactions">
+/// 共享事务。
+/// </param>
+/// <param name="runtime">
+/// 回复权端口。
+/// </param>
+/// <param name="journal">
+/// 可靠提醒登记。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="followups">
+/// 同客服 owner 的正式跟进工作项。
+/// </param>
+/// <param name="tasks">
+/// 仅返回安全投递摘要。
+/// </param>
+/// <param name="access">
+/// 客服原组权限核验。
+/// </param>
 public sealed class WaitingService(IReceptionRepository repository, ConfigurationService configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, CommandJournal journal, TimeProvider clock, IFollowupRepository followups, ITaskRepository tasks, AccessService access)
 {
-    /// <summary>读取时初始化并按需补算期限，响应不包含邮箱。</summary>
+    /// <summary>
+    /// 读取时初始化并按需补算期限，响应不包含邮箱。
+    /// </summary>
     public Task<object?> GetAsync(Actor actor, Scope scope, CancellationToken ct) =>
         transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -33,7 +55,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             return await ViewAsync(waiting, ct);
         }, ct);
 
-    /// <summary>访客继续等待、保存邮箱或转邮件，使用独立等待版本。</summary>
+    /// <summary>
+    /// 访客继续等待、保存邮箱或转邮件，使用独立等待版本。
+    /// </summary>
     public Task<object> ChooseAsync(Actor actor, Scope scope, WaitingChoice command, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -69,7 +93,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             return await ViewAsync(waiting, ct);
         }, ct);
 
-    /// <summary>客服按原周期恢复等待与安全通知摘要，仍需当前原组权限。</summary>
+    /// <summary>
+    /// 客服按原周期恢复等待与安全通知摘要，仍需当前原组权限。
+    /// </summary>
     public Task<object?> GetAgentAsync(Actor actor, Scope scope, string? episodeId, CancellationToken ct) =>
         transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -82,7 +108,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             return await ViewAsync(await RefreshInTransactionAsync(episode, actor.TraceId, ct), ct);
         }, ct);
 
-    /// <summary>只恢复原周期 DEAD 邮件或转人工通知，保留首次 eventKey 和冻结载荷。</summary>
+    /// <summary>
+    /// 只恢复原周期 DEAD 邮件或转人工通知，保留首次 eventKey 和冻结载荷。
+    /// </summary>
     public Task<object> RetryNotificationsAsync(Actor actor, Scope scope, string? episodeId, CancellationToken ct) =>
         transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -104,7 +132,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             return await ViewAsync(waiting, ct);
         }, ct);
 
-    /// <summary>同事务初始化并推进等待事实，闭班优先于过期提醒，已接单优先于营业时间。</summary>
+    /// <summary>
+    /// 同事务初始化并推进等待事实，闭班优先于过期提醒，已接单优先于营业时间。
+    /// </summary>
     public async Task<Waiting> RefreshInTransactionAsync(Episode episode, string trace, CancellationToken ct)
     {
         var waiting = await repository.WaitingAsync(episode.Scope, episode.Id, ct);
@@ -170,7 +200,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         return waiting;
     }
 
-    /// <summary>明确选择邮件后原子取消在线等待、恢复 AI、创建唯一工单和通知任务。</summary>
+    /// <summary>
+    /// 明确选择邮件后原子取消在线等待、恢复 AI、创建唯一工单和通知任务。
+    /// </summary>
     public async Task EmailInTransactionAsync(Episode episode, Waiting waiting, string? email, string trace, CancellationToken ct, bool createWorkItem = true)
     {
         var address = Guard.Email(email);
@@ -209,7 +241,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
             new { type = "followup.created", ticketId = waiting.TicketId, conversationId = episode.ConversationId }, trace, ct);
     }
 
-    /// <summary>取消与恢复回复权沿用同一状态规则及事务，绝不覆盖已先认领的周期。</summary>
+    /// <summary>
+    /// 取消与恢复回复权沿用同一状态规则及事务，绝不覆盖已先认领的周期。
+    /// </summary>
     private async Task CancelInTransactionAsync(Episode episode, CancellationToken ct)
     {
         episode.Status = ReceptionRules.Transition(episode.Status, "CANCEL");
@@ -218,7 +252,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         await runtime.ResumeAiAsync(episode.Scope, episode.Id, ct);
     }
 
-    /// <summary>访客等待投影不泄露邮箱及内部通知接收者。</summary>
+    /// <summary>
+    /// 访客等待投影不泄露邮箱及内部通知接收者。
+    /// </summary>
     private async Task<object> ViewAsync(Waiting waiting, CancellationToken ct) => new
     {
         waiting.State,
@@ -230,7 +266,9 @@ public sealed class WaitingService(IReceptionRepository repository, Configuratio
         deliveries = (await DeliveriesAsync(waiting, ct)).Select(t => new { kind = t.Kind, status = t.State, t.Attempts, t.Version, t.ProviderRequestId })
     };
 
-    /// <summary>使用固定业务键读取本周期提醒与建单通知，不暴露任务载荷、邮箱或内部接收者。</summary>
+    /// <summary>
+    /// 使用固定业务键读取本周期提醒与建单通知，不暴露任务载荷、邮箱或内部接收者。
+    /// </summary>
     private async Task<List<ReliableTask>> DeliveriesAsync(Waiting waiting, CancellationToken ct)
     {
         var result = new List<ReliableTask>();

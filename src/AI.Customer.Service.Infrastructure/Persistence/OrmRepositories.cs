@@ -4,8 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AI.Customer.Service.Infrastructure.Persistence;
 
-/// <summary>Conversation owner 的类型化 ORM 仓储，完整隔离条件不向应用层泄露 DbSet。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// Conversation owner 的类型化 ORM 仓储，完整隔离条件不向应用层泄露 DbSet。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class ConversationRepository(CustomerServiceDbContext db) : IConversationRepository
 {
     /// <inheritdoc />
@@ -79,14 +83,20 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
         db.Set<Conversation>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant)
             .OrderBy(x => x.CreatedAt).ThenBy(x => x.Id).Skip((page - 1) * size).Take(size).ToListAsync(ct);
 
-    /// <summary>查询始终绑定租户、组织、会话、助手和大会。</summary>
+    /// <summary>
+    /// 查询始终绑定租户、组织、会话、助手和大会。
+    /// </summary>
     private IQueryable<T> InScope<T>(Scope scope) where T : ConversationAggregate =>
         db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
             x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
 }
 
-/// <summary>Customer Service owner 的接待、建议、等待和不可变回执 ORM 仓储。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// Customer Service owner 的接待、建议、等待和不可变回执 ORM 仓储。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptionRepository
 {
     /// <inheritdoc />
@@ -132,14 +142,20 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
         InScope<CommandReceipt>(scope).SingleOrDefaultAsync(x => x.ActorId == actor && x.Action == action && x.RequestId == key, ct);
     /// <inheritdoc />
     public void AddCommand(CommandReceipt value) => db.Add(value);
-    /// <summary>所有客服会话聚合均保留完整可信范围。</summary>
+    /// <summary>
+    /// 所有客服会话聚合均保留完整可信范围。
+    /// </summary>
     private IQueryable<T> InScope<T>(Scope scope) where T : ConversationAggregate =>
         db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
             x.ConversationId == scope.ConversationId && x.AssistantConfigId == scope.AssistantConfigId && x.BventId == scope.BventId);
 }
 
-/// <summary>路由、日历和在线运行事实的组织隔离 ORM 仓储。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// 路由、日历和在线运行事实的组织隔离 ORM 仓储。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConfigurationRepository
 {
     /// <inheritdoc />
@@ -164,8 +180,12 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
     public void AddAvailability(Availability value) => db.Add(value);
 }
 
-/// <summary>原跟进表单及最终回复的隔离 ORM 仓储，不直接操作 Conversation 表。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// 原跟进表单及最终回复的隔离 ORM 仓储，不直接操作 Conversation 表。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupRepository
 {
     /// <inheritdoc />
@@ -205,8 +225,12 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
             x.State == DeliveryState.CLOSED && episodes.Contains(x.EpisodeId)).Select(x => x.EpisodeId).ToListAsync(ct)).ToHashSet(StringComparer.Ordinal);
 }
 
-/// <summary>调查 owner 的一会话一调查 ORM 仓储。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// 调查 owner 的一会话一调查 ORM 仓储。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class SurveyRepository(CustomerServiceDbContext db) : ISurveyRepository
 {
     /// <inheritdoc />
@@ -224,8 +248,12 @@ public sealed class SurveyRepository(CustomerServiceDbContext db) : ISurveyRepos
     public void Add(Survey value) => db.Add(value);
 }
 
-/// <summary>可靠投递任务 ORM 仓储，领取前过滤通道并保留租户组织条件。</summary>
-/// <param name="db">共享事务上下文。</param>
+/// <summary>
+/// 可靠投递任务 ORM 仓储，领取前过滤通道并保留租户组织条件。
+/// </summary>
+/// <param name="db">
+/// 共享事务上下文。
+/// </param>
 public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepository
 {
     /// <inheritdoc />

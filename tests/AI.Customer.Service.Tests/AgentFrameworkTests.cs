@@ -15,11 +15,15 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>通过官方 SDK 的真实 HTTP 序列化和 MAF 运行，验证工具执行、结束门禁及会话隔离。</summary>
+/// <summary>
+/// 通过官方 SDK 的真实 HTTP 序列化和 MAF 运行，验证工具执行、结束门禁及会话隔离。
+/// </summary>
 [TestClass]
 public sealed class AgentFrameworkTests
 {
-    /// <summary>模型申请工具实际执行拒绝结果，不能生成业务申请或冒充用户同意。</summary>
+    /// <summary>
+    /// 模型申请工具实际执行拒绝结果，不能生成业务申请或冒充用户同意。
+    /// </summary>
     [TestMethod]
     public async Task ModelCannotAuthorizeHandoff()
     {
@@ -43,7 +47,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual("完整答复", string.Concat(deltas.Select(x => x.Text)));
     }
 
-    /// <summary>合法建议只在最终回答成功后输出，模型工具本身不持久化人工状态。</summary>
+    /// <summary>
+    /// 合法建议只在最终回答成功后输出，模型工具本身不持久化人工状态。
+    /// </summary>
     [TestMethod]
     public async Task HandoffProposalIsReleasedOnlyAfterSuccessfulContinuation()
     {
@@ -56,7 +62,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual("proposeHandoff", deltas[^1].ToolName);
     }
 
-    /// <summary>工具已在内存执行但续轮失败时不输出任何候选，确保失败轮次无法触发业务状态。</summary>
+    /// <summary>
+    /// 工具已在内存执行但续轮失败时不输出任何候选，确保失败轮次无法触发业务状态。
+    /// </summary>
     [TestMethod]
     public async Task FailedContinuationDiscardsExecutedCandidates()
     {
@@ -75,7 +83,9 @@ public sealed class AgentFrameworkTests
         Assert.IsTrue(emitted.All(x => x.ToolName is null));
     }
 
-    /// <summary>模型多带租户字段、未知工具、损坏 JSON 或过大参数时必须在自动绑定之前拒绝。</summary>
+    /// <summary>
+    /// 模型多带租户字段、未知工具、损坏 JSON 或过大参数时必须在自动绑定之前拒绝。
+    /// </summary>
     [TestMethod]
     [DataRow("proposeResolution", "{\"confidence\":0.95,\"tenantId\":\"other\"}")]
     [DataRow("deleteConversation", "{}")]
@@ -93,7 +103,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual(1, requests);
     }
 
-    /// <summary>工具参数值非法时返回受限错误，保留完整主回答且不产生解决候选。</summary>
+    /// <summary>
+    /// 工具参数值非法时返回受限错误，保留完整主回答且不产生解决候选。
+    /// </summary>
     [TestMethod]
     public async Task InvalidConfidenceProducesNoCandidate()
     {
@@ -112,7 +124,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual(2, requests);
     }
 
-    /// <summary>同一个 Adapter 可并发运行；每次框架 session 只读本范围成功历史，所有续轮保留上下文。</summary>
+    /// <summary>
+    /// 同一个 Adapter 可并发运行；每次框架 session 只读本范围成功历史，所有续轮保留上下文。
+    /// </summary>
     [TestMethod]
     public async Task AgentSessionsAndHeadersStayIsolated()
     {
@@ -163,7 +177,9 @@ public sealed class AgentFrameworkTests
         }));
     }
 
-    /// <summary>成功的分类确实经过 Agent Framework，JSON 格式和合法置信结果不能被统一降级掩盖。</summary>
+    /// <summary>
+    /// 成功的分类确实经过 Agent Framework，JSON 格式和合法置信结果不能被统一降级掩盖。
+    /// </summary>
     [TestMethod]
     public async Task ClassificationUsesFrameworkAndStrictOutput()
     {
@@ -182,7 +198,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual(Category.OTHER, (await Model(http).ClassifyAsync(Input().Scope, "展位咨询", default)).Category);
     }
 
-    /// <summary>SDK HTTP 失败不隐式重试，转换为既有可靠恢复可识别的业务异常。</summary>
+    /// <summary>
+    /// SDK HTTP 失败不隐式重试，转换为既有可靠恢复可识别的业务异常。
+    /// </summary>
     [TestMethod]
     public async Task ProviderFailureHasNoHiddenRetry()
     {
@@ -196,7 +214,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual(1, requests);
     }
 
-    /// <summary>客户端取消会中止框架续轮，并丢弃已执行但尚未提交的工具候选。</summary>
+    /// <summary>
+    /// 客户端取消会中止框架续轮，并丢弃已执行但尚未提交的工具候选。
+    /// </summary>
     [TestMethod]
     public async Task CancellationDiscardsToolCandidates()
     {
@@ -223,7 +243,9 @@ public sealed class AgentFrameworkTests
         Assert.IsTrue(emitted.All(x => x.ToolName is null));
     }
 
-    /// <summary>连续工具调用达到框架迭代上限时必须失败，不能把最后一个 tool_calls 当作成功回答。</summary>
+    /// <summary>
+    /// 连续工具调用达到框架迭代上限时必须失败，不能把最后一个 tool_calls 当作成功回答。
+    /// </summary>
     [TestMethod]
     public async Task ToolLoopHasBoundedIterations()
     {
@@ -246,7 +268,9 @@ public sealed class AgentFrameworkTests
         Assert.IsTrue(requests is > 1 and <= 5, "框架必须有界结束工具循环");
     }
 
-    /// <summary>真实 JWT、MVC、MAF、SQLite 全链路验证：建议仅随成功轮次提交，失败则登记可靠恢复。</summary>
+    /// <summary>
+    /// 真实 JWT、MVC、MAF、SQLite 全链路验证：建议仅随成功轮次提交，失败则登记可靠恢复。
+    /// </summary>
     [TestMethod]
     [DataRow("stop", true)]
     [DataRow("length", false)]
@@ -279,7 +303,9 @@ public sealed class AgentFrameworkTests
         Assert.AreEqual(succeeded ? 0 : 1, await db.Set<ReliableTask>().CountAsync(x => x.Kind == "SYSTEM_HANDOFF"));
     }
 
-    /// <summary>生成含完整 OpenAI 元数据的流响应，由官方 provider 解析每个网络事件。</summary>
+    /// <summary>
+    /// 生成含完整 OpenAI 元数据的流响应，由官方 provider 解析每个网络事件。
+    /// </summary>
     internal static HttpResponseMessage Stream(params string[] choices)
     {
         var frames = choices.Select(choice => choice == "[DONE]" ? "[DONE]" :
@@ -287,7 +313,9 @@ public sealed class AgentFrameworkTests
         return new(HttpStatusCode.OK) { Content = new StringContent(string.Concat(frames.Select(x => "data: " + x + "\n\n")), Encoding.UTF8, "text/event-stream") };
     }
 
-    /// <summary>构造 SDK 可解析的分类完成响应，含明确 stop 结束证据。</summary>
+    /// <summary>
+    /// 构造 SDK 可解析的分类完成响应，含明确 stop 结束证据。
+    /// </summary>
     internal static HttpResponseMessage ClassificationResponse(string content) => new(HttpStatusCode.OK)
     {
         Content = new StringContent(JsonSerializer.Serialize(new
@@ -300,7 +328,9 @@ public sealed class AgentFrameworkTests
         }), Encoding.UTF8, "application/json")
     };
 
-    /// <summary>生成自动工具调用响应，框架必须调用本地函数才能得到下一轮工具结果。</summary>
+    /// <summary>
+    /// 生成自动工具调用响应，框架必须调用本地函数才能得到下一轮工具结果。
+    /// </summary>
     private static HttpResponseMessage ToolResponse(string name, string arguments) => Stream(JsonSerializer.Serialize(new
     {
         index = 0,
@@ -308,16 +338,24 @@ public sealed class AgentFrameworkTests
         finish_reason = "tool_calls"
     }), "[DONE]");
 
-    /// <summary>生成正常的最终文本回答。</summary>
+    /// <summary>
+    /// 生成正常的最终文本回答。
+    /// </summary>
     private static HttpResponseMessage Answer() => Stream("""{"index":0,"delta":{"role":"assistant","content":"完整答复"},"finish_reason":"stop"}""", "[DONE]");
 
-    /// <summary>创建隔离框架适配器，不访问真实供应商。</summary>
+    /// <summary>
+    /// 创建隔离框架适配器，不访问真实供应商。
+    /// </summary>
     private static AgentFrameworkChatModel Model(HttpClient http) => new(http, Options.Create(new ModelOptions { BaseUrl = "https://model.invalid/v1", Model = "test" }));
 
-    /// <summary>固定可信会话输入，模型不能修改这些归属字段。</summary>
+    /// <summary>
+    /// 固定可信会话输入，模型不能修改这些归属字段。
+    /// </summary>
     private static ModelRequest Input() => new(new("tenant-a", "org-a", "session-a", "assistant-a", null), "turn-a", "trace-a", [], "请问怎么入场？");
 
-    /// <summary>完整枚举框架增量以覆盖最终完成与候选释放门禁。</summary>
+    /// <summary>
+    /// 完整枚举框架增量以覆盖最终完成与候选释放门禁。
+    /// </summary>
     private static async Task<List<ModelDelta>> CollectAsync(IChatModel model, ModelRequest input)
     {
         var deltas = new List<ModelDelta>();

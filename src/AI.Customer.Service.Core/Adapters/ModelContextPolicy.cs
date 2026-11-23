@@ -3,11 +3,21 @@ using AI.Customer.Service.Domain.Models;
 
 namespace AI.Customer.Service.Core.Adapters;
 
-/// <summary>向本轮所有模型请求（含工具续轮）传播可信上下文，不依赖线程本地变量。</summary>
-/// <param name="scope">服务端绑定的完整会话范围。</param>
-/// <param name="turnId">生成轮次；独立分类时为空。</param>
-/// <param name="traceId">当前生成跟踪；独立分类时为空。</param>
-/// <param name="anonymous">无密钥兼容端点移除 SDK 占位认证头。</param>
+/// <summary>
+/// 向本轮所有模型请求（含工具续轮）传播可信上下文，不依赖线程本地变量。
+/// </summary>
+/// <param name="scope">
+/// 服务端绑定的完整会话范围。
+/// </param>
+/// <param name="turnId">
+/// 生成轮次；独立分类时为空。
+/// </param>
+/// <param name="traceId">
+/// 当前生成跟踪；独立分类时为空。
+/// </param>
+/// <param name="anonymous">
+/// 无密钥兼容端点移除 SDK 占位认证头。
+/// </param>
 internal sealed class ModelContextPolicy(Scope scope, string? turnId, string? traceId, bool anonymous) : PipelinePolicy
 {
     /// <inheritdoc />

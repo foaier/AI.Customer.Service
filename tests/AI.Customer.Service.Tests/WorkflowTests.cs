@@ -18,22 +18,32 @@ using static AI.Customer.Service.Tests.TestApplication;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>真实 HTTP、数据库事务和 WebSocket 下的客服业务回归。</summary>
+/// <summary>
+/// 真实 HTTP、数据库事务和 WebSocket 下的客服业务回归。
+/// </summary>
 [TestClass]
 public sealed partial class WorkflowTests
 {
-    /// <summary>每项测试使用独立应用和数据库。</summary>
+    /// <summary>
+    /// 每项测试使用独立应用和数据库。
+    /// </summary>
     private TestApplication application = null!;
 
-    /// <summary>初始化正式分层应用，外部依赖仅在测试替换。</summary>
+    /// <summary>
+    /// 初始化正式分层应用，外部依赖仅在测试替换。
+    /// </summary>
     [TestInitialize]
     public void Initialize() => application = new TestApplication();
 
-    /// <summary>关闭宿主并清理独立临时数据库。</summary>
+    /// <summary>
+    /// 关闭宿主并清理独立临时数据库。
+    /// </summary>
     [TestCleanup]
     public async Task Cleanup() => await application.DisposeAsync();
 
-    /// <summary>匿名、过期和跨租户会话访问均失败。</summary>
+    /// <summary>
+    /// 匿名、过期和跨租户会话访问均失败。
+    /// </summary>
     [TestMethod]
     public async Task AuthenticationAndTenantIsolation()
     {
@@ -48,7 +58,9 @@ public sealed partial class WorkflowTests
         await GetAsync(other, VisitorPath(id) + "/handoffs/latest", HttpStatusCode.Forbidden);
     }
 
-    /// <summary>默认配置只读不创建组，保存时外部名称覆盖客户端展示快照且旧版本冲突。</summary>
+    /// <summary>
+    /// 默认配置只读不创建组，保存时外部名称覆盖客户端展示快照且旧版本冲突。
+    /// </summary>
     [TestMethod]
     public async Task RoutingReadAndCompareAndSwap()
     {
@@ -66,7 +78,9 @@ public sealed partial class WorkflowTests
             new { version = 0, groups = saved.GetProperty("groups"), routes = saved.GetProperty("routes") }, HttpStatusCode.Conflict);
     }
 
-    /// <summary>直接申请不二次确认，同键返回首次周期且不再次推进 generation。</summary>
+    /// <summary>
+    /// 直接申请不二次确认，同键返回首次周期且不再次推进 generation。
+    /// </summary>
     [TestMethod]
     public async Task DirectHandoffIsDurableAndIdempotent()
     {
@@ -87,7 +101,9 @@ public sealed partial class WorkflowTests
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", tenantId = "tenant-b" }, HttpStatusCode.BadRequest);
     }
 
-    /// <summary>两位客服同版本竞争只能一个成功，未上线仍允许手动接单。</summary>
+    /// <summary>
+    /// 两位客服同版本竞争只能一个成功，未上线仍允许手动接单。
+    /// </summary>
     [TestMethod]
     public async Task ConcurrentClaimHasOneWinnerWithoutOnline()
     {
@@ -109,7 +125,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(1, await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().CountAsync(x => x.Status == EpisodeStatus.CLAIMED));
     }
 
-    /// <summary>一个客服跨两个会话竞争最后容量时只有一个成功，容量不是单会话计数。</summary>
+    /// <summary>
+    /// 一个客服跨两个会话竞争最后容量时只有一个成功，容量不是单会话计数。
+    /// </summary>
     [TestMethod]
     public async Task OrganizationCapacitySerializesAcrossConversations()
     {
@@ -130,7 +148,9 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>取消和接单共用同一事务围栏，不出现 HUMAN 回复权和 CANCELLED 半写。</summary>
+    /// <summary>
+    /// 取消和接单共用同一事务围栏，不出现 HUMAN 回复权和 CANCELLED 半写。
+    /// </summary>
     [TestMethod]
     public async Task CancelVersusClaimIsAtomic()
     {
@@ -155,7 +175,9 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>验证纯文本消息幂等、首响、单调回执和终态重放。</summary>
+    /// <summary>
+    /// 验证纯文本消息幂等、首响、单调回执和终态重放。
+    /// </summary>
     [TestMethod]
     public async Task MessagesReceiptsAndTerminalReplay()
     {
@@ -183,7 +205,9 @@ public sealed partial class WorkflowTests
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "late", content = "新消息" }, HttpStatusCode.Conflict);
     }
 
-    /// <summary>改派需目标在线，成功后旧客服不能读取历史或正文；原键重放仍恢复首次回执。</summary>
+    /// <summary>
+    /// 改派需目标在线，成功后旧客服不能读取历史或正文；原键重放仍恢复首次回执。
+    /// </summary>
     [TestMethod]
     public async Task TransferRevokesPreviousAssigneeAndKeepsSource()
     {
@@ -206,7 +230,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual("VISITOR_DIRECT_REQUEST", latest.GetProperty("episode").GetProperty("triggerSource").GetString());
     }
 
-    /// <summary>旧上线代次不能通过心跳覆盖用户主动离线。</summary>
+    /// <summary>
+    /// 旧上线代次不能通过心跳覆盖用户主动离线。
+    /// </summary>
     [TestMethod]
     public async Task HeartbeatCannotResurrectOfflineSelection()
     {
@@ -219,7 +245,9 @@ public sealed partial class WorkflowTests
             new { version = online.GetProperty("version").GetInt64() }, HttpStatusCode.Conflict);
     }
 
-    /// <summary>等待在访问时补算五分钟提醒、十分钟繁忙及闭班恢复，不依赖全局扫描。</summary>
+    /// <summary>
+    /// 等待在访问时补算五分钟提醒、十分钟繁忙及闭班恢复，不依赖全局扫描。
+    /// </summary>
     [TestMethod]
     public async Task WaitingDeadlinesAreLazyAndCloseRestoresAi()
     {
@@ -243,7 +271,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(0, await db.Set<ReliableTask>().CountAsync(x => x.Kind == "INTERNAL"));
     }
 
-    /// <summary>留言正文必须先认领，最终回复经网关受理才可结案。</summary>
+    /// <summary>
+    /// 留言正文必须先认领，最终回复经网关受理才可结案。
+    /// </summary>
     [TestMethod]
     public async Task FollowupClaimReplyDeliveryAndExplicitClose()
     {
@@ -272,7 +302,9 @@ public sealed partial class WorkflowTests
         Assert.IsTrue(application.Notification.Accepted.Contains("reply:" + form.GetProperty("ticketId").GetString()));
     }
 
-    /// <summary>网关拒绝按退避有限重试，最终死信不伪装 SENT。</summary>
+    /// <summary>
+    /// 网关拒绝按退避有限重试，最终死信不伪装 SENT。
+    /// </summary>
     [TestMethod]
     public async Task NotificationRetryExhaustionIsDurable()
     {
@@ -296,7 +328,9 @@ public sealed partial class WorkflowTests
         Assert.IsNull(task.LeaseId);
     }
 
-    /// <summary>真实结束证据才能创建单次调查；不满意先询问，明确同意后才申请人工。</summary>
+    /// <summary>
+    /// 真实结束证据才能创建单次调查；不满意先询问，明确同意后才申请人工。
+    /// </summary>
     [TestMethod]
     public async Task SurveyRequiresEvidenceAndExplicitOptIn()
     {
@@ -321,7 +355,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(TriggerSource.SURVEY_DISSATISFIED_OPT_IN, (await db.Set<Episode>().SingleAsync()).TriggerSource);
     }
 
-    /// <summary>单独致谢不能触发调查；AI 建议卡只有明确确认后才申请。</summary>
+    /// <summary>
+    /// 单独致谢不能触发调查；AI 建议卡只有明确确认后才申请。
+    /// </summary>
     [TestMethod]
     public async Task AiProposalNeedsConfirmationAndThanksIsNotResolution()
     {
@@ -346,7 +382,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(JsonValueKind.Null, (await GetAsync(visitor, VisitorPath(thanksSession) + "/survey")).GetProperty("survey").ValueKind);
     }
 
-    /// <summary>人工接管后旧 AI epoch 不能提交正文。</summary>
+    /// <summary>
+    /// 人工接管后旧 AI epoch 不能提交正文。
+    /// </summary>
     [TestMethod]
     public async Task LateAiCompletionIsFenced()
     {
@@ -372,7 +410,9 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>模型最终失败登记可靠系统任务，恢复时来源为 SYSTEM_POLICY。</summary>
+    /// <summary>
+    /// 模型最终失败登记可靠系统任务，恢复时来源为 SYSTEM_POLICY。
+    /// </summary>
     [TestMethod]
     public async Task ModelFailureCreatesRecoverableSystemHandoff()
     {
@@ -388,7 +428,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(TriggerSource.SYSTEM_POLICY, episode.TriggerSource);
     }
 
-    /// <summary>真实 WebSocket 首帧登录后收到持久快照，未知身份字段和过期 JWT 以 1008 关闭。</summary>
+    /// <summary>
+    /// 真实 WebSocket 首帧登录后收到持久快照，未知身份字段和过期 JWT 以 1008 关闭。
+    /// </summary>
     [TestMethod]
     public async Task WebSocketUsesLoginJwtAndRejectsSpoofedFields()
     {
@@ -421,7 +463,9 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(WebSocketCloseStatus.PolicyViolation, invalid.CloseStatus);
     }
 
-    /// <summary>格式化后的原客服静态页面和依赖均可由新服务独立读取。</summary>
+    /// <summary>
+    /// 格式化后的原客服静态页面和依赖均可由新服务独立读取。
+    /// </summary>
     [TestMethod]
     public async Task StaticPagesAndOpenApiAreServed()
     {
@@ -434,24 +478,34 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>稳定申请辅助入口，默认请求键仅在单会话内复用。</summary>
+    /// <summary>
+    /// 稳定申请辅助入口，默认请求键仅在单会话内复用。
+    /// </summary>
     private static Task<JsonElement> RequestAsync(HttpClient visitor, string id, string key = "handoff") =>
         SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = key, email = "visitor@example.com" });
 
-    /// <summary>访客完整客服资源路径。</summary>
+    /// <summary>
+    /// 访客完整客服资源路径。
+    /// </summary>
     private static string VisitorPath(string id) => "/api/customer-service/conversations/" + id;
 
-    /// <summary>客服完整资源路径。</summary>
+    /// <summary>
+    /// 客服完整资源路径。
+    /// </summary>
     private static string AgentPath(string id) => "/api/customer-service/agents/conversations/" + id;
 
-    /// <summary>运行单轮正式 Worker 处理，控制租约和网关替身结果。</summary>
+    /// <summary>
+    /// 运行单轮正式 Worker 处理，控制租约和网关替身结果。
+    /// </summary>
     private async Task RunWorkerAsync()
     {
         await using var scope = application.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<ReliableTaskProcessor>().RunOnceAsync(default);
     }
 
-    /// <summary>通过真实 SSE HTTP 入口消费完整一轮。</summary>
+    /// <summary>
+    /// 通过真实 SSE HTTP 入口消费完整一轮。
+    /// </summary>
     private static async Task<string> ChatAsync(HttpClient visitor, string id, string input)
     {
         using var response = await visitor.PostAsJsonAsync("/api/agent/chatStream", new

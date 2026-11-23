@@ -9,28 +9,52 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>认领、结束、取消和改派短事务，先复核权限再处理幂等回执。</summary>
-/// <param name="repository">接待 owner。</param>
-/// <param name="configuration">组织级运行与配置 owner。</param>
-/// <param name="transactions">跨 owner 共享事务。</param>
-/// <param name="runtime">Conversation 回复权端口。</param>
-/// <param name="access">当前成员权限。</param>
-/// <param name="journal">回执及审计事实。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="options">同组织容量。</param>
+/// <summary>
+/// 认领、结束、取消和改派短事务，先复核权限再处理幂等回执。
+/// </summary>
+/// <param name="repository">
+/// 接待 owner。
+/// </param>
+/// <param name="configuration">
+/// 组织级运行与配置 owner。
+/// </param>
+/// <param name="transactions">
+/// 跨 owner 共享事务。
+/// </param>
+/// <param name="runtime">
+/// Conversation 回复权端口。
+/// </param>
+/// <param name="access">
+/// 当前成员权限。
+/// </param>
+/// <param name="journal">
+/// 回执及审计事实。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="options">
+/// 同组织容量。
+/// </param>
 public sealed class ReceptionService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, AccessService access, CommandJournal journal, TimeProvider clock, IOptions<CustomerServiceOptions> options)
 {
-    /// <summary>读取当前或原始接待，无法访问时不泄露其它组织记录。</summary>
+    /// <summary>
+    /// 读取当前或原始接待，无法访问时不泄露其它组织记录。
+    /// </summary>
     public async Task<Episode> RequireAsync(Scope scope, string? episode, CancellationToken ct) =>
         (episode is null ? await repository.LatestAsync(scope, ct) : await repository.EpisodeAsync(scope, episode, ct))
         ?? throw BusinessException.Forbidden("人工周期不存在或不可访问");
 
-    /// <summary>当前成员只读待接单及本人进行中的接待。</summary>
+    /// <summary>
+    /// 当前成员只读待接单及本人进行中的接待。
+    /// </summary>
     public async Task<List<Episode>> QueueAsync(Actor actor, string org, string assistant, CancellationToken ct) =>
         await repository.QueueAsync(actor.TenantId, org, assistant, await access.GroupsAsync(actor, org, ct), actor.AccountId, ct);
 
-    /// <summary>同版本并发认领只有一人成功，默认离线和过期心跳均不阻止手动接单。</summary>
+    /// <summary>
+    /// 同版本并发认领只有一人成功，默认离线和过期心跳均不阻止手动接单。
+    /// </summary>
     public Task<object> ClaimAsync(Actor actor, Scope scope, StateCommand command, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -56,7 +80,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             return await SaveAsync(actor, episode, "CLAIM", command.RequestId, command, ct);
         }, ct);
 
-    /// <summary>访客取消未接单或认领客服结束已接单，与恢复 AI 原子提交。</summary>
+    /// <summary>
+    /// 访客取消未接单或认领客服结束已接单，与恢复 AI 原子提交。
+    /// </summary>
     public Task<object> FinishAsync(Actor actor, Scope scope, StateCommand command, bool visitor, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -89,7 +115,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             return await SaveAsync(actor, episode, action, command.RequestId, command, ct);
         }, ct);
 
-    /// <summary>扫描候选后在组织写锁内复核截止时间并自动结单。</summary>
+    /// <summary>
+    /// 扫描候选后在组织写锁内复核截止时间并自动结单。
+    /// </summary>
     public Task<bool> AutoCloseAsync(Scope scope, string episodeId, DateTime now, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -105,7 +133,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             return true;
         }, ct);
 
-    /// <summary>同组改派保留原周期及首次来源，目标必须实时外部有效且主动在线有容量。</summary>
+    /// <summary>
+    /// 同组改派保留原周期及首次来源，目标必须实时外部有效且主动在线有容量。
+    /// </summary>
     public Task<object> TransferAsync(Actor actor, Scope scope, TransferCommand command, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -143,7 +173,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
             return journal.Save(scope, actor, episode.PrincipalId, "TRANSFER", command.RequestId, command, Result(episode, command.RequestId));
         }, ct);
 
-    /// <summary>组织级容量在共享写锁内重新统计；首次运行行默认离线，不伪装上线。</summary>
+    /// <summary>
+    /// 组织级容量在共享写锁内重新统计；首次运行行默认离线，不伪装上线。
+    /// </summary>
     private async Task RequireCapacityAsync(Actor actor, string org, bool online, CancellationToken ct)
     {
         var availability = await configuration.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
@@ -162,7 +194,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
         }
     }
 
-    /// <summary>状态、首次回执和可靠审计事件同事务保存。</summary>
+    /// <summary>
+    /// 状态、首次回执和可靠审计事件同事务保存。
+    /// </summary>
     private async Task<object> SaveAsync<T>(Actor actor, Episode episode, string action, string key, T input, CancellationToken ct) where T : notnull
     {
         await journal.EnqueueAsync(episode.Scope, episode.PrincipalId, episode.Id, "EVENT", action + ":" + episode.Id + ":" + key,
@@ -170,7 +204,9 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
         return journal.Save(episode.Scope, actor, episode.PrincipalId, action, key, input, Result(episode, key));
     }
 
-    /// <summary>安全命令投影不返回邮箱、内部跟踪或模型数据。</summary>
+    /// <summary>
+    /// 安全命令投影不返回邮箱、内部跟踪或模型数据。
+    /// </summary>
     private static object Result(Episode episode, string request) =>
         new { requestId = request, episodeId = episode.Id, status = episode.Status, version = episode.Version, replayed = false };
 }

@@ -4,13 +4,23 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>只读聊天及 AI 评价导出编排，不包含系统提示词、留言邮箱或模型请求载荷。</summary>
-/// <param name="conversations">Conversation owner。</param>
-/// <param name="surveys">调查 owner。</param>
-/// <param name="clock">UTC 时钟。</param>
+/// <summary>
+/// 只读聊天及 AI 评价导出编排，不包含系统提示词、留言邮箱或模型请求载荷。
+/// </summary>
+/// <param name="conversations">
+/// Conversation owner。
+/// </param>
+/// <param name="surveys">
+/// 调查 owner。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
 public sealed class ExportService(IConversationRepository conversations, ISurveyRepository surveys, TimeProvider clock)
 {
-    /// <summary>按组织、助手和页码导出安全文本，一页不是全部数据。</summary>
+    /// <summary>
+    /// 按组织、助手和页码导出安全文本，一页不是全部数据。
+    /// </summary>
     public async Task<object> ExportAsync(Actor actor, string org, string assistant, int page, int size, CancellationToken ct)
     {
         if (page is < 1 or > 100000 || size is < 1 or > 100)

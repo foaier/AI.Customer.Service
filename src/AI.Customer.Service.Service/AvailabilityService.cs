@@ -6,23 +6,39 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>组织级在线展示和心跳代次，手动接单独立使用组权限及容量。</summary>
-/// <param name="repository">运行事实 owner。</param>
-/// <param name="reception">容量只读端口。</param>
-/// <param name="transactions">组织级共享事务。</param>
-/// <param name="clock">UTC 时钟。</param>
-/// <param name="options">容量规则。</param>
+/// <summary>
+/// 组织级在线展示和心跳代次，手动接单独立使用组权限及容量。
+/// </summary>
+/// <param name="repository">
+/// 运行事实 owner。
+/// </param>
+/// <param name="reception">
+/// 容量只读端口。
+/// </param>
+/// <param name="transactions">
+/// 组织级共享事务。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
+/// <param name="options">
+/// 容量规则。
+/// </param>
 public sealed class AvailabilityService(IConfigurationRepository repository, IReceptionRepository reception,
     IUnitOfWork transactions, TimeProvider clock, IOptions<CustomerServiceOptions> options)
 {
-    /// <summary>只读恢复在线状态，过期按 OFFLINE 展示且不隐式续约。</summary>
+    /// <summary>
+    /// 只读恢复在线状态，过期按 OFFLINE 展示且不隐式续约。
+    /// </summary>
     public async Task<object> GetAsync(Actor actor, string org, CancellationToken ct)
     {
         var value = await repository.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
         return await ViewAsync(actor, org, value, ct);
     }
 
-    /// <summary>明确状态选择推进版本，旧页面此后不能继续续约。</summary>
+    /// <summary>
+    /// 明确状态选择推进版本，旧页面此后不能继续续约。
+    /// </summary>
     public Task<object> SetAsync(Actor actor, string org, AvailabilityStatus status, CancellationToken ct) =>
         transactions.ExecuteAsync(actor.TenantId, org, async () =>
         {
@@ -42,7 +58,9 @@ public sealed class AvailabilityService(IConfigurationRepository repository, IRe
             return await ViewAsync(actor, org, value, ct);
         }, ct);
 
-    /// <summary>心跳仅延长有效同代次 ONLINE，不推进代次或复活离线选择。</summary>
+    /// <summary>
+    /// 心跳仅延长有效同代次 ONLINE，不推进代次或复活离线选择。
+    /// </summary>
     public Task<object> HeartbeatAsync(Actor actor, string org, long version, CancellationToken ct) =>
         transactions.ExecuteAsync(actor.TenantId, org, async () =>
         {
@@ -56,7 +74,9 @@ public sealed class AvailabilityService(IConfigurationRepository repository, IRe
             return await ViewAsync(actor, org, value, ct);
         }, ct);
 
-    /// <summary>返回实际接待数及有效展示状态，不授予账号或组权限。</summary>
+    /// <summary>
+    /// 返回实际接待数及有效展示状态，不授予账号或组权限。
+    /// </summary>
     private async Task<object> ViewAsync(Actor actor, string org, Availability? value, CancellationToken ct) => new
     {
         status = value?.Status == AvailabilityStatus.ONLINE && value.ExpiresAt <= clock.GetUtcNow().UtcDateTime

@@ -5,7 +5,9 @@ using Microsoft.Extensions.Logging;
 
 namespace AI.Customer.Service.Service.Workers;
 
-/// <summary>有界恢复已首响且访客沉默的在线接待。</summary>
+/// <summary>
+/// 有界恢复已首响且访客沉默的在线接待。
+/// </summary>
 public sealed class AutoCloseWorker(IServiceScopeFactory scopes, TimeProvider clock, ILogger<AutoCloseWorker> logger) : BackgroundService
 {
     /// <inheritdoc />

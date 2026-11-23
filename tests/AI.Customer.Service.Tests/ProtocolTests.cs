@@ -15,11 +15,15 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>真实 HTTP 协议适配器回归，外部网络由消息处理器替代。</summary>
+/// <summary>
+/// 真实 HTTP 协议适配器回归，外部网络由消息处理器替代。
+/// </summary>
 [TestClass]
 public sealed class ProtocolTests
 {
-    /// <summary>用户中心组织状态必须启用，账号租户不可被外部目录名称替代。</summary>
+    /// <summary>
+    /// 用户中心组织状态必须启用，账号租户不可被外部目录名称替代。
+    /// </summary>
     [TestMethod]
     public async Task AccountInfoAndOrganizationMustAgree()
     {
@@ -40,7 +44,9 @@ public sealed class ProtocolTests
         await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.RequireAsync("tenant-a", "org-b", "account-a", default));
     }
 
-    /// <summary>旧用户中心要求 PascalCase 目录参数，游标必须固定组织和关键词。</summary>
+    /// <summary>
+    /// 旧用户中心要求 PascalCase 目录参数，游标必须固定组织和关键词。
+    /// </summary>
     [TestMethod]
     public async Task DirectoryProtocolPreservesPascalCaseAndCursorScope()
     {
@@ -64,7 +70,9 @@ public sealed class ProtocolTests
         await Assert.ThrowsExactlyAsync<BusinessException>(() => adapter.GroupsAsync("tenant-a", "org-b", "客服", first.NextCursor, 2, default));
     }
 
-    /// <summary>流式工具参数跨多帧累计，中文文本与正文之外的工具候选都完整恢复。</summary>
+    /// <summary>
+    /// 流式工具参数跨多帧累计，中文文本与正文之外的工具候选都完整恢复。
+    /// </summary>
     [TestMethod]
     public async Task ModelSseReassemblesToolArguments()
     {
@@ -106,7 +114,9 @@ public sealed class ProtocolTests
         Assert.AreEqual(.95, JsonDocument.Parse(candidate.Arguments!).RootElement.GetProperty("confidence").GetDouble());
     }
 
-    /// <summary>截断的模型流不能伪装成功，不够置信的语义分类必须降 OTHER。</summary>
+    /// <summary>
+    /// 截断的模型流不能伪装成功，不够置信的语义分类必须降 OTHER。
+    /// </summary>
     [TestMethod]
     public async Task IncompleteStreamFailsAndClassificationFallsBack()
     {
@@ -130,7 +140,9 @@ public sealed class ProtocolTests
         Assert.AreEqual(Category.OTHER, (await Model(classificationHttp).ClassifyAsync(new("t", "o", "c", "a", null), "展位", default)).Category);
     }
 
-    /// <summary>HTTP 200 仍需明确 accepted 回执；重试使用同一持久投递键。</summary>
+    /// <summary>
+    /// HTTP 200 仍需明确 accepted 回执；重试使用同一持久投递键。
+    /// </summary>
     [TestMethod]
     public async Task NotificationRequiresExplicitAcceptance()
     {
@@ -153,7 +165,9 @@ public sealed class ProtocolTests
         await adapter.SendAsync(task, default);
     }
 
-    /// <summary>仅明确请求能够授权，否定、引用和假设不能直接授权。</summary>
+    /// <summary>
+    /// 仅明确请求能够授权，否定、引用和假设不能直接授权。
+    /// </summary>
     [TestMethod]
     public void ExplicitHandoffRequiresOriginalConsent()
     {
@@ -167,17 +181,27 @@ public sealed class ProtocolTests
         }
     }
 
-    /// <summary>创建真实 Microsoft Agent Framework 适配器，仅替代供应商 HTTP 传输。</summary>
+    /// <summary>
+    /// 创建真实 Microsoft Agent Framework 适配器，仅替代供应商 HTTP 传输。
+    /// </summary>
     private static AgentFrameworkChatModel Model(HttpClient http) => new(http, Options.Create(new ModelOptions { BaseUrl = "https://model.invalid/v1", Model = "test" }));
 
-    /// <summary>生成上游 JSON 响应，避免生产实现被测试数据污染。</summary>
+    /// <summary>
+    /// 生成上游 JSON 响应，避免生产实现被测试数据污染。
+    /// </summary>
     private static HttpResponseMessage Json(string content) => new(HttpStatusCode.OK) { Content = new StringContent(content, Encoding.UTF8, "application/json") };
 }
 
-/// <summary>单次 HTTP 协议测试处理器；不注册到生产依赖容器。</summary>
-/// <param name="respond">检查出站请求并生成替身响应。</param>
+/// <summary>
+/// 单次 HTTP 协议测试处理器；不注册到生产依赖容器。
+/// </summary>
+/// <param name="respond">
+/// 检查出站请求并生成替身响应。
+/// </param>
 internal sealed class ProtocolHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> respond) : HttpMessageHandler
 {
-    /// <summary>交由具体协议场景检查路径、字段和响应信封。</summary>
+    /// <summary>
+    /// 交由具体协议场景检查路径、字段和响应信封。
+    /// </summary>
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => respond(request);
 }

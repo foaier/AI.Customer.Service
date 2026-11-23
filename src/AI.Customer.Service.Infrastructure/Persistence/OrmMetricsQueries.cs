@@ -4,8 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AI.Customer.Service.Infrastructure.Persistence;
 
-/// <summary>只使用客服 owner 表的 ORM 聚合，历史窗口与当前积压分别查询。</summary>
-/// <param name="db">共享一致性事务上下文。</param>
+/// <summary>
+/// 只使用客服 owner 表的 ORM 聚合，历史窗口与当前积压分别查询。
+/// </summary>
+/// <param name="db">
+/// 共享一致性事务上下文。
+/// </param>
 public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IReceptionMetricsQuery
 {
     /// <inheritdoc />
@@ -43,7 +47,9 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
             states.ToDictionary(x => x.State.ToString(), x => x.Count), timings, backlog);
     }
 
-    /// <summary>缺失或逆序时间不计样本，不用零耗时填补缺失首响。</summary>
+    /// <summary>
+    /// 缺失或逆序时间不计样本，不用零耗时填补缺失首响。
+    /// </summary>
     private static void Accumulate(IDictionary<string, TimingMetric> output, string stage, DateTime requested, DateTime? occurred)
     {
         if (occurred is null || occurred < requested)
@@ -55,8 +61,12 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
     }
 }
 
-/// <summary>Conversation owner 的 ORM 满意度聚合，不返回调查原文或访客引用。</summary>
-/// <param name="db">共享一致性事务上下文。</param>
+/// <summary>
+/// Conversation owner 的 ORM 满意度聚合，不返回调查原文或访客引用。
+/// </summary>
+/// <param name="db">
+/// 共享一致性事务上下文。
+/// </param>
 public sealed class SurveyMetricsQuery(CustomerServiceDbContext db) : ISurveyMetricsQuery
 {
     /// <inheritdoc />

@@ -7,17 +7,33 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>人工消息和回执应用编排，正文只经 Conversation owner 单一端口保存。</summary>
-/// <param name="conversations">会话及时间线 owner。</param>
-/// <param name="reception">客服周期 owner。</param>
-/// <param name="transactions">共享事务。</param>
-/// <param name="runtime">回复权端口。</param>
-/// <param name="access">成员准入。</param>
-/// <param name="clock">UTC 时钟。</param>
+/// <summary>
+/// 人工消息和回执应用编排，正文只经 Conversation owner 单一端口保存。
+/// </summary>
+/// <param name="conversations">
+/// 会话及时间线 owner。
+/// </param>
+/// <param name="reception">
+/// 客服周期 owner。
+/// </param>
+/// <param name="transactions">
+/// 共享事务。
+/// </param>
+/// <param name="runtime">
+/// 回复权端口。
+/// </param>
+/// <param name="access">
+/// 成员准入。
+/// </param>
+/// <param name="clock">
+/// UTC 时钟。
+/// </param>
 public sealed class MessagingService(IConversationRepository conversations, IReceptionRepository reception, IUnitOfWork transactions,
     ConversationRuntime runtime, AccessService access, TimeProvider clock)
 {
-    /// <summary>同键同内容返回原消息，即使周期已结束；新消息必须仍具备当前回复权。</summary>
+    /// <summary>
+    /// 同键同内容返回原消息，即使周期已结束；新消息必须仍具备当前回复权。
+    /// </summary>
     public async Task<object> SendAsync(Actor actor, Scope scope, bool agent, MessageCommand command, CancellationToken ct)
     {
         var result = await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
@@ -89,7 +105,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
 
     private sealed record SendResult(object? Message, bool Expired);
 
-    /// <summary>持锁复核认领后读取时间线，改派和撤权提交后旧客服不能读取正文。</summary>
+    /// <summary>
+    /// 持锁复核认领后读取时间线，改派和撤权提交后旧客服不能读取正文。
+    /// </summary>
     public Task<object> TimelineAsync(Actor actor, Scope scope, bool agent, long afterSeq, int limit, CancellationToken ct) =>
         transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -105,7 +123,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
             return new { messages = messages.Select(View), receipt = ReceiptView(receipt), peerReceipt = ReceiptView(peerReceipt) };
         }, ct);
 
-    /// <summary>只推进认证主体水位，READ 同时推进 DELIVERED，拒绝确认未来消息。</summary>
+    /// <summary>
+    /// 只推进认证主体水位，READ 同时推进 DELIVERED，拒绝确认未来消息。
+    /// </summary>
     public Task<object> ReceiptAsync(Actor actor, Scope scope, bool agent, ReceiptCommand command, CancellationToken ct) =>
         transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -134,7 +154,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
             return ReceiptView(receipt);
         }, ct);
 
-    /// <summary>当前认领者读取最小 AI 文本历史，不包含提示词或请求 DTO。</summary>
+    /// <summary>
+    /// 当前认领者读取最小 AI 文本历史，不包含提示词或请求 DTO。
+    /// </summary>
     public Task<object> HistoryAsync(Actor actor, Scope scope, CancellationToken ct) =>
         transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
         {
@@ -144,7 +166,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
                     new { id = x.Id + ":assistant", role = "assistant", content = x.AssistantContent! } }).ToArray();
         }, ct);
 
-    /// <summary>在读取或写入的同一事务内执行本地资格复核。</summary>
+    /// <summary>
+    /// 在读取或写入的同一事务内执行本地资格复核。
+    /// </summary>
     private async Task<Episode> AuthorizeAsync(Actor actor, Scope scope, bool agent, CancellationToken ct)
     {
         var episode = await reception.LatestAsync(scope, ct) ?? throw BusinessException.Forbidden("人工周期不存在");
@@ -160,7 +184,9 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
         return episode;
     }
 
-    /// <summary>兼容原前端的消息投影，纯文本渲染由页面执行。</summary>
+    /// <summary>
+    /// 兼容原前端的消息投影，纯文本渲染由页面执行。
+    /// </summary>
     public static object View(HumanMessage message) => new
     {
         message.Seq,
@@ -173,6 +199,8 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
         message.CreatedAt
     };
 
-    /// <summary>空回执使用零水位，不推断对方已接收或已读。</summary>
+    /// <summary>
+    /// 空回执使用零水位，不推断对方已接收或已读。
+    /// </summary>
     private static object ReceiptView(MessageReceipt? receipt) => new { deliveredSeq = receipt?.DeliveredSeq ?? 0, readSeq = receipt?.ReadSeq ?? 0 };
 }

@@ -6,10 +6,14 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>授权坐席范围的未读汇总与不含正文的队列提醒投影。</summary>
+/// <summary>
+/// 授权坐席范围的未读汇总与不含正文的队列提醒投影。
+/// </summary>
 public sealed class InboxService(AccessService access, IReceptionRepository reception, IConversationRepository conversations, IFollowupRepository followups)
 {
-    /// <summary>完整权限范围计算稳定摘要；页面分页不影响角标及变化检测。</summary>
+    /// <summary>
+    /// 完整权限范围计算稳定摘要；页面分页不影响角标及变化检测。
+    /// </summary>
     public async Task<InboxSummary> SummaryAsync(Actor actor, string org, string? assistant, CancellationToken ct)
     {
         var groups = await access.GroupsAsync(actor, org, ct);
@@ -49,7 +53,9 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
         return new InboxSummary(unreadCount, unreadConversations, newFollowups, pending.Length, hash);
     }
 
-    /// <summary>返回分页队列当前已加载周期的真实消息水位，不返回正文。</summary>
+    /// <summary>
+    /// 返回分页队列当前已加载周期的真实消息水位，不返回正文。
+    /// </summary>
     public async Task<object> QueueAsync(Actor actor, string org, string assistant, CancellationToken ct)
     {
         var groups = await access.GroupsAsync(actor, org, ct);
@@ -84,5 +90,7 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
     }
 }
 
-/// <summary>坐席当前授权收件箱的聚合角标。</summary>
+/// <summary>
+/// 坐席当前授权收件箱的聚合角标。
+/// </summary>
 public sealed record InboxSummary(int UnreadMessageCount, int UnreadConversationCount, int NewFollowupCount, int PendingReceptionCount, string ChangeToken);

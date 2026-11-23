@@ -8,11 +8,15 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Service;
 
-/// <summary>会话匿名凭据签发及第三方身份绑定，外部身份永远不用于授予会话访问权。</summary>
+/// <summary>
+/// 会话匿名凭据签发及第三方身份绑定，外部身份永远不用于授予会话访问权。
+/// </summary>
 public sealed class ConversationAccessService(IAssistantRegistry assistants, ConversationRuntime runtime,
     IConversationAccessRepository repository, IUnitOfWork transactions, TimeProvider clock)
 {
-    /// <summary>只签发新会话，随机凭据原文返回一次，摘要与会话原子提交。</summary>
+    /// <summary>
+    /// 只签发新会话，随机凭据原文返回一次，摘要与会话原子提交。
+    /// </summary>
     public async Task<object> CreateAnonymousAsync(string assistantId, string trace, CancellationToken ct)
     {
         var assistant = assistants.RequirePublic(Guard.Text(assistantId, "助手"));
@@ -24,7 +28,9 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         return new { sessionId = session, tempUserId = principal, credential, expiresAt = expires, conversation.ExternalIdentityRequired };
     }
 
-    /// <summary>凭据只授予原会话访客身份，任何组织、租户和主体均从持久授权解析。</summary>
+    /// <summary>
+    /// 凭据只授予原会话访客身份，任何组织、租户和主体均从持久授权解析。
+    /// </summary>
     public async Task<AnonymousConversationAccess> AuthorizeAsync(string credential, string? session, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(credential) || !Regex.IsMatch(credential, "\\A[A-Za-z0-9_-]{43}\\z"))
@@ -36,7 +42,9 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         return grant;
     }
 
-    /// <summary>原访客首次绑定；并发相同值幂等，不同值稳定冲突，不回显 cookie ID。</summary>
+    /// <summary>
+    /// 原访客首次绑定；并发相同值幂等，不同值稳定冲突，不回显 cookie ID。
+    /// </summary>
     public async Task<object> BindAsync(Actor actor, string session, string cookieId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(cookieId) || cookieId.Length > 512)
@@ -59,6 +67,8 @@ public sealed class ConversationAccessService(IAssistantRegistry assistants, Con
         }, ct);
     }
 
-    /// <summary>只保存单向摘要，未将原始凭据作为日志或数据库键。</summary>
+    /// <summary>
+    /// 只保存单向摘要，未将原始凭据作为日志或数据库键。
+    /// </summary>
     private static string Digest(string credential) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(credential)));
 }
