@@ -1,0 +1,411 @@
+tests\AI.Customer.Service.Tests\BackendNotificationTests.cs:63:        var retryPath = AgentPath(id) + "/notifications/retry?topOrgId=org-a";
+tests\AI.Customer.Service.Tests\BackendNotificationTests.cs:165:        var task = new ReliableTask { TopOrgId = "org-a", AssistantConfigId = "assistant-a", ConversationId = "conversation-a" };
+tests\AI.Customer.Service.Tests\BackendNotificationTests.cs:173:        Assert.AreEqual(2, text.Split("https://support.example.com/b/inbox?topOrgId=org-a&assistantConfigId=assistant-a&conversationId=conversation-a").Length - 1);
+tests\AI.Customer.Service.Tests\BackendNotificationTests.cs:183:        var value = await GetAsync(agent, "/api/customer-service/configuration?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\BackendNotificationTests.cs:187:        await SendAsync(agent, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a", body.RootElement, HttpStatusCode.BadRequest);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:68:        var initial = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:75:        var saved = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:77:        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a",
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:101:        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", tenantId = "tenant-b" }, HttpStatusCode.BadRequest);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:117:            first.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim-a", expectedVersion = 1 }),
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:118:            second.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim-b", expectedVersion = 1 }));
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:142:            agent.PostAsJsonAsync(AgentPath(one) + "/claim?topOrgId=org-a", new { requestId = "one", expectedVersion = 1 }),
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:143:            agent.PostAsJsonAsync(AgentPath(two) + "/claim?topOrgId=org-a", new { requestId = "two", expectedVersion = 1 }));
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:164:            agent.PostAsJsonAsync(AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 }));
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:189:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:190:        var first = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:192:        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:194:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "改写" }, HttpStatusCode.Conflict);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:201:        var current = await GetAsync(agent, AgentPath(id) + "/reception?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:203:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/resolve?topOrgId=org-a", new { requestId = "resolve", expectedVersion = current.GetProperty("version").GetInt64() });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:204:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", new { clientMsgId = "hello", content = "<script>纯文本</script>" });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:220:        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:222:        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer, HttpStatusCode.Conflict);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:223:        await SendAsync(second, HttpMethod.Post, "/api/customer-service/agents/availability?topOrgId=org-a&assistantConfigId=assistant-a", new { status = "ONLINE" });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:224:        await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:225:        var replay = await SendAsync(first, HttpMethod.Post, AgentPath(id) + "/transfer?topOrgId=org-a", transfer);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:227:        await GetAsync(first, AgentPath(id) + "/messages?topOrgId=org-a", HttpStatusCode.Forbidden);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:228:        await GetAsync(second, AgentPath(id) + "/messages?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:241:        const string path = "/api/customer-service/agents/availability?topOrgId=org-a&assistantConfigId=assistant-a";
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:244:        await SendAsync(agent, HttpMethod.Post, "/api/customer-service/agents/availability/heartbeat?topOrgId=org-a&assistantConfigId=assistant-a",
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:291:        var summary = await GetAsync(agent, path + "/form?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:293:        await GetAsync(agent, path + "?topOrgId=org-a", HttpStatusCode.Forbidden);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:294:        await SendAsync(agent, HttpMethod.Post, path + "/claim?topOrgId=org-a", new { requestId = "form-claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:295:        await SendAsync(agent, HttpMethod.Post, path + "/reply?topOrgId=org-a",
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:297:        await SendAsync(agent, HttpMethod.Post, path + "/close?topOrgId=org-a", new { requestId = "close", expectedVersion = 2 }, HttpStatusCode.Conflict);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:299:        var sent = await GetAsync(agent, path + "?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:301:        await SendAsync(agent, HttpMethod.Post, path + "/close?topOrgId=org-a", new { requestId = "close", expectedVersion = sent.GetProperty("version").GetInt64() });
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:443:        await socket.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, topOrgId = "org-a", assistantConfigId = "assistant-a", afterSeq = 0 }), WebSocketMessageType.Text, true, default);
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:453:            new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={queryToken}&agent=false&conversationId={Uri.EscapeDataString(id)}&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"),
+tests\AI.Customer.Service.Tests\WorkflowTests.cs:460:        await invalid.SendAsync(JsonSerializer.SerializeToUtf8Bytes(new { authorization = "Bearer " + Token("visitor"), agent = false, conversationId = id, afterSeq = 0, tenantId = "fake" }), WebSocketMessageType.Text, true, default);
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:90:    [DataRow("proposeResolution", "{\"confidence\":0.95,\"tenantId\":\"other\"}")]
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:156:                TenantId = scope.TenantId,
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:157:                TopOrgId = scope.TopOrgId,
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:168:                TenantId = scope.TenantId,
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:169:                TopOrgId = scope.TopOrgId,
+tests\AI.Customer.Service.Tests\AgentFrameworkTests.cs:197:        content = """{"category":"MEDIA","confidence":0.99,"topOrgId":"forged"}""";
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:75:        var metrics = await GetAsync(agent, "/api/customer-service/agents/metrics?topOrgId=org-a&assistantConfigId=assistant-a");
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:80:        using var response = await agent.GetAsync("/api/customer-service/agents/metrics/prometheus?topOrgId=org-a&assistantConfigId=assistant-a");
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:87:        var old = await GetAsync(agent, "/api/customer-service/agents/metrics?topOrgId=org-a&assistantConfigId=assistant-a");
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:103:            db.Set<AiTurn>().Add(new AiTurn { Id = "cross-org", TenantId = "tenant-a", TopOrgId = "org-b", ConversationId = id, AssistantConfigId = "assistant-a", PrincipalId = "visitor", Epoch = 1, CreatedAt = DateTime.UtcNow });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:109:            db.Set<Availability>().Add(new Availability { Id = "invalid-version", TenantId = "tenant-a", TopOrgId = "org-a", Version = 0 });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:251:        var queue = await GetAsync(agent, "/api/customer-service/agents/followups?topOrgId=org-a&assistantConfigId=assistant-a");
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:254:        await SendAsync(agent, HttpMethod.Post, path + "/claim?topOrgId=org-a", new { requestId = "email-claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:255:        var form = await GetAsync(agent, path + "/form?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:264:        var query = "?topOrgId=org-a&episodeId=" + episode;
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:292:        const string summaryPath = "/api/customer-service/agents/inbox/summary?topOrgId=org-a&assistantConfigId=assistant-a";
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:297:        using (var socket = await socketClient.ConnectAsync(new Uri($"ws://localhost/api/customer-service/realtime/ws?authorization={token}&agent=true&topOrgId=org-a&assistantConfigId=assistant-a&afterSeq=0"), default))
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:311:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "inbox-claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:316:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/receipts?topOrgId=org-a", new { kind = "READ", seq = 1L });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:336:            AgentPath(followupId) + "/followups/" + episodeId + "/receipts?topOrgId=org-a",
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:353:        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim?topOrgId=org-a", new { requestId = "auto-close-claim", expectedVersion = 1 });
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:355:        var original = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+tests\AI.Customer.Service.Tests\WorkflowRecoveryTests.cs:361:        var replay = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages?topOrgId=org-a", reply);
+tests\AI.Customer.Service.Tests\ConversationAccessTests.cs:44:        await GetAsync(guest, "/api/customer-service/agents/queue?topOrgId=org-a&assistantConfigId=assistant-a", HttpStatusCode.Forbidden);
+tests\AI.Customer.Service.Tests\TestApplication.cs:81:            ["Assistants:Items:0:TenantId"] = "tenant-a",
+tests\AI.Customer.Service.Tests\TestApplication.cs:82:            ["Assistants:Items:0:TopOrgId"] = "org-a",
+tests\AI.Customer.Service.Tests\TestApplication.cs:149:            Subject = new ClaimsIdentity([new Claim("accountId", account), new Claim("tenantId", tenant)]),
+tests\AI.Customer.Service.Tests\TestApplication.cs:159:        var current = await GetAsync(manager, "/api/customer-service/configuration?topOrgId=org-a");
+tests\AI.Customer.Service.Tests\TestApplication.cs:167:        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration?topOrgId=org-a", new
+tests\AI.Customer.Service.Tests\ChatNotificationTests.cs:19:    private const string ChatConfigPath = "/api/customer-service/configuration/chat-notifications?topOrgId=org-a";
+tests\AI.Customer.Service.Tests\ChatNotificationTests.cs:81:            TenantId = episode.TenantId,
+tests\AI.Customer.Service.Tests\ChatNotificationTests.cs:82:            TopOrgId = episode.TopOrgId,
+tests\AI.Customer.Service.Tests\ChatNotificationTests.cs:121:        task.TopOrgId = "org-b";
+tests\AI.Customer.Service.Tests\ProtocolTests.cs:36:                return Json("""{"isSuccess":true,"returnObj":{"accountId":"account-a","tenantId":"tenant-a","fullName":"正式客服"}}""");
+tests\AI.Customer.Service.Tests\ProtocolTests.cs:158:        config.AddChatNotification(new ChatNotificationConfiguration { Id = "chat", TenantId = "tenant-a", TopOrgId = "org-a", Enabled = true });
+tests\AI.Customer.Service.Tests\ProtocolTests.cs:162:        var task = new ReliableTask { TenantId = "tenant-a", TopOrgId = "org-a", Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:61:                    actor = new(grant.TenantId, grant.PrincipalId, context.TraceIdentifier, grant.ConversationId);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:70:                var subscription = new Subscription(first.Agent, first.ConversationId, first.TopOrgId, first.AssistantConfigId);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:123:                                .SummaryAsync(actor, subscription.TopOrgId!, subscription.AssistantConfigId, stop.Token);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:203:            "authorization", "credential", "agent", "conversationId", "topOrgId", "assistantConfigId", "afterSeq"
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:222:            OptionalQuery(query, "topOrgId"),
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:284:            if (string.IsNullOrWhiteSpace(subscription.TopOrgId) || string.IsNullOrWhiteSpace(subscription.AssistantConfigId))
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:288:            await access.RequireAgentAsync(actor, subscription.TopOrgId, subscription.AssistantConfigId, ct);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:293:            if ((subscription.TopOrgId is not null && subscription.TopOrgId != conversation.TopOrgId) ||
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:297:                await access.RequireAccountAsync(actor, conversation.TopOrgId, ct);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:311:            await access.GroupsAsync(actor, sub.TopOrgId!, ct);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:317:                var queue = JsonSerializer.SerializeToElement(await inbox.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:321:                    followups = JsonSerializer.SerializeToElement(await followups.QueueAsync(actor, sub.TopOrgId!, sub.AssistantConfigId!, ct), JsonDefaults.Options).GetProperty("followups")
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:324:            var scope = await access.AgentScopeAsync(actor, sub.TopOrgId!, sub.ConversationId,
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:408:    /// <param name="TopOrgId">
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:421:    private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
+src\AI.Customer.Service.Web\Realtime\RealtimeEndpoint.cs:426:    private sealed record Subscription(bool Agent, string? ConversationId, string? TopOrgId, string? AssistantConfigId);
+src\AI.Customer.Service.Web\Security\ConversationCredentialHandler.cs:37:                new Claim(claims.Value.TenantClaim, grant.TenantId),
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:30:    public async Task<IActionResult> Export(string topOrgId, string assistantConfigId, CancellationToken ct, int page = 1, int size = 20)
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:32:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:33:        access.RequireAssistant(Actor, topOrgId, assistantConfigId);
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:34:        var data = await exports.ExportAsync(Actor, topOrgId, assistantConfigId, page, size, ct);
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:42:    public async Task<object> Metrics(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:44:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:45:        return Success(await metrics.ReadAsync(Actor, topOrgId, assistantConfigId, ct));
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:52:    public async Task<IActionResult> Prometheus(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:54:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\ExportController.cs:55:        return Content(MetricsService.Prometheus(await metrics.ReadAsync(Actor, topOrgId, assistantConfigId, ct)), "text/plain; version=0.0.4; charset=utf-8");
+src\AI.Customer.Service.Web\Security\AuthenticationOptions.cs:25:    /// JWT 中租户声明名，默认 tenantId。
+src\AI.Customer.Service.Web\Security\AuthenticationOptions.cs:27:    public string TenantClaim { get; set; } = "tenantId";
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:43:    public object List() => new { isSuccess = true, returnObj = assistants.List(request.Actor.TenantId).Select(x => new { id = x.Id, configId = x.Id, assistantConfigId = x.Id, name = x.Name, x.TopOrgId }) };
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:53:        returnObj = assistants.List(request.Actor.TenantId)
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:54:        .Select(x => new { assistantConfigId = x.Id, buttonName = x.Name, x.TopOrgId })
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:64:        var value = assistants.Require(request.Actor.TenantId, assistantConfigId);
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:71:                value.TopOrgId,
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:89:            await runtime.CreateAsync(request.Actor, assistants.Require(request.Actor.TenantId, assistantConfigId), id, ct);
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:107:        var existing = await conversations.FindAsync(request.Actor.TenantId, command.SessionId, ct);
+src\AI.Customer.Service.Web\Controllers\ChatController.cs:108:        var assistant = assistants.Require(request.Actor.TenantId, extension?.AssistantConfigId ?? existing?.AssistantConfigId ?? "");
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:29:    public async Task<object> Queue(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:31:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:32:        return Success(await inbox.QueueAsync(Actor, topOrgId, assistantConfigId, ct));
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:46:    public async Task<object> AgentReception(string id, string topOrgId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:48:        var episode = await reception.RequireAsync(await RequestAccess.AgentAsync(topOrgId, id, ct), null, ct);
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:57:    public async Task<object> Claim(string id, string topOrgId, StateCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:58:        Success(await reception.ClaimAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), command, ct));
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:64:    public async Task<object> Resolve(string id, string topOrgId, StateCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\ReceptionController.cs:65:        Success(await reception.FinishAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), command, false, ct));
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:30:    public async Task<object> AgentSend(string id, string topOrgId, MessageCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:31:        Success(await messages.SendAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, command, ct));
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:44:    public async Task<object> AgentMessages(string id, string topOrgId, CancellationToken ct, long afterSeq = 0, int limit = 100) =>
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:45:        Success(await messages.TimelineAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, afterSeq, limit, ct));
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:58:    public async Task<object> AgentReceipt(string id, string topOrgId, ReceiptCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:59:        Success(await messages.ReceiptAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), true, command, ct));
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:65:    public async Task<object> History(string id, string topOrgId, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\MessagingController.cs:66:        Success(await messages.HistoryAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), ct));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:39:    public async Task<object> Get(string topOrgId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:41:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:42:        return Success(RoutingView(await configuration.GetAsync(Actor, topOrgId, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:49:    public async Task<object> Save(string topOrgId, RoutingCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:51:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:52:        return Success(RoutingView(await configuration.SaveAsync(Actor, topOrgId, command, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:60:    public async Task<object> ChatNotification(string topOrgId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:62:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:63:        return Success(ChatNotificationService.View(await notifications.GetAsync(Actor, topOrgId, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:71:    public async Task<object> SaveChatNotification(string topOrgId, ChatNotificationCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:73:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:74:        return Success(ChatNotificationService.View(await notifications.SaveAsync(Actor, topOrgId, command, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:81:    public async Task<object> Groups(string topOrgId, CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 100)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:83:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:84:        var page = await accounts.GroupsAsync(Actor.TenantId, topOrgId, keyword, afterCursor, limit, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:92:    public async Task<object> Accounts(string topOrgId, string groupId, CancellationToken ct, string? keyword = null, string? afterCursor = null, int limit = 50)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:94:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:95:        var page = await accounts.AccountsAsync(Actor.TenantId, topOrgId, groupId, keyword, afterCursor, limit, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:103:    public async Task<object> Preview(string topOrgId, RoutingPreview command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:105:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:106:        var assistant = access.RequireAssistant(Actor, topOrgId, command.AssistantConfigId);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:107:        var scope = new Scope(Actor.TenantId, topOrgId, "preview", assistant.Id, assistant.BventId);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:109:        var config = await configuration.GetAsync(Actor, topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:118:    public async Task<object> Calendar(string topOrgId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:120:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:121:        return Success(CalendarView(await configuration.CalendarAsync(Actor.TenantId, topOrgId, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:128:    public async Task<object> SaveCalendar(string topOrgId, CalendarCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:130:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:131:        return Success(CalendarView(await configuration.SaveCalendarAsync(Actor, topOrgId, command, ct)));
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:138:    public async Task<object> PreviewCalendar(string topOrgId, CalendarPreview command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\ConfigurationController.cs:140:        await RequestAccess.ManagerAsync(topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\ConversationSessionController.cs:26:        var value = await runtime.CreateAsync(request.Actor, assistants.Require(request.Actor.TenantId, command.AssistantConfigId), Guard.Id("session"), ct);
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:52:    public async Task<object> Queue(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:54:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:55:        var result = await followups.QueueAsync(Actor, topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:63:    public async Task<object> Seen(string id, string episode, string topOrgId, FollowupReceiptCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:64:        Success(await followups.SeenAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:70:    public async Task<object> AgentWaiting(string id, string topOrgId, CancellationToken ct, string? episodeId = null) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:71:        Success(await waiting.GetAgentAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episodeId, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:77:    public async Task<object> RetryNotifications(string id, string topOrgId, CancellationToken ct, string? episodeId = null) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:78:        Success(await waiting.RetryNotificationsAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episodeId, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:84:    public async Task<object> AgentForm(string id, string episode, string topOrgId, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:85:        Success(await followups.GetFormAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, true, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:91:    public async Task<object> Claim(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:92:        Success(await followups.ClaimAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:98:    public async Task<object> GetResponse(string id, string episode, string topOrgId, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:99:        Success(await followups.GetResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:105:    public async Task<object> Reply(string id, string episode, string topOrgId, ReplyCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:106:        Success(await followups.ReplyAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:112:    public async Task<object> Retry(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:113:        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, false, ct));
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:119:    public async Task<object> Close(string id, string episode, string topOrgId, StateCommand command, CancellationToken ct) =>
+src\AI.Customer.Service.Web\Controllers\FollowupController.cs:120:        Success(await followups.ChangeResponseAsync(Actor, await RequestAccess.AgentAsync(topOrgId, id, ct), episode, command, true, ct));
+src\AI.Customer.Service.Web\Controllers\InboxController.cs:16:    public async Task<object> Summary(string topOrgId, CancellationToken ct, string? assistantConfigId = null)
+src\AI.Customer.Service.Web\Controllers\InboxController.cs:18:        await access.RequireAccountAsync(Actor, topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\InboxController.cs:19:        if (assistantConfigId is not null) access.RequireAssistant(Actor, topOrgId, assistantConfigId);
+src\AI.Customer.Service.Web\Controllers\InboxController.cs:20:        return Success(await inbox.SummaryAsync(Actor, topOrgId, assistantConfigId, ct));
+src\AI.Customer.Service.Service\AccessService.cs:30:        accounts.RequireAsync(actor.TenantId, Guard.Text(org, "组织", 64), actor.AccountId, ct);
+src\AI.Customer.Service.Service\AccessService.cs:47:        var current = await configuration.RoutingAsync(actor.TenantId, org, ct);
+src\AI.Customer.Service.Service\AccessService.cs:61:        if (actor.TenantId != episode.TenantId || !(await GroupsAsync(actor, episode.TopOrgId, ct)).Contains(episode.GroupId))
+src\AI.Customer.Service.Service\AccessService.cs:72:        var value = assistants.Require(actor.TenantId, assistant);
+src\AI.Customer.Service.Service\AccessService.cs:73:        if (value.TopOrgId != org)
+src\AI.Customer.Service.Service\AccessService.cs:91:        var value = await conversations.FindAsync(actor.TenantId, conversation, ct);
+src\AI.Customer.Service.Service\AccessService.cs:92:        if (value is null || value.TopOrgId != org)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:42:    public async Task<object> Get(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:44:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:45:        return Success(await availability.GetAsync(Actor, topOrgId, ct));
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:52:    public async Task<object> Set(string topOrgId, string assistantConfigId, AvailabilityCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:54:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:55:        return Success(await availability.SetAsync(Actor, topOrgId, command.Status, ct));
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:62:    public async Task<object> Heartbeat(string topOrgId, string assistantConfigId, HeartbeatCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:64:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:65:        return Success(await availability.HeartbeatAsync(Actor, topOrgId, command.Version, ct));
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:72:    public async Task<object> Candidates(string topOrgId, string assistantConfigId, CancellationToken ct, string? afterCursor = null)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:74:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:75:        var config = await configuration.RoutingAsync(Actor.TenantId, topOrgId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:86:    public async Task<object> Transfer(string id, string topOrgId, TransferCommand command, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:88:        var scope = await RequestAccess.AgentAsync(topOrgId, id, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:89:        await accounts.RequireAsync(Actor.TenantId, topOrgId, Guard.Text(command.TargetAccountId, "目标账号"), ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:97:    public async Task<object> SystemTasks(string topOrgId, string assistantConfigId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:99:        await RequestAccess.AgentListAsync(topOrgId, assistantConfigId, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:100:        var values = await tasks.ListAsync(Actor.TenantId, topOrgId, "SYSTEM_HANDOFF", ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:109:    public async Task<object> Retry(string id, string topOrgId, CancellationToken ct)
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:111:        var scope = await RequestAccess.AgentAsync(topOrgId, id, ct);
+src\AI.Customer.Service.Web\Controllers\AgentOperationsController.cs:112:        var failed = (await tasks.ListAsync(Actor.TenantId, topOrgId, "SYSTEM_HANDOFF", ct))
+src\AI.Customer.Service.Service\ChatService.cs:113:                logger.LogWarning("AI轮次失败 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Failure={Failure}",
+src\AI.Customer.Service.Service\ChatService.cs:114:                    scope.ConversationId, turn.Id, actor.TraceId, scope.TopOrgId, scope.BventId, failure?.GetType().Name ?? "EMPTY");
+src\AI.Customer.Service.Service\ChatService.cs:165:            logger.LogWarning("取消轮次待租约恢复 SessionId={SessionId} TurnId={TurnId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Failure={Failure}",
+src\AI.Customer.Service.Service\ChatService.cs:166:                scope.ConversationId, turn.Id, actor.TraceId, scope.TopOrgId, scope.BventId, error.GetType().Name);
+src\AI.Customer.Service.Service\ChatService.cs:218:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\AvailabilityService.cs:35:        var value = await repository.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
+src\AI.Customer.Service.Service\AvailabilityService.cs:43:        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\AvailabilityService.cs:49:            var value = await repository.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
+src\AI.Customer.Service.Service\AvailabilityService.cs:52:                value = new Availability { Id = actor.AccountId, TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+src\AI.Customer.Service.Service\AvailabilityService.cs:65:        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\AvailabilityService.cs:67:            var value = await repository.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
+src\AI.Customer.Service.Service\AvailabilityService.cs:86:        activeCount = await reception.ActiveCountAsync(actor.TenantId, org, actor.AccountId, ct),
+src\AI.Customer.Service.Service\ChatNotificationService.cs:18:        await repository.ChatNotificationAsync(actor.TenantId, org, ct) ?? new() { Id = "chat", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+src\AI.Customer.Service.Service\ChatNotificationService.cs:24:        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\ChatNotificationService.cs:26:            var saved = await repository.ChatNotificationAsync(actor.TenantId, org, ct);
+src\AI.Customer.Service.Service\ChatNotificationService.cs:32:                TenantId = actor.TenantId,
+src\AI.Customer.Service.Service\ChatNotificationService.cs:33:                TopOrgId = org,
+src\AI.Customer.Service.Core\ConversationRuntime.cs:29:        transactions.ExecuteAsync(actor.TenantId, assistant.TopOrgId, async () =>
+src\AI.Customer.Service.Core\ConversationRuntime.cs:33:            var existing = await conversations.FindAsync(actor.TenantId, id, ct);
+src\AI.Customer.Service.Core\ConversationRuntime.cs:37:                if (existing.AssistantConfigId != assistant.Id || existing.TopOrgId != assistant.TopOrgId)
+src\AI.Customer.Service.Core\ConversationRuntime.cs:48:                TenantId = actor.TenantId,
+src\AI.Customer.Service.Core\ConversationRuntime.cs:49:                TopOrgId = assistant.TopOrgId,
+src\AI.Customer.Service.Core\ConversationRuntime.cs:74:        var value = await conversations.FindAsync(actor.TenantId, id, ct) ?? throw BusinessException.Forbidden("会话不存在或不可访问");
+src\AI.Customer.Service.Core\ConversationRuntime.cs:84:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Core\ConversationRuntime.cs:126:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Core\ConversationRuntime.cs:162:        var value = await conversations.FindAsync(scope.TenantId, scope.ConversationId, ct);
+src\AI.Customer.Service.Core\ConversationRuntime.cs:163:        if (value is null || value.TopOrgId != scope.TopOrgId || value.AssistantConfigId != scope.AssistantConfigId || value.BventId != scope.BventId)
+src\AI.Customer.Service.Core\ConversationRuntime.cs:209:            TenantId = scope.TenantId,
+src\AI.Customer.Service.Core\ConversationRuntime.cs:210:            TopOrgId = scope.TopOrgId,
+src\AI.Customer.Service.Core\ConversationRuntime.cs:222:        if (value.TenantId != actor.TenantId || value.PrincipalId != actor.AccountId ||
+src\AI.Customer.Service.Service\CommandJournal.cs:71:        if (await tasks.FindAsync(scope.TenantId, scope.TopOrgId, key, ct) is not null)
+src\AI.Customer.Service.Service\ConfigurationService.cs:36:        await repository.RoutingAsync(actor.TenantId, org, ct) ?? Defaults(actor.TenantId, org);
+src\AI.Customer.Service.Service\ConfigurationService.cs:50:                members.Add(await accounts.RequireAsync(actor.TenantId, org, Guard.Text(member.AccountId, "账号"), ct));
+src\AI.Customer.Service.Service\ConfigurationService.cs:54:        return await transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\ConfigurationService.cs:56:            var value = await repository.RoutingAsync(actor.TenantId, org, ct);
+src\AI.Customer.Service.Service\ConfigurationService.cs:63:                value = new RoutingConfiguration { Id = "routing", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+src\AI.Customer.Service.Service\ConfigurationService.cs:85:        fallback.TenantId = tenant;
+src\AI.Customer.Service.Service\ConfigurationService.cs:86:        fallback.TopOrgId = org;
+src\AI.Customer.Service.Service\ConfigurationService.cs:98:        return transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\ConfigurationService.cs:100:            var current = await repository.CalendarAsync(actor.TenantId, org, ct);
+src\AI.Customer.Service.Service\ConfigurationService.cs:113:                current = new CalendarPolicy { Id = "calendar", TenantId = actor.TenantId, TopOrgId = org, Version = 0 };
+src\AI.Customer.Service.Service\ConfigurationService.cs:139:            TenantId = tenant,
+src\AI.Customer.Service.Service\ConfigurationService.cs:140:            TopOrgId = org,
+src\AI.Customer.Service.Service\ExportService.cs:30:        var values = await conversations.PageAsync(actor.TenantId, org, assistant, page, size, ct);
+src\AI.Customer.Service.Service\ExportService.cs:54:        return new { exportedAt = clock.GetUtcNow(), topOrgId = org, assistantConfigId = assistant, page, size, hasMore = values.Count == size, conversations = output };
+src\AI.Customer.Service.Service\ConversationAccessService.cs:27:        var conversation = await runtime.CreateAsync(new(assistant.TenantId, principal, trace, session), assistant, session, ct, Digest(credential), expires);
+src\AI.Customer.Service.Service\ConversationAccessService.cs:41:        await runtime.VisitorAsync(new(grant.TenantId, grant.PrincipalId, "credential", grant.ConversationId), grant.ConversationId, ct);
+src\AI.Customer.Service.Service\ConversationAccessService.cs:53:        return await transactions.ExecuteAsync(conversation.TenantId, conversation.TopOrgId, async () =>
+src\AI.Customer.Service.Service\HandoffService.cs:59:        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\HandoffService.cs:108:        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\HandoffService.cs:150:        return transactions.ExecuteAsync<Proposal?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\HandoffService.cs:188:        var config = await configuration.RoutingAsync(scope.TenantId, scope.TopOrgId, ct);
+src\AI.Customer.Service.Service\HandoffNotificationService.cs:18:        var settings = await configuration.ChatNotificationAsync(episode.TenantId, episode.TopOrgId, ct);
+src\AI.Customer.Service.Service\HandoffNotificationService.cs:25:            assistants.Require(episode.TenantId, episode.AssistantConfigId).Language,
+src\AI.Customer.Service.Service\InboxService.cs:21:        var episodes = await reception.InboxEpisodesAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
+src\AI.Customer.Service.Service\InboxService.cs:22:        var stats = await conversations.InboxMessageStatsAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
+src\AI.Customer.Service.Service\InboxService.cs:23:        var forms = await followups.InboxAsync(actor.TenantId, org, assistant, groups, ct);
+src\AI.Customer.Service.Service\InboxService.cs:25:        var seen = await followups.SeenEpisodeIdsAsync(actor.TenantId, org, ids, actor.AccountId, ct);
+src\AI.Customer.Service.Service\InboxService.cs:26:        var closed = await followups.ClosedEpisodeIdsAsync(actor.TenantId, org, ids, ct);
+src\AI.Customer.Service.Service\InboxService.cs:62:        var episodes = await reception.QueueAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct);
+src\AI.Customer.Service.Service\InboxService.cs:63:        var stats = (await conversations.InboxMessageStatsAsync(actor.TenantId, org, assistant, groups, actor.AccountId, ct))
+src\AI.Customer.Service.Service\MessagingService.cs:39:        var result = await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\MessagingService.cs:112:        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\MessagingService.cs:130:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\MessagingService.cs:161:        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\MessagingService.cs:180:        else if (episode.PrincipalId != actor.AccountId || episode.TenantId != actor.TenantId)
+src\AI.Customer.Service.Service\MetricsService.cs:29:        transactions.ExecuteAsync(actor.TenantId, org, async () =>
+src\AI.Customer.Service.Service\MetricsService.cs:33:            return new MetricsSnapshot(from, through, await reception.ReadAsync(actor.TenantId, org, assistant, from, through, ct),
+src\AI.Customer.Service.Service\MetricsService.cs:34:                await surveys.CountAsync(actor.TenantId, org, assistant, from, through, ct));
+src\AI.Customer.Service.Core\Adapters\ModelContextPolicy.cs:42:        headers.Set("X-Tenant-Id", scope.TenantId);
+src\AI.Customer.Service.Core\Adapters\ModelContextPolicy.cs:43:        headers.Set("X-Top-Org-Id", scope.TopOrgId);
+src\AI.Customer.Service.Service\FollowupService.cs:45:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\FollowupService.cs:105:        var values = await repository.QueueAsync(actor.TenantId, org, assistant, groups, ct);
+src\AI.Customer.Service.Service\FollowupService.cs:107:        var seen = await repository.SeenEpisodeIdsAsync(actor.TenantId, org, ids, actor.AccountId, ct);
+src\AI.Customer.Service.Service\FollowupService.cs:108:        var closed = await repository.ClosedEpisodeIdsAsync(actor.TenantId, org, ids, ct);
+src\AI.Customer.Service.Service\FollowupService.cs:128:        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\FollowupService.cs:155:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\FollowupService.cs:188:        var task = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, "reply:" + form.TicketId, ct);
+src\AI.Customer.Service.Service\FollowupService.cs:196:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\FollowupService.cs:235:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\FollowupService.cs:250:            var task = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, "reply:" + form.TicketId, ct) ?? throw BusinessException.Conflict("原投递任务不存在");
+src\AI.Customer.Service.Infrastructure\Adapters\ConfiguredAssistantRegistry.cs:24:        options.Value.Items.SingleOrDefault(x => x.TenantId == tenant && x.Id == assistant)
+src\AI.Customer.Service.Infrastructure\Adapters\ConfiguredAssistantRegistry.cs:29:        options.Value.Items.Where(x => x.TenantId == tenant).ToArray();
+src\AI.Customer.Service.Service\ReceptionService.cs:53:        await repository.QueueAsync(actor.TenantId, org, assistant, await access.GroupsAsync(actor, org, ct), actor.AccountId, ct);
+src\AI.Customer.Service.Service\ReceptionService.cs:59:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReceptionService.cs:70:            await RequireCapacityAsync(actor, scope.TopOrgId, false, ct);
+src\AI.Customer.Service.Service\ReceptionService.cs:87:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReceptionService.cs:122:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReceptionService.cs:140:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReceptionService.cs:157:            await RequireCapacityAsync(target, scope.TopOrgId, true, ct);
+src\AI.Customer.Service.Service\ReceptionService.cs:181:        var availability = await configuration.AvailabilityAsync(actor.TenantId, org, actor.AccountId, ct);
+src\AI.Customer.Service.Service\ReceptionService.cs:184:            availability = new Availability { Id = actor.AccountId, TenantId = actor.TenantId, TopOrgId = org };
+src\AI.Customer.Service.Service\ReceptionService.cs:191:        if (await repository.ActiveCountAsync(actor.TenantId, org, actor.AccountId, ct) >= options.Value.Capacity)
+src\AI.Customer.Service.Domain\Policies\DeliveryRules.cs:16:        if (task.State != DeliveryState.DEAD || task.TenantId != actor.TenantId)
+src\AI.Customer.Service.Service\SurveyService.cs:51:        transactions.ExecuteAsync<Survey?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\SurveyService.cs:82:        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\SurveyService.cs:103:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\SurveyService.cs:136:        return await transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\SurveyService.cs:167:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\SurveyService.cs:192:        return transactions.ExecuteAsync<ResolutionEvidence?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:71:                logger.LogWarning("任务待恢复 EventKey={EventKey} SessionId={SessionId} TraceId={TraceId} TopOrgId={TopOrgId} BventId={BventId} Attempt={Attempt} Failure={Failure}",
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:72:                    lease.EventKey, lease.ConversationId, lease.TraceId, lease.TopOrgId, lease.BventId, lease.Attempts, error);
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:82:        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:84:            var value = await tasks.FindAsync(scope.TenantId, scope.TopOrgId, eventKey, ct) ?? throw BusinessException.Forbidden();
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:97:        transactions.ExecuteAsync<ReliableTask?>(candidate.TenantId, candidate.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:99:            var value = await tasks.FindAsync(candidate.TenantId, candidate.TopOrgId, candidate.EventKey, ct);
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:128:        transactions.ExecuteAsync(lease.TenantId, lease.TopOrgId, async () =>
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:130:            var value = await tasks.FindAsync(lease.TenantId, lease.TopOrgId, lease.EventKey, ct);
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:178:        var current = await conversations.FindAsync(task.TenantId, task.ConversationId, ct);
+src\AI.Customer.Service.Service\ReliableTaskProcessor.cs:184:        await handoff.RequestAsync(new(task.TenantId, task.PrincipalId, task.TraceId), task.Scope, task.EventKey,
+src\AI.Customer.Service.Infrastructure\Adapters\HandoffNotificationText.cs:20:        var url = root.TrimEnd('/') + "/b/inbox?topOrgId=" + Uri.EscapeDataString(task.TopOrgId) +
+src\AI.Customer.Service.Infrastructure\Adapters\NotificationHttpAdapter.cs:42:        var settings = await configuration.ChatNotificationAsync(task.TenantId, task.TopOrgId, ct);
+src\AI.Customer.Service.Infrastructure\Adapters\NotificationHttpAdapter.cs:106:            task.TenantId,
+src\AI.Customer.Service.Infrastructure\Adapters\NotificationHttpAdapter.cs:107:            task.TopOrgId,
+src\AI.Customer.Service.Infrastructure\Adapters\UserCenterAdapter.cs:28:        if (item.GetProperty("accountId").GetString() != account || item.GetProperty("tenantId").GetString() != tenant)
+src\AI.Customer.Service.Service\WaitingService.cs:47:        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\WaitingService.cs:62:        transactions.ExecuteAsync(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\WaitingService.cs:100:        transactions.ExecuteAsync<object?>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\WaitingService.cs:115:        transactions.ExecuteAsync<object>(scope.TenantId, scope.TopOrgId, async () =>
+src\AI.Customer.Service.Service\WaitingService.cs:144:            var calendar = await configuration.CalendarAsync(episode.TenantId, episode.TopOrgId, ct);
+src\AI.Customer.Service.Service\WaitingService.cs:277:            var value = await tasks.FindAsync(waiting.TenantId, waiting.TopOrgId, key, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmMetricsQueries.cs:18:        var episodes = db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmMetricsQueries.cs:34:        var tasks = db.Set<ReliableTask>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmMetricsQueries.cs:75:        var rows = await db.Set<Survey>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant &&
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:31:        model.Entity<AnonymousConversationAccess>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:32:        model.Entity<ConversationExternalIdentity>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ProviderCode }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:57:        model.Entity<ChatNotificationConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:61:        model.Entity<Conversation>().HasIndex(x => new { x.TenantId, x.Id }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:62:        model.Entity<RoutingConfiguration>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:63:        model.Entity<CalendarPolicy>().HasIndex(x => new { x.TenantId, x.TopOrgId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:64:        model.Entity<HumanMessage>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.Seq }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:65:        model.Entity<HumanMessage>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.SenderId, x.ClientMsgId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:66:        model.Entity<MessageReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ActorId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:67:        model.Entity<Survey>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:68:        model.Entity<ResolutionEvidence>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.TurnId, x.Kind }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:69:        model.Entity<Waiting>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:70:        model.Entity<Followup>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:71:        model.Entity<FollowupReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.EpisodeId, x.SeenBy }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:72:        model.Entity<FollowupResponse>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EpisodeId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:73:        model.Entity<ReliableTask>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.EventKey }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:75:        model.Entity<CommandReceipt>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.ConversationId, x.ActorId, x.Action, x.RequestId }).IsUnique();
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:76:        model.Entity<Episode>().HasIndex(x => new { x.TenantId, x.TopOrgId, x.AssistantConfigId, x.Status });
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:79:            .HasForeignKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:80:            .HasPrincipalKey(x => new { x.TenantId, x.TopOrgId, x.EpisodeId })
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:83:        model.Entity<OrganizationGate>().HasKey(x => new { x.TenantId, x.TopOrgId });
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:84:        model.Entity<OrganizationGate>().Property(x => x.TenantId).HasMaxLength(64);
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:85:        model.Entity<OrganizationGate>().Property(x => x.TopOrgId).HasMaxLength(64);
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:128:        entity.HasKey(x => new { x.TenantId, x.TopOrgId, x.Id });
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:134:                "TenantId" or "TopOrgId" => 64,
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:149:                    .HasForeignKey(nameof(Aggregate.TenantId), nameof(Aggregate.TopOrgId), nameof(ConversationAggregate.ConversationId))
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:178:    public string TenantId { get; set; } = "";
+src\AI.Customer.Service.Infrastructure\Persistence\CustomerServiceDbContext.cs:182:    public string TopOrgId { get; set; } = "";
+src\AI.Customer.Service.Infrastructure\Persistence\ConversationAccessRepository.cs:17:        db.Set<AnonymousConversationAccess>().AsNoTracking().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\ConversationAccessRepository.cs:23:        db.Set<ConversationExternalIdentity>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Domain\Ports\ExternalPorts.cs:49:/// <param name="TenantId">
+src\AI.Customer.Service.Domain\Ports\ExternalPorts.cs:52:/// <param name="TopOrgId">
+src\AI.Customer.Service.Domain\Ports\ExternalPorts.cs:70:public sealed record AssistantDefinition(string Id, string TenantId, string TopOrgId, string? BventId = null, string Name = "智能客服", string Language = "zh-CN",
+src\AI.Customer.Service.Infrastructure\Persistence\OrmUnitOfWork.cs:28:            await db.Set<OrganizationGate>().Where(x => x.TenantId == tenant && x.TopOrgId == org)
+src\AI.Customer.Service.Infrastructure\Persistence\OrmUnitOfWork.cs:55:        if (await db.Set<OrganizationGate>().AnyAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct))
+src\AI.Customer.Service.Infrastructure\Persistence\OrmUnitOfWork.cs:60:        db.Set<OrganizationGate>().Add(new OrganizationGate { TenantId = tenant, TopOrgId = org });
+src\AI.Customer.Service.Infrastructure\Persistence\OrmUnitOfWork.cs:71:            if (!await db.Set<OrganizationGate>().AnyAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct))
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:22:            .SingleOrDefaultAsync(x => x.TenantId == tenant && x.Id == id, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:48:        var episodes = db.Set<Episode>().Where(e => e.TenantId == tenant && e.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:55:        var messages = db.Set<HumanMessage>().Where(m => m.TenantId == tenant && m.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:63:        var unread = await messages.Where(m => m.Seq > (db.Set<MessageReceipt>().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:66:        var receipts = await db.Set<MessageReceipt>().AsNoTracking().Where(r => r.TenantId == tenant && r.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:83:        db.Set<Conversation>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant)
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:90:        db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:111:        db.Set<Episode>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:117:        db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:127:        db.Set<Episode>().CountAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.AgentId == actor &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:149:        db.Set<T>().Where(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:163:        db.Set<ChatNotificationConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:168:        db.Set<RoutingConfiguration>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:173:        db.Set<CalendarPolicy>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:178:        db.Set<Availability>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.Id == account, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:193:        db.Set<Followup>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:199:        db.Set<FollowupResponse>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:205:        db.Set<Followup>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant && groups.Contains(x.GroupId))
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:209:        db.Set<Followup>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:214:        episodes.Count == 0 ? [] : (await db.Set<FollowupReceipt>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:218:        db.Set<FollowupReceipt>().SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.TopOrgId == scope.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:224:        episodes.Count == 0 ? [] : (await db.Set<FollowupResponse>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:240:        db.Set<ResolutionEvidence>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:245:        db.Set<Survey>().SingleOrDefaultAsync(x => x.TenantId == s.TenantId && x.TopOrgId == s.TopOrgId &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:261:        db.Set<ReliableTask>().SingleOrDefaultAsync(x => x.TenantId == tenant && x.TopOrgId == org && x.EventKey == key, ct);
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:271:                db.Set<ChatNotificationConfiguration>().Any(c => c.TenantId == x.TenantId && c.TopOrgId == x.TopOrgId && c.Enabled))))) &&
+src\AI.Customer.Service.Infrastructure\Persistence\OrmRepositories.cs:276:        db.Set<ReliableTask>().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.Kind == kind)
+src\AI.Customer.Service.Domain\Models\Scope.cs:6:/// <param name="TenantId">
+src\AI.Customer.Service.Domain\Models\Scope.cs:9:/// <param name="TopOrgId">
+src\AI.Customer.Service.Domain\Models\Scope.cs:21:public sealed record Scope(string TenantId, string TopOrgId, string ConversationId, string AssistantConfigId, string? BventId);
+src\AI.Customer.Service.Domain\Models\Scope.cs:26:/// <param name="TenantId">
+src\AI.Customer.Service.Domain\Models\Scope.cs:38:public sealed record Actor(string TenantId, string AccountId, string TraceId, string? GuestConversationId = null);
+src\AI.Customer.Service.Domain\Models\Scope.cs:53:    public string TenantId { get; set; } = "";
+src\AI.Customer.Service.Domain\Models\Scope.cs:58:    public string TopOrgId { get; set; } = "";
+src\AI.Customer.Service.Domain\Models\Scope.cs:94:    public Scope Scope => new(TenantId, TopOrgId, ConversationId, AssistantConfigId, BventId);

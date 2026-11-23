@@ -18,7 +18,9 @@ internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingCh
     /// </summary>
     private readonly HashSet<string> calls = new(StringComparer.Ordinal);
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 获取完整模型响应后校验结束原因及全部工具调用参数，校验失败时拒绝返回响应。
+    /// </summary>
     public override async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var response = await base.GetResponseAsync(messages, options, cancellationToken);
@@ -30,7 +32,9 @@ internal sealed class AgentResponseGuard(IChatClient innerClient) : DelegatingCh
         return response;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 逐帧校验工具调用和结束原因后转发模型增量，流结束时确认存在合法结束信号。
+    /// </summary>
     public override async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages,
         ChatOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {

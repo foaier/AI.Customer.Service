@@ -13,7 +13,9 @@ namespace AI.Customer.Service.Infrastructure.Persistence;
 /// </param>
 public sealed class OrmUnitOfWork(CustomerServiceDbContext db) : IUnitOfWork
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 取得组织写门闩后在串行化事务内执行本地业务并保存变更；失败时回滚，拒绝嵌套事务。
+    /// </summary>
     public async Task<T> ExecuteAsync<T>(string tenant, string org, Func<Task<T>> action, CancellationToken ct)
     {
         if (db.Database.CurrentTransaction is not null)

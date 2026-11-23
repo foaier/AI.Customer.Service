@@ -10,7 +10,9 @@ namespace AI.Customer.Service.Service.Workers;
 /// </summary>
 public sealed class AutoCloseWorker(IServiceScopeFactory scopes, TimeProvider clock, ILogger<AutoCloseWorker> logger) : BackgroundService
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 每五秒读取最多一百个到期接待并逐一复核结单，隔离单项失败，在宿主取消时停止。
+    /// </summary>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));

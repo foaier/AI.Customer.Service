@@ -12,7 +12,9 @@ namespace AI.Customer.Service.Infrastructure.Persistence;
 /// </param>
 public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IReceptionMetricsQuery
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 按租户、组织和助手汇总指定时间窗口内的接待来源、状态及耗时，并统计全部当前积压。
+    /// </summary>
     public async Task<ReceptionMetrics> ReadAsync(string tenant, string org, string assistant, DateTime from, DateTime through, CancellationToken ct)
     {
         var episodes = db.Set<Episode>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant);
@@ -69,7 +71,9 @@ public sealed class ReceptionMetricsQuery(CustomerServiceDbContext db) : IRecept
 /// </param>
 public sealed class SurveyMetricsQuery(CustomerServiceDbContext db) : ISurveyMetricsQuery
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 按完整授权范围及打开时间窗口统计调查状态，将截至窗口末尾已超期的未回答调查计为过期。
+    /// </summary>
     public async Task<IReadOnlyDictionary<string, long>> CountAsync(string tenant, string org, string assistant, DateTime from, DateTime through, CancellationToken ct)
     {
         var rows = await db.Set<Survey>().AsNoTracking().Where(x => x.TenantId == tenant && x.TopOrgId == org && x.AssistantConfigId == assistant &&

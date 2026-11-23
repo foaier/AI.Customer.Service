@@ -20,7 +20,9 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// </param>
 public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOptions> options) : IAccountDirectory
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 实时核验用户中心账号、租户和目标组织启用关系，并返回权威展示名称。
+    /// </summary>
     public async Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct)
     {
         var info = await SendAsync(HttpMethod.Post, "/api/AccountUser/v1/Info", new { accountId = account }, ct);
@@ -41,7 +43,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         return new(account, string.IsNullOrWhiteSpace(name) ? account : name[..Math.Min(name.Length, 128)]);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 按绑定租户、组织、关键词和页大小的游标查询人员组，拒绝跨组织记录。
+    /// </summary>
     public async Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string tenant, string org, string? keyword, string? cursor, int limit, CancellationToken ct)
     {
         var scope = CursorScope(tenant, org, "", keyword, limit);
@@ -59,7 +63,9 @@ public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOption
         return Page(json, page, limit, scope, items);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 先确认人员组属于目标组织，再按绑定范围的游标分页读取最小账号候选。
+    /// </summary>
     public async Task<DirectoryPage<Member>> AccountsAsync(string tenant, string org, string group, string? keyword, string? cursor, int limit, CancellationToken ct)
     {
         var verified = false;

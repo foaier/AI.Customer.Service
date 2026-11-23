@@ -15,10 +15,14 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 public sealed class NotificationHttpAdapter(HttpClient http, IOptions<NotificationOptions> options,
     IConfigurationRepository configuration, IReceptionRepository reception, ISecretCipher cipher, TimeProvider clock) : INotificationPort
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 启用按组织持久通知配置筛选任务，未启用组织不领取邮件和群通知任务。
+    /// </summary>
     public bool UseConfiguredChatGroups => true;
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 根据邮件网关地址和审计转发配置返回可投递的 EMAIL、EMAIL_REPLY 及 EVENT 类型。
+    /// </summary>
     public IReadOnlyCollection<string> SupportedKinds
     {
         get
@@ -30,7 +34,9 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
         }
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 复核任务对应的通知配置，按邮件、审计或群通知协议发送，并校验供应商明确受理。
+    /// </summary>
     public async Task SendAsync(ReliableTask task, CancellationToken ct)
     {
         if (task.Kind == "EVENT")

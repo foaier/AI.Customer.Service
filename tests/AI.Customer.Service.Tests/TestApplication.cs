@@ -256,15 +256,21 @@ public sealed class TestDirectory : IAccountDirectory
     /// 模拟外部账号禁用名单。
     /// </summary>
     public HashSet<string> Disabled { get; } = [];
-    /// <inheritdoc />
+    /// <summary>
+    /// 仅允许固定测试租户组织中未被禁用的预设账号，并返回测试用权威名称。
+    /// </summary>
     public Task<Member> RequireAsync(string tenant, string org, string account, CancellationToken ct) =>
         tenant == "tenant-a" && org == "org-a" && !Disabled.Contains(account) && account is "agent-a" or "agent-b" or "visitor"
             ? Task.FromResult(new Member(account, "权威名称-" + account))
             : throw BusinessException.Forbidden("外部账号未启用");
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定的单页测试人员组，用于隔离真实用户中心依赖。
+    /// </summary>
     public Task<DirectoryPage<DirectoryGroup>> GroupsAsync(string tenant, string org, string? keyword, string? cursor, int limit, CancellationToken ct) =>
         Task.FromResult(new DirectoryPage<DirectoryGroup>("READY", [new("external-group", "用户中心组")], null, false));
-    /// <inheritdoc />
+    /// <summary>
+    /// 返回固定的两位测试客服候选，供目录及路由回归使用。
+    /// </summary>
     public Task<DirectoryPage<Member>> AccountsAsync(string tenant, string org, string group, string? keyword, string? cursor, int limit, CancellationToken ct) =>
         Task.FromResult(new DirectoryPage<Member>("READY", [new("agent-a", "客服甲"), new("agent-b", "客服乙")], null, false));
 }
@@ -286,7 +292,9 @@ public sealed class TestModel : IChatModel
     /// 可控受限工具结果。
     /// </summary>
     public ModelDelta? Tool { get; set; }
-    /// <inheritdoc />
+    /// <summary>
+    /// 按测试配置抛出生成失败，或依次返回预设文本和可选工具候选。
+    /// </summary>
     public async IAsyncEnumerable<ModelDelta> StreamAsync(ModelRequest request, [EnumeratorCancellation] CancellationToken ct)
     {
         await Task.Yield();
@@ -300,7 +308,9 @@ public sealed class TestModel : IChatModel
             yield return Tool;
         }
     }
-    /// <inheritdoc />
+    /// <summary>
+    /// 固定返回 OTHER 和 TEST_FALLBACK 分类，用于确定性的业务回归。
+    /// </summary>
     public Task<Classification> ClassifyAsync(Scope scope, string context, CancellationToken ct) =>
         Task.FromResult(new Classification(Category.OTHER, 0, "TEST_FALLBACK"));
 }
@@ -326,9 +336,13 @@ public sealed class TestNotification : INotificationPort
     /// 按稳定事件键记录受理事实。
     /// </summary>
     public HashSet<string> Accepted { get; } = [];
-    /// <inheritdoc />
+    /// <summary>
+    /// 配置测试网关支持的任务类型，默认支持邮件通知、邮件回复和内部通知。
+    /// </summary>
     public IReadOnlyCollection<string> SupportedKinds { get; set; } = ["EMAIL", "EMAIL_REPLY", "INTERNAL"];
-    /// <inheritdoc />
+    /// <summary>
+    /// 按测试配置模拟供应商失败或拒绝，否则按稳定事件键记录受理事实。
+    /// </summary>
     public Task SendAsync(ReliableTask task, CancellationToken ct)
     {
         if (Failure is not null) throw Failure;

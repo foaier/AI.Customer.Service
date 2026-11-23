@@ -20,14 +20,18 @@ namespace AI.Customer.Service.Core.Adapters;
 /// </param>
 internal sealed class ModelContextPolicy(Scope scope, string? turnId, string? traceId, bool anonymous) : PipelinePolicy
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 向当前请求写入可信会话上下文及可选轮次信息，再同步执行后续模型传输策略。
+    /// </summary>
     public override void Process(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
     {
         AddHeaders(message.Request.Headers);
         ProcessNext(message, pipeline, currentIndex);
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 向当前请求写入可信会话上下文及可选轮次信息，再异步执行后续模型传输策略。
+    /// </summary>
     public override ValueTask ProcessAsync(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
     {
         AddHeaders(message.Request.Headers);

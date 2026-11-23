@@ -13,18 +13,24 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// </param>
 public sealed class ConfiguredAssistantRegistry(IOptions<AssistantOptions> options) : IAssistantRegistry
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 查找明确允许匿名访问的助手，匹配结果不是唯一一项时拒绝请求。
+    /// </summary>
     public AssistantDefinition RequirePublic(string assistant)
     {
         var candidates = options.Value.Items.Where(x => x.Id == assistant && x.AllowAnonymous).ToArray();
         return candidates.Length == 1 ? candidates[0] : throw BusinessException.Forbidden("助手未开放匿名咨询");
     }
-    /// <inheritdoc />
+    /// <summary>
+    /// 从受控配置读取指定租户的助手，助手未注册时拒绝请求。
+    /// </summary>
     public AssistantDefinition Require(string tenant, string assistant) =>
         options.Value.Items.SingleOrDefault(x => x.TenantId == tenant && x.Id == assistant)
         ?? throw BusinessException.Forbidden("助手未在当前租户注册");
 
-    /// <inheritdoc />
+    /// <summary>
+    /// 列举受控配置中属于指定租户的助手。
+    /// </summary>
     public IReadOnlyList<AssistantDefinition> List(string tenant) =>
         options.Value.Items.Where(x => x.TenantId == tenant).ToArray();
 }

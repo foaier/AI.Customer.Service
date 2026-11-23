@@ -12,9 +12,13 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// </summary>
 public sealed class NotificationTokenCipher(IOptions<NotificationOptions> options) : ISecretCipher
 {
-    /// <inheritdoc />
+    /// <summary>
+    /// 使用部署主密钥和随机 nonce 进行 AES-256-GCM 加密，返回带版本前缀的令牌密文。
+    /// </summary>
     public string Protect(string plaintext) => Transform(plaintext, encrypt: true);
-    /// <inheritdoc />
+    /// <summary>
+    /// 校验密文版本和认证标签后解密令牌；主密钥或密文无效时返回安全的配置错误。
+    /// </summary>
     public string Unprotect(string ciphertext) => Transform(ciphertext, encrypt: false);
 
     /// <summary>
