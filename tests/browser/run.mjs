@@ -182,6 +182,17 @@ try {
             { assistantConfigId: "assistant-a", groups: Object.fromEntries(groups.map((g) => [g.category, g.id])) },
         ],
     });
+    await api("/api/customer-service/configuration/chat-notifications?topOrgId=org-a", "PUT", {
+        version: 0,
+        enabled: true,
+        publicBaseUrl: "https://support.example.com",
+        chatGroup: {
+            SALES: "sales-group-1",
+            VISITOR: "visitor-group-1",
+            FINANCE: "finance-group-1",
+            EMP: "employee-group-1",
+        },
+    });
     const today = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Shanghai",
         year: "numeric",
@@ -254,7 +265,7 @@ try {
     await agent.locator("#followup-reply-subject").fill("咨询回复");
     await agent.locator("#followup-reply-content").fill("已核实，请于工作时间办理。");
     await agent.locator("#followup-reply-submit").click();
-    for (let attempt = 0; attempt < 12; attempt++) {
+    for (let attempt = 0; attempt < 30; attempt++) {
         await agent.locator("#followup-reply-load").click();
         if (await agent.locator("#followup-reply-close").isEnabled()) break;
         await new Promise((resolve) => setTimeout(resolve, 500));

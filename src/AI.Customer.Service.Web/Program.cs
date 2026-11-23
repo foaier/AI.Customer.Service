@@ -1,7 +1,6 @@
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using AI.Customer.Service.Common;
+using AI.Customer.Service.Common.Converter;
 using AI.Customer.Service.Core;
 using AI.Customer.Service.Core.Adapters;
 using AI.Customer.Service.Core.Models;
@@ -16,7 +15,6 @@ using AI.Customer.Service.Web.Realtime;
 using AI.Customer.Service.Web.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using AuthenticationOptions = AI.Customer.Service.Web.Security.AuthenticationOptions;
 
@@ -153,21 +151,3 @@ await app.RunAsync();
 /// WebApplicationFactory 的公开应用入口，生产启动由顶层语句负责。
 /// </summary>
 public partial class Program;
-
-/// <summary>
-/// ORM 读取的无 Kind 时间统一按 UTC 输出。
-/// </summary>
-public sealed class UtcDateTimeConverter : JsonConverter<DateTime>
-{
-    /// <summary>
-    /// 解析带时区时间并归一化 UTC。
-    /// </summary>
-    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-        reader.GetDateTimeOffset().UtcDateTime;
-
-    /// <summary>
-    /// 数据库时间统一以 Z 后缀写出，避免浏览器按本地时间解释。
-    /// </summary>
-    public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) =>
-        writer.WriteStringValue(DateTime.SpecifyKind(value, DateTimeKind.Utc));
-}

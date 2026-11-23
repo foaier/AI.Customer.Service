@@ -152,7 +152,9 @@ public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptio
         return new(new ChatClient(value.Model, credential, provider).AsIChatClient());
     }
 
-    /// <summary>仅采用相同完整范围的成功轮次，避免框架会话引入第二份跨租户历史。</summary>
+    /// <summary>
+    /// 仅采用相同完整范围的成功轮次，避免框架会话引入第二份跨租户历史
+    /// </summary>
     private static IReadOnlyList<ChatMessage> Messages(ModelRequest input)
     {
         var messages = new List<ChatMessage>();

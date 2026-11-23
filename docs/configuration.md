@@ -93,7 +93,6 @@ MySQL 使用官方 EF Provider，建议 UTF8MB4 和区分大小写的标识符�
 
 | 键                             | 默认值 / 范围                 | 作用域和缺省行为                                  |
 | ------------------------------ | ----------------------------- | ------------------------------------------------- |
-| `Notifications:EncryptionKey`  | 空；Base64 编码的随机 32 字节 | 雅式令牌 AES-256-GCM 主密钥；只由部署 Secret 注入 |
 | `Notifications:Endpoint`       | 空；受控 HTTP(S) 网关         | 通知和最终邮件；空地址不发送                      |
 | `Notifications:Authorization`  | 空；可选服务间认证头          | 网关认证，不写入任务或日志                        |
 | `Notifications:EventsEnabled`  | false；布尔                   | 可选 EVENT 审计转发；不影响本地接待               |
