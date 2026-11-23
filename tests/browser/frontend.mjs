@@ -88,7 +88,7 @@ try {
     });
     let heldHistory;
     let holdHistory = false;
-    await page.route("**/api/**", async (route) => {
+    await page.route((url) => url.pathname.startsWith("/api/"), async (route) => {
         const url = new URL(route.request().url());
         const path = url.pathname;
         let data;

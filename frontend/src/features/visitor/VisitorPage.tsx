@@ -14,9 +14,9 @@ import {
     UserRound,
     X,
 } from "lucide-react";
-import { getAccessToken } from "./auth";
-import { post, realtimeUrl, request, streamChat } from "./api";
-import type { Assistant, Episode, HumanMessage, Proposal, Waiting } from "./types";
+import { getAccessToken } from "@/shared/auth/client";
+import { post, realtimeUrl, request, streamChat } from "@/shared/api/client";
+import type { Assistant, Episode, HumanMessage, Proposal, Waiting } from "@/shared/types/customer-service";
 
 type ChatMessage = { id: string; role: "user" | "assistant" | "agent" | "system"; text: string; pending?: boolean };
 type FollowupForm = {
@@ -44,6 +44,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     const [conversationId, setConversationId] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [episode, setEpisode] = useState<Episode | null>(null);
+    const episodeStatus = episode?.status;
     const [waiting, setWaiting] = useState<Waiting | null>(null);
     const [followup, setFollowup] = useState<FollowupForm | null>(null);
     const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -167,14 +168,19 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     }, [messages, proposals, notice]);
 
     useEffect(() => {
-        if (!pageVisible || !survey || survey.status !== "OPEN" || surveyReceiptSent.current === survey.surveyId) return;
+        if (!pageVisible || !survey || survey.status !== "OPEN" || surveyReceiptSent.current === survey.surveyId)
+            return;
         surveyReceiptSent.current = survey.surveyId;
-        post(`/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/receipt`, {})
-            .catch(() => { surveyReceiptSent.current = ""; });
+        post(
+            `/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/receipt`,
+            {},
+        ).catch(() => {
+            surveyReceiptSent.current = "";
+        });
     }, [conversationId, pageVisible, survey]);
 
     useEffect(() => {
-        if (!conversationId || !episode || !openStatuses.includes(episode.status)) return;
+        if (!conversationId || !episodeStatus || !openStatuses.includes(episodeStatus)) return;
         let disposed = false;
         let socket: WebSocket | null = null;
         let reconnectTimer = 0;
@@ -183,13 +189,15 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             try {
                 const token = await getAccessToken();
                 if (disposed) return;
-                socket = new WebSocket(realtimeUrl({
-                    authorization: `Bearer ${token}`,
-                    agent: false,
-                    conversationId,
-                    assistantConfigId: assistantId,
-                    afterSeq: sequence.current,
-                }));
+                socket = new WebSocket(
+                    realtimeUrl({
+                        authorization: `Bearer ${token}`,
+                        agent: false,
+                        conversationId,
+                        assistantConfigId: assistantId,
+                        afterSeq: sequence.current,
+                    }),
+                );
                 socket.onopen = () => {
                     retry = 0;
                 };
@@ -220,7 +228,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             window.clearTimeout(reconnectTimer);
             socket?.close();
         };
-    }, [conversationId, episode?.status, assistantId, addHumanMessages]);
+    }, [conversationId, episodeStatus, assistantId, addHumanMessages]);
 
     const resetSession = async () => {
         setMessages([]);
@@ -295,7 +303,12 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                         );
                     },
                     (card) => {
-                        const value = card as { status?: string; data?: Proposal & Survey; cardType?: string; content?: { data?: Survey } };
+                        const value = card as {
+                            status?: string;
+                            data?: Proposal & Survey;
+                            cardType?: string;
+                            content?: { data?: Survey };
+                        };
                         if (value.status === "handoff.proposed" && value.data)
                             setProposals((current) =>
                                 current.some((item) => item.proposalId === value.data!.proposalId)
@@ -307,7 +320,12 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                             setShowHandoffForm(true);
                             setNotice("请先填写联系邮箱，再提交人工申请。");
                         }
-                        const surveyCard = value.status === "ai-survey" ? value.data : value.cardType === "ai-survey" ? value.content?.data : undefined;
+                        const surveyCard =
+                            value.status === "ai-survey"
+                                ? value.data
+                                : value.cardType === "ai-survey"
+                                  ? value.content?.data
+                                  : undefined;
                         if (surveyCard?.surveyId) setSurvey(surveyCard as Survey);
                     },
                 );
@@ -518,7 +536,8 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                     {statusLabel}
                 </div>
             </section>
-            {((episode?.autoCloseAt && episode.status === "ACTIVE") || (episode?.status === "RESOLVED" && episode.resolutionReason)) && (
+            {((episode?.autoCloseAt && episode.status === "ACTIVE") ||
+                (episode?.status === "RESOLVED" && episode.resolutionReason)) && (
                 <p className="visitor-state-note">
                     {episode.status === "ACTIVE"
                         ? `若人工接待期间访客 5 分钟未回复，将于 ${formatDateTime(episode.autoCloseAt!)} 自动结束。`
@@ -665,7 +684,11 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                     placeholder="name@example.com"
                                 />
                                 <div className="survey-actions">
-                                    <button type="button" disabled={!email.trim()} onClick={() => void chooseSurveyHandoff("OPTED_IN")}>
+                                    <button
+                                        type="button"
+                                        disabled={!email.trim()}
+                                        onClick={() => void chooseSurveyHandoff("OPTED_IN")}
+                                    >
                                         联系人工
                                     </button>
                                     <button type="button" onClick={() => void chooseSurveyHandoff("DECLINED")}>
@@ -793,10 +816,22 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                             placeholder="name@example.com"
                                             disabled={sending}
                                         />
-                                        <button className="button button--primary button--full" type="submit" disabled={sending || loading}>
-                                            <Headphones size={16} /> {handoffProposal ? "确认并联系人工" : "提交并联系人工"}
+                                        <button
+                                            className="button button--primary button--full"
+                                            type="submit"
+                                            disabled={sending || loading}
+                                        >
+                                            <Headphones size={16} />{" "}
+                                            {handoffProposal ? "确认并联系人工" : "提交并联系人工"}
                                         </button>
-                                        <button className="link-button" type="button" onClick={() => { setShowHandoffForm(false); setHandoffProposal(null); }}>
+                                        <button
+                                            className="link-button"
+                                            type="button"
+                                            onClick={() => {
+                                                setShowHandoffForm(false);
+                                                setHandoffProposal(null);
+                                            }}
+                                        >
                                             取消
                                         </button>
                                     </form>
@@ -805,7 +840,10 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                         className="button button--primary button--full"
                                         type="button"
                                         disabled={sending || loading}
-                                        onClick={() => { setHandoffProposal(null); setShowHandoffForm(true); }}
+                                        onClick={() => {
+                                            setHandoffProposal(null);
+                                            setShowHandoffForm(true);
+                                        }}
                                     >
                                         <Headphones size={16} /> 联系人工客服
                                     </button>

@@ -2,6 +2,8 @@
 
 智能客服 **.NET 10 + Microsoft Agent Framework 1.28.0** 项目，包含 AI 文本咨询、转人工建议与确认、接单/首响/消息/结束、WebSocket、分组路由、营业日历、等待及邮箱跟进、留言认领、最终邮件回复/结案、满意度、可靠任务和分页导出。
 
+前端位于 [`frontend/`](frontend/README.md)，使用 React、TypeScript、Vite 和 React Router，按应用层、业务功能和共享能力组织。目录约定、本地启动和前端验证命令见前端说明。
+
 AI 对话、流式输出、语义分类和受限工具执行均通过 Microsoft Agent Framework 的 `ChatClientAgent` 运行，使用官方 OpenAI provider 连接兼容模型端点。框架负责工具调用与结果续轮；业务状态由原有领域规则和成功轮次围栏控制。接入细节见 [Agent Framework 实现](docs/agent-framework.md)。
 
 ## 本机运行

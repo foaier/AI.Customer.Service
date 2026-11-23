@@ -12,9 +12,9 @@ import {
     Trash2,
     UsersRound,
 } from "lucide-react";
-import { post, put, request } from "./api";
-import type { Assistant, Calendar, Group, Routing } from "./types";
-import ChatNotifications from "./ChatNotifications";
+import { post, put, request } from "@/shared/api/client";
+import type { Assistant, Calendar, Group, Routing } from "@/shared/types/customer-service";
+import ChatNotifications from "@/features/settings/components/ChatNotifications";
 
 const categories = [
     { id: "EXHIBITOR", label: "展商咨询", accent: "teal" },

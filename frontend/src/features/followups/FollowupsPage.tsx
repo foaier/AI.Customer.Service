@@ -12,9 +12,9 @@ import {
     ShieldCheck,
     UserRound,
 } from "lucide-react";
-import { post, realtimeUrl, request } from "./api";
-import { getAccessToken } from "./auth";
-import type { Assistant, Followup } from "./types";
+import { post, realtimeUrl, request } from "@/shared/api/client";
+import { getAccessToken } from "@/shared/auth/client";
+import type { Assistant, Followup } from "@/shared/types/customer-service";
 
 type FollowupFormState = {
     version?: number;
@@ -24,6 +24,10 @@ type FollowupFormState = {
     assignedTo?: string;
 };
 type ReplyState = { version: number; state: string; subject?: string; content?: string; attempts?: number };
+
+function advanceGeneration(generation: { current: number }) {
+    generation.current++;
+}
 
 export default function Followups({ assistant }: { assistant: Assistant }) {
     const assistantId = assistant.assistantConfigId || assistant.configId || assistant.id;
@@ -59,7 +63,7 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
     useEffect(() => {
         void loadItems();
         return () => {
-            selectionGeneration.current++;
+            advanceGeneration(selectionGeneration);
         };
     }, [loadItems]);
 

@@ -18,10 +18,10 @@ import {
     UserRound,
     UsersRound,
 } from "lucide-react";
-import { getAccessToken } from "./auth";
-import { ApiError, post, realtimeUrl, request } from "./api";
-import type { AgentSnapshot, Assistant, Episode, HumanMessage, InboxSummary } from "./types";
-import { useEpisodePreviews } from "./useEpisodePreviews";
+import { getAccessToken } from "@/shared/auth/client";
+import { ApiError, post, realtimeUrl, request } from "@/shared/api/client";
+import type { AgentSnapshot, Assistant, Episode, HumanMessage, InboxSummary } from "@/shared/types/customer-service";
+import { useEpisodePreviews } from "@/features/agent-inbox/useEpisodePreviews";
 
 type AgentMessage = {
     id: string;
@@ -38,6 +38,10 @@ type Availability = {
     capacity?: number;
 };
 const activeStatuses = ["CLAIMED", "ACTIVE"];
+
+function advanceGeneration(generation: { current: number }) {
+    generation.current++;
+}
 
 export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const assistantId = assistant.assistantConfigId || assistant.configId || assistant.id;
@@ -67,6 +71,9 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     const openedLink = useRef("");
     const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
     const previews = useEpisodePreviews(episodes);
+    const selectedEpisodeId = selected?.episodeId;
+    const selectedConversationId = selected?.scope.conversationId;
+    const selectedStatus = selected?.status;
 
     const syncSelection = useCallback((queue: Episode[]) => {
         const current = selectedRef.current;
@@ -181,11 +188,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const conversationId = params.get("conversationId");
-        if (
-            !conversationId ||
-            params.get("assistantConfigId") !== assistantId
-        )
-            return;
+        if (!conversationId || params.get("assistantConfigId") !== assistantId) return;
         const linkKey = `${query}&conversationId=${conversationId}`;
         if (openedLink.current === linkKey) return;
         const episode = episodes.find((item) => item.scope.conversationId === conversationId);
@@ -197,9 +200,9 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     useEffect(() => {
         void loadQueue();
         return () => {
-            loadRequest.current++;
-            queueRevision.current++;
-            selectionGeneration.current++;
+            advanceGeneration(loadRequest);
+            advanceGeneration(queueRevision);
+            advanceGeneration(selectionGeneration);
             window.clearTimeout(queueRefreshTimer.current);
         };
     }, [loadQueue]);
@@ -287,7 +290,13 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
     }, [assistantId, syncSelection, loadQueue]);
 
     useEffect(() => {
-        if (!selected || readyEpisodeId !== selected.episodeId || !activeStatuses.includes(selected.status)) return;
+        if (
+            !selectedEpisodeId ||
+            !selectedConversationId ||
+            readyEpisodeId !== selectedEpisodeId ||
+            !activeStatuses.includes(selectedStatus || "")
+        )
+            return;
         let closed = false;
         let timer = 0;
         let socket: WebSocket | null = null;
@@ -300,13 +309,13 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     realtimeUrl({
                         authorization: `Bearer ${token}`,
                         agent: true,
-                        conversationId: selected.scope.conversationId,
+                        conversationId: selectedConversationId,
                         assistantConfigId: assistantId,
                         afterSeq: lastSeq.current,
                     }),
                 );
                 socket.onmessage = (event) => {
-                    if (closed || selectedRef.current?.episodeId !== selected.episodeId) return;
+                    if (closed || selectedRef.current?.episodeId !== selectedEpisodeId) return;
                     const frame = JSON.parse(String(event.data));
                     if (frame.type !== "snapshot") return;
                     const data = frame.data as AgentSnapshot;
@@ -317,7 +326,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                     if (data.timeline?.messages) receiveTimeline(data.timeline.messages);
                 };
                 socket.onclose = (event) => {
-                    if (closed || selectedRef.current?.episodeId !== selected.episodeId) return;
+                    if (closed || selectedRef.current?.episodeId !== selectedEpisodeId) return;
                     if (event.code === 1008) {
                         selectedRef.current = null;
                         setSelected(null);
@@ -337,13 +346,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
             window.clearTimeout(timer);
             socket?.close();
         };
-    }, [
-        selected?.scope.conversationId,
-        selected?.status,
-        readyEpisodeId,
-        assistantId,
-        receiveTimeline,
-    ]);
+    }, [selectedConversationId, selectedStatus, selectedEpisodeId, readyEpisodeId, assistantId, receiveTimeline]);
 
     useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -370,10 +373,10 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
         const requestKey = `${conversationId}:${seq}`;
         const generation = selectionGeneration.current;
         pendingRead.current = requestKey;
-        post(
-            `/customer-service/agents/conversations/${encodeURIComponent(conversationId)}/receipts`,
-            { kind: "READ", seq },
-        )
+        post(`/customer-service/agents/conversations/${encodeURIComponent(conversationId)}/receipts`, {
+            kind: "READ",
+            seq,
+        })
             .then(() => {
                 if (generation !== selectionGeneration.current) return;
                 readWatermark.current = { conversationId, seq: Math.max(seq, readWatermark.current.seq) };

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ApiError, request } from "./api";
-import type { Episode, HumanMessage } from "./types";
+import { ApiError, request } from "@/shared/api/client";
+import type { Episode, HumanMessage } from "@/shared/types/customer-service";
 
 /** 列表预览只读消息，不提交 READ；仅为当前可读周期加载，最多三个并发请求。 */
 export function useEpisodePreviews(episodes: Episode[]) {

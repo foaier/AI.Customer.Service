@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { BellRing, RefreshCw, Save } from "lucide-react";
-import { ApiError, put, request } from "./api";
+import { ApiError, put, request } from "@/shared/api/client";
 
 type ChatConfiguration = {
     version: number;

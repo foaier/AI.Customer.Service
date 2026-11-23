@@ -1,6 +1,7 @@
-import { getAccessToken } from "./auth";
+import { getAccessToken } from "@/shared/auth/client";
+import { runtimeConfig } from "@/shared/config/env";
 
-const apiBase = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+const apiBase = runtimeConfig.apiBaseUrl;
 
 export class ApiError extends Error {
     constructor(

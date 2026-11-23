@@ -6,6 +6,10 @@ export type Assistant = {
     bventId?: string | null;
 };
 
+export function getAssistantId(assistant: Assistant): string {
+    return assistant.assistantConfigId || assistant.configId || assistant.id;
+}
+
 export type HumanMessage = {
     seq: number;
     messageId: string;
