@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace AI.Customer.Service.Infrastructure.Adapters;
 
-/// <summary>复用 Java 现有用户中心四个只读接口，不创建第二套账号和组织关系。</summary>
+/// <summary>通过用户中心四个只读接口查询权威账号和组织关系。</summary>
 /// <param name="http">有超时且禁重定向的客户端。</param>
 /// <param name="options">受控根地址和服务间认证。</param>
 public sealed class UserCenterAdapter(HttpClient http, IOptions<UserCenterOptions> options) : IAccountDirectory

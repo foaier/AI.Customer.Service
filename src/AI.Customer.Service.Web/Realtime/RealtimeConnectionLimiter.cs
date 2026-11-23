@@ -5,7 +5,7 @@ namespace AI.Customer.Service.Web.Realtime;
 /// </summary>
 public sealed class RealtimeConnectionLimiter : IDisposable
 {
-    /// <summary>节点固定连接上限，与 Java 当前约定一致。</summary>
+    /// <summary>节点固定连接上限。</summary>
     public SemaphoreSlim Slots { get; } = new(64, 64);
 
     /// <summary>应用停止时释放信号量。</summary>

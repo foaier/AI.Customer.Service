@@ -37,7 +37,7 @@ API 和 WebSocket 均验证 issuer、audience、签名和 exp，时钟容差为 
 | `Model:ApiKey`             | 空；可选 Bearer 密钥                | 只在出站 Authorization 使用                              |
 | `Model:Model`              | 空；实际模型名称                    | 文本与分类共用；空值拒绝模型调用                         |
 | `Model:TimeoutSeconds`     | 120 秒；整数 5—240                  | 单轮流式生成；超时记录失败并登记可靠恢复任务             |
-| `Model:SystemPrompt`       | 模板中的中文展会客服提示词          | 全应用；服务端控制，访客不能覆盖；不是原 Java 知识库接入 |
+| `Model:SystemPrompt`       | 模板中的中文展会客服提示词          | 全应用；服务端控制，访客不能覆盖                         |
 
 用户中心连接超时 2 秒、请求 5 秒，禁止跟随重定向。依赖既有四个只读接口：
 
@@ -74,10 +74,10 @@ API 和 WebSocket 均验证 issuer、audience、签名和 exp，时钟容差为 
 | 键                          | 默认值 / 范围                                  | 作用域和缺省行为                                                   |
 | --------------------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
 | `Database:Provider`         | `Sqlite`；Sqlite / MySql / Kingbase            | 应用唯一共享数据源；差异仅在基础设施装配                           |
-| `Database:ConnectionString` | `Data Source=data/runtime/customer-service.db` | 必须是本项目独立库；不允许与 Java 共写                             |
+| `Database:ConnectionString` | `Data Source=data/runtime/customer-service.db` | 必须是本项目独立数据库                                            |
 | `Database:Initialize`       | true；布尔                                     | 只为空库自动建表；已有表不会升级，生产先执行对应建库脚本后设 false |
 
-连接串示例（仅替换占位符，不能直接连接原库）：
+连接串示例（按部署环境替换占位符）：
 
 ```text
 Sqlite:   Data Source=data/runtime/customer-service.db;Default Timeout=5
@@ -105,6 +105,6 @@ EMAIL 为建工单通知，payload 含 ticketId/conversationId，由网关根据
 
 企微仅允许 `https://qyapi.weixin.qq.com/cgi-bin/webhook/send`，必须返回 `errcode=0`；官方机器人不保证事件键去重，可能重复提醒。需要严格去重时使用自有持久幂等网关。任务最多自动尝试 5 次，DEAD 需工作台人工恢复；关闭通道只暂停发送，不丢任务。
 
-组织持久通知配置的 `enabled` 统一控制 EMAIL、EMAIL_REPLY、INTERNAL、HANDOFF_NOTIFY，替代旧部署开关。保存规则、雅式协议和数据库 004 升级见 [后端迁移说明](backend-migration-20261119.md)。
+组织持久通知配置的 `enabled` 统一控制 EMAIL、EMAIL_REPLY、INTERNAL、HANDOFF_NOTIFY，替代旧部署开关。
 
 助手定义支持 `AllowAnonymous`、`ExternalIdentityRequired`，默认均为 false。前者允许匿名创建，后者在新会话创建时冻结 AI 聊天前外部身份绑定要求；已有会话保持原策略。公开助手 ID 必须唯一。

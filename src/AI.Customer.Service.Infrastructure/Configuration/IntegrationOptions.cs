@@ -2,7 +2,7 @@ using AI.Customer.Service.Domain.Ports;
 
 namespace AI.Customer.Service.Infrastructure.Configuration;
 
-/// <summary>独立数据源配置，禁止指向仍由 Java 写入的原业务库。</summary>
+/// <summary>本项目独立数据源的连接与初始化配置。</summary>
 public sealed class DatabaseOptions
 {
     /// <summary>Sqlite、MySql 或 Kingbase，默认 Sqlite；Kingbase 使用 PostgreSQL 兼容协议。</summary>

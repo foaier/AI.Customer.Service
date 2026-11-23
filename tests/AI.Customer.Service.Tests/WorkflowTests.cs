@@ -18,7 +18,7 @@ using static AI.Customer.Service.Tests.TestApplication;
 
 namespace AI.Customer.Service.Tests;
 
-/// <summary>真实 HTTP、数据库事务和 WebSocket 下的客服迁移回归。</summary>
+/// <summary>真实 HTTP、数据库事务和 WebSocket 下的客服业务回归。</summary>
 [TestClass]
 public sealed partial class WorkflowTests
 {
@@ -155,7 +155,7 @@ public sealed partial class WorkflowTests
         }
     }
 
-    /// <summary>纯文本消息幂等、首响、单调回执和终态重放保留 Java 语义。</summary>
+    /// <summary>验证纯文本消息幂等、首响、单调回执和终态重放。</summary>
     [TestMethod]
     public async Task MessagesReceiptsAndTerminalReplay()
     {

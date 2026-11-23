@@ -9,7 +9,7 @@ namespace AI.Customer.Service.Common;
 public static class JsonDefaults
 {
     /// <summary>
-    /// camelCase 字段和枚举名称，保持 Java 客服接口语义
+    /// 统一使用 camelCase 字段和枚举名称
     /// </summary>
     public static JsonSerializerOptions Options { get; } = Create();
 

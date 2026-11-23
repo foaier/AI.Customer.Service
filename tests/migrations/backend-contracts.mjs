@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 
-// 从发布的历史 DDL 升级，验证已有路由和成员不被财务分类迁移覆盖。
+// 从发布的历史 DDL 升级，验证财务分类调整保留已有路由和成员。
 const db = new DatabaseSync(":memory:");
 const sql = (file) => readFileSync(new URL(`../../data/sql/sqlite/${file}`, import.meta.url), "utf8");
 try {

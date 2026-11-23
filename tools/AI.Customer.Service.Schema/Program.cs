@@ -5,7 +5,7 @@ using AI.Customer.Service.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-// 仅离线生成全新独立库 DDL；不打开连接、不执行 SQL、不读取 Java 数据库。
+// 仅离线生成全新独立库 DDL；不打开连接、不执行 SQL。
 var output = Path.GetFullPath(args.Length == 0 ? "data/sql" : args[0]);
 var docs = SchemaDocumentation.Load();
 var dictionary = new StringBuilder("# 独立数据库字典\n\n由 ORM 模型和中文 XML 注释生成。所有表均物理保留，不启用隐式逻辑删除。\n\n");
@@ -26,8 +26,8 @@ foreach (var provider in new[] { "Sqlite", "MySql", "Kingbase" })
     }
     using var db = new CustomerServiceDbContext(options.Options);
     var sql = new StringBuilder($"-- 目的：AI.Customer.Service 首次部署独立数据库；方言：{provider}。\n");
-    sql.AppendLine("-- 前提：全新空库、独占建库权限、已备份目标；禁止在 Java 原业务库或已有 .NET 库执行。");
-    sql.AppendLine("-- 兼容：结构与 Java 原库不同，不包含历史数据搬迁；Kingbase 要求 PostgreSQL 兼容模式。");
+    sql.AppendLine("-- 前提：全新空库、独占建库权限、已备份目标；禁止在已有业务表的数据库执行。");
+    sql.AppendLine("-- 兼容：Kingbase 要求 PostgreSQL 兼容模式。");
     sql.AppendLine("-- 回滚：失败时回滚 DDL 事务（数据库支持时）；否则仅清理本次新建的独立空库后重新部署。");
     sql.AppendLine("-- 隔离：tenant_id 来自签名身份，top_org_id 来自可信助手/用户中心；复合主键和 FK 同时约束归属。");
     sql.AppendLine("-- 约束：NOT NULL 禁止缺失必需事实，UNIQUE 保证幂等，CHECK 约束状态/租约/版本，FK 禁止跨组织引用。");

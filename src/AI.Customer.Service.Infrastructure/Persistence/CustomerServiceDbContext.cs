@@ -12,7 +12,7 @@ namespace AI.Customer.Service.Infrastructure.Persistence;
 /// <param name="options">由数据库协议适配器创建的上下文选项。</param>
 public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbContext> options) : DbContext(options)
 {
-    /// <summary>映射独立数据库结构；不把 Java 原库增量 DDL 自动施加到本项目。</summary>
+    /// <summary>映射本项目的数据库结构、索引和约束。</summary>
     protected override void OnModelCreating(ModelBuilder model)
     {
         model.Ignore<Aggregate>();

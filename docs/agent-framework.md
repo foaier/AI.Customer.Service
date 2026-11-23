@@ -14,7 +14,7 @@
 - `ModelContextPolicy`：官方 SDK 管线中的请求策略；每次生成和工具续轮显式传播租户、组织、助手、会话、轮次、trace 与大会。
 - `Program.cs`：通过 `IHttpClientFactory` 装配真实 MAF Adapter，连接池共享，但身份头和 session 状态按运行创建。
 
-`IChatModel` 仍是稳定领域端口，Domain 和客服应用编排不依赖框架类型。数据库、会话状态和人工业务 owner 保持原 Java 拆分逻辑。
+`IChatModel` 是稳定领域端口，Domain 和客服应用编排不依赖框架类型。Conversation 管理会话状态，CustomerService 管理人工接待业务，Infrastructure 提供数据库访问实现。
 
 ## Session 与业务提交
 
@@ -32,7 +32,7 @@
 
 ## 固定运行约束
 
-模型配置继续使用 `Model:BaseUrl/ApiKey/Model/TimeoutSeconds/SystemPrompt`，含默认值、范围与缺省行为的说明见 [配置文档](configuration.md)。当前 provider 使用 OpenAI 兼容 Chat Completions 端点，不要求原 Java 进程。
+模型配置使用 `Model:BaseUrl/ApiKey/Model/TimeoutSeconds/SystemPrompt`，含默认值、范围与缺省行为的说明见 [配置文档](configuration.md)。当前 provider 使用 OpenAI 兼容 Chat Completions 端点。
 
 - 客服单轮总超时默认 120 秒，可配置 5—240 秒，包含全部工具续轮；分类固定 5 秒。
 - MAF 工具循环最多 4 次模型响应，不并行调用；每次运行最多 8 个工具调用，单次参数最多 4000 字符。

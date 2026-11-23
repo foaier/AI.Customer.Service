@@ -1,4 +1,4 @@
-/** 从独立服务读取公开 OIDC 配置；不复制 Java 环境地址及密钥。 */
+/** 从服务端读取公开 OIDC 配置。 */
 (function () {
     "use strict";
     window.AUTH_SCRIPTS_READY = (async function () {

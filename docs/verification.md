@@ -1,6 +1,6 @@
-# 本次迁移验证记录
+# 项目验证记录
 
-验证日期：2026-11-12。结果仅对应此 .NET 项目，不引用 Java 历史报告作为通过证据。
+验证日期：2026-11-12。以下结果对应当时的项目版本；当前版本应重新执行 README 中的验证命令。
 
 ## 已执行
 
@@ -9,17 +9,16 @@
 | .NET 10 解决方案构建          | 通过，零警告零错误            | 七层业务项目、测试、离线 schema 工具                             |
 | `dotnet test`                 | **50/50 通过**                | 真实 MVC/JWT/SQLite/事务/WebSocket，含 MAF 官方 SDK 及工具执行   |
 | 浏览器端到端                  | **4 组通过，页面异常 0**      | 正式 Kestrel + Microsoft Edge 无界面模式；独立 SQLite 和签名 JWT |
-| C# 统一格式化                 | 已执行 `dotnet format` 并检查 | 仅新项目，不格式化原 Java                                        |
-| JS/HTML/CSS/JSON/Markdown/XML | Prettier 格式化并检查         | 业务代码、项目配置、文档；原规范和 SQL 快照保持原字节            |
+| C# 统一格式化                 | 已执行 `dotnet format` 并检查 | 生产代码、测试和离线工具                                        |
+| JS/HTML/CSS/JSON/Markdown/XML | Prettier 格式化并检查         | 业务代码、项目配置和文档                                         |
 | SQL                           | 已分别按三种方言格式化        | EF Core 离线生成的新库 DDL，附中文字段及约束说明                 |
 | Release 发布                  | 通过                          | `artifacts/publish/AI.Customer.Service.dll`，含 wwwroot          |
 | MAF Release 发布包烟测        | 通过                          | 健康 200、匿名 401、静态页面 200、独立空库初始化成功             |
 | 依赖漏洞检查                  | 当前源未报告漏洞              | NuGet 含传递依赖，前端 npm 依赖由 `frontend/package-lock.json` 锁定 |
-| Java 原仓库                   | `git status --short` 为空     | 未改源码、依赖、配置或原数据库                                   |
 
 自动回归证据：`artifacts/tests/customer-service.trx`。浏览器证据：`artifacts/browser/result.json`、`visitor.png`、`agent.png`、`routing.png`，附独立测试宿主日志。artifacts、bin、obj、临时数据库和本机密钥配置均不进入 Git。
 
-MAF 发布包烟测日志与独立临时数据库保存在 `artifacts/smoke/maf-b964ea8e45aa400ca74251cc650ad577/`，验证后测试进程已停止。Java 迁移来源的 316 项 SHA-256 重新核验一致，原仓库状态为空。
+MAF 发布包烟测日志与独立临时数据库保存在 `artifacts/smoke/maf-b964ea8e45aa400ca74251cc650ad577/`，验证后测试进程已停止。
 
 ## 回归覆盖
 
@@ -56,4 +55,4 @@ MAF 发布包烟测日志与独立临时数据库保存在 `artifacts/smoke/maf-
 
 MySQL 与 Kingbase 只完成 EF 模型和方言 DDL 离线生成，尚未在真实数据库版本执行建库、并发、锁等待、时区和故障恢复验收。Kingbase 使用 PostgreSQL 兼容模式，需先确认目标版本和 Npgsql 兼容性；MySQL 需 8.0.16+ 强制 CHECK。Dockerfile 已提供，当前未运行 Docker 镜像构建或容器实测。
 
-本机 SQLite 验证不代替多节点负载、生产 OIDC 回调、代理 WebSocket、实际邮件送达及持久幂等网关验收。历史业务数据没有从 Java 原库复制；独立项目没有原平台知识检索/语音/地图等非客服能力，范围见 [迁移说明](migration.md)。
+本机 SQLite 验证不代替多节点负载、生产 OIDC 回调、代理 WebSocket、实际邮件送达及持久幂等网关验收。

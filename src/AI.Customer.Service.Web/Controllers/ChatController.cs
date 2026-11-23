@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AI.Customer.Service.Web.Controllers;
 
-/// <summary>独立客服所需的最小 AI 会话 Adapter，沿用 Java 页面路径和 SSE 信封。</summary>
+/// <summary>AI 会话 Adapter，提供页面接口和 SSE 响应信封。</summary>
 /// <param name="request">正式登录身份。</param>
 /// <param name="assistants">可信助手注册表。</param>
 /// <param name="runtime">Conversation owner。</param>
@@ -79,7 +79,7 @@ public sealed class ChatController(RequestAccess request, IAssistantRegistry ass
             throw BusinessException.Forbidden("临时主体与会话凭据不一致");
         if (command.IsReconnect || command.SpeechEnabled)
         {
-            throw BusinessException.Invalid("客服迁移当前只支持新文本轮次，重连请读取持久历史");
+            throw BusinessException.Invalid("当前只支持新文本轮次，重连请读取持久历史");
         }
         var extension = command.Extensions?.GetValueOrDefault("event-assistant");
         var existing = await conversations.FindAsync(request.Actor.TenantId, command.SessionId, ct);

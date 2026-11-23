@@ -113,7 +113,7 @@ builder.Services.AddHostedService<AutoCloseWorker>();
 builder.Services.AddSingleton<RealtimeConnectionLimiter>();
 
 var app = builder.Build();
-// 独立数据库初始化只对空库建表，绝不读取或变更原 Java 数据源。
+// 数据库初始化只对空库建表。
 await using (var scope = app.Services.CreateAsyncScope())
 {
     var database = scope.ServiceProvider.GetRequiredService<DatabaseOptions>();

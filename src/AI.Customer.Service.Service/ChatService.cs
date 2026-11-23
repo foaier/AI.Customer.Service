@@ -196,7 +196,7 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
             return true;
         }, ct);
 
-    /// <summary>卡片安全字段与 Java 前端协议一致。</summary>
+    /// <summary>按前端协议投影卡片可公开的安全字段。</summary>
     public static object ProposalView(Proposal proposal) => new
     {
         proposalId = proposal.Id,

@@ -132,7 +132,7 @@ public sealed record CalendarPreview(CalendarCommand Calendar, DateTimeOffset At
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record RoutingPreview(string AssistantConfigId, string Context);
 
-/// <summary>与 Java 页面一致的 AI 聊天请求，归属只读服务端助手注册表。</summary>
+/// <summary>AI 聊天请求，归属只读服务端助手注册表。</summary>
 /// <param name="SessionId">已有共享会话。</param>
 /// <param name="UserInput">当前原始输入。</param>
 /// <param name="BusinessType">页面兼容业务类型，不授予权限。</param>

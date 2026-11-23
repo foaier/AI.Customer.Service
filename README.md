@@ -1,17 +1,15 @@
 # AI.Customer.Service
 
-从 `byt-cloud-agent` 的智能客服模块独立迁移的 **.NET 10 + Microsoft Agent Framework 1.28.0** 项目，按原 Java 的 Common / Api / Domain / Infrastructure / Core / Service / Web 拆分。源码位于本目录，不依赖 Java 工程构建，也不修改 Java 代码或原数据库。
-
-已迁移 AI 文本咨询、转人工建议与确认、接单/首响/消息/结束、WebSocket、分组路由、营业日历、等待及邮箱跟进、留言认领、最终邮件回复/结案、满意度、可靠任务和分页导出。完整边界及 Java 对照见 [迁移说明](docs/migration.md)。
+智能客服 **.NET 10 + Microsoft Agent Framework 1.28.0** 项目，包含 AI 文本咨询、转人工建议与确认、接单/首响/消息/结束、WebSocket、分组路由、营业日历、等待及邮箱跟进、留言认领、最终邮件回复/结案、满意度、可靠任务和分页导出。
 
 AI 对话、流式输出、语义分类和受限工具执行均通过 Microsoft Agent Framework 的 `ChatClientAgent` 运行，使用官方 OpenAI provider 连接兼容模型端点。框架负责工具调用与结果续轮；业务状态由原有领域规则和成功轮次围栏控制。接入细节见 [Agent Framework 实现](docs/agent-framework.md)。
 
 ## 本机运行
 
-需要稳定版 .NET SDK **10.0.302**（允许同补丁系列更新）。运行后无需 Java、Consul、Redis 或 Node.js；Node.js 仅在构建前端时使用。
+需要稳定版 .NET SDK **10.0.302**（允许同补丁系列更新）。Node.js 用于构建前端和执行开发验证工具。
 
 ```powershell
-cd D:\MyCode\AI.Customer.Service
+cd AI.Customer.Service
 dotnet restore AI.Customer.Service.sln
 dotnet run --project src/AI.Customer.Service.Web
 ```
@@ -55,9 +53,7 @@ dotnet run --project tools/AI.Customer.Service.Schema -- data/sql
 npm --prefix frontend run format:sql
 ```
 
-数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库依次执行 `001_initial.sql`、`002_inbox_auto_close.sql`、`003_chat_notifications.sql`，已有库只执行尚未应用的增量，再设置 `Database:Initialize=false`。字段和 owner 说明：[数据库字典](docs/schema.md)；最新群配置及升级说明：[前端迁移记录](docs/frontend-migration-20261119.md)。`EnsureCreated` 仅初始化空库，不升级旧表。
-
-`data/sql/reference` 和 `docs/java-baseline` 是原项目只读参考快照，不能用于创建此 .NET 数据库，也不能将其中 Java 的历史验收结论当成本项目结果。业务历史数据未自动搬迁，需要另行设计 ETL 和切换窗口。
+数据库脚本位于 `data/sql/{sqlite,mysql,kingbase}`；新库依次执行 `001_initial.sql`、`002_inbox_auto_close.sql`、`003_chat_notifications.sql`、`004_backend_contracts.sql`，已有库只执行尚未应用的增量，再设置 `Database:Initialize=false`。字段和 owner 说明见[数据库字典](docs/schema.md)及[配置说明](docs/configuration.md)。`EnsureCreated` 仅初始化空库，不升级旧表。
 
 ## 验证
 
@@ -87,4 +83,4 @@ dotnet AI.Customer.Service.dll --urls http://localhost:5180
 
 也提供 .NET 10 多阶段 Dockerfile，容器监听 8080。SQLite 目录挂载 `/app/data/runtime`；密钥通过环境变量或 Secret 注入，不能打进镜像。HTTPS、反向代理路径和统一登录回调需与实际部署域名一致；WebSocket 需要代理支持 Upgrade。
 
-保留目标仓库原有 MIT LICENSE。本次迁移未自动提交或推送。
+项目采用 [MIT License](LICENSE)。

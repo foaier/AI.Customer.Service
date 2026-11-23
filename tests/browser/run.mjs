@@ -284,7 +284,7 @@ try {
     await new Promise((resolve) => external.close(resolve));
     await writeFile(path.join(artifacts, "server.log"), log);
     await writeFile(path.join(artifacts, "result.json"), JSON.stringify({ checks, errors }, null, 2));
-    // 只移除本测试刚创建并保存的临时目录，绝不触碰项目数据和 Java 原库。
+    // 只移除本测试刚创建并保存的临时目录，保留项目数据。
     assert.ok(path.resolve(temporary).startsWith(path.resolve(tmpdir()) + path.sep));
     await rm(temporary, { recursive: true, force: true });
 }

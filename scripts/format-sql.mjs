@@ -7,7 +7,7 @@ const require = createRequire(new URL("../frontend/package.json", import.meta.ur
 const { format } = require("sql-formatter");
 const root = fileURLToPath(new URL("../", import.meta.url));
 
-// 只格式化本项目从 ORM 生成的初始脚本，原 Java SQL 快照保持字节不变。
+// 格式化本项目从 ORM 生成的三种方言初始脚本。
 for (const [provider, language] of [
     ["sqlite", "sqlite"],
     ["mysql", "mysql"],

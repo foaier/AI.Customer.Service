@@ -153,7 +153,7 @@ public sealed class ProtocolTests
         await adapter.SendAsync(task, default);
     }
 
-    /// <summary>沿用 Java 的明确请求样例，否定、引用和假设不能直接授权。</summary>
+    /// <summary>仅明确请求能够授权，否定、引用和假设不能直接授权。</summary>
     [TestMethod]
     public void ExplicitHandoffRequiresOriginalConsent()
     {

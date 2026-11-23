@@ -1,6 +1,6 @@
 # AI.Customer.Service 前端
 
-独立 React 前端包含 C 端访客咨询和 B 端客服工作台，连接同级 .NET 10 API。Agent、模型流式对话和工具调用由后端 Microsoft Agent Framework 执行；浏览器不承担模型编排，也不依赖或修改原 Java、Vue 前端。
+独立 React 前端包含 C 端访客咨询和 B 端客服工作台，连接同级 .NET 10 API。Agent、模型流式对话和工具调用由后端 Microsoft Agent Framework 执行。
 
 ## 本地运行
 

@@ -1,6 +1,6 @@
 # 收件箱提醒与超时结单
 
-此功能同步上游 2026-11-18 客服契约，新增坐席收件箱汇总、留言首次查看回执，以及客服回复后访客沉默五分钟自动结单。
+提供坐席收件箱汇总、留言首次查看回执，以及客服回复后访客沉默五分钟自动结单。
 
 ## 收件箱
 
@@ -35,4 +35,4 @@ Content-Type: application/json
 - SQLite：`data/sql/sqlite/002_inbox_auto_close.sql`
 - Kingbase：`data/sql/kingbase/002_inbox_auto_close.sql`
 
-升级脚本按一次性迁移编写；升级期间停止并发 DDL。SQLite 的状态约束由应用执行，MySQL/Kingbase 同时创建数据库 CHECK 约束。
+升级脚本只执行一次；升级期间停止并发 DDL。SQLite 的状态约束由应用执行，MySQL/Kingbase 同时创建数据库 CHECK 约束。
