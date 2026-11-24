@@ -87,21 +87,39 @@ public sealed record WaitingChoice(long ExpectedVersion, string Action, string? 
 /// <summary>
 /// 明确留言表单，邮箱只写等待 owner。
 /// </summary>
-/// <param name="RequestId">稳定提交键 </param>
-/// <param name="ExpectedVersion">原等待版本 </param>
-/// <param name="Email">实际回复邮箱 </param>
-/// <param name="ContactName">可空称呼，最多 100 字符 </param>
-/// <param name="Content">1 至 4000 字符留言 </param>
+/// <param name="RequestId">
+/// 稳定提交键。
+/// </param>
+/// <param name="ExpectedVersion">
+/// 原等待版本。
+/// </param>
+/// <param name="Email">
+/// 实际回复邮箱。
+/// </param>
+/// <param name="ContactName">
+/// 可空称呼，最多 100 字符。
+/// </param>
+/// <param name="Content">
+/// 1 至 4000 字符留言。
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record FollowupFormCommand(string RequestId, long ExpectedVersion, string Email, string? ContactName, string Content);
 
 /// <summary>
 /// 客服最终回复，不接受客户端指定收件地址。
 /// </summary>
-/// <param name="RequestId">稳定首次提交键 </param>
-/// <param name="ExpectedVersion">回复版本，尚未提交时为 1</param>
-/// <param name="Subject">1 至 200 字符且禁止换行 </param>
-/// <param name="Content"> 1 至 10000 字符纯文本 </param>
+/// <param name="RequestId">
+/// 稳定首次提交键。
+/// </param>
+/// <param name="ExpectedVersion">
+/// 回复版本，尚未提交时为 1。
+/// </param>
+/// <param name="Subject">
+/// 1 至 200 字符且禁止换行。
+/// </param>
+/// <param name="Content">
+/// 1 至 10000 字符纯文本。
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ReplyCommand(string RequestId, long ExpectedVersion, string Subject, string Content);
 
@@ -111,13 +129,18 @@ public sealed record ReplyCommand(string RequestId, long ExpectedVersion, string
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record FollowupReceiptCommand(string Kind, string TicketId);
 
-
 /// <summary>
-/// 同组改派请求，目标资格由服务器实时核验
+/// 同组改派请求，目标资格由服务器实时核验。
 /// </summary>
-/// <param name="RequestId">稳定首次改派键</param>
-/// <param name="ExpectedVersion">接待版本</param>
-/// <param name="TargetAccountId">同组其它账号引用</param>
+/// <param name="RequestId">
+/// 稳定首次改派键。
+/// </param>
+/// <param name="ExpectedVersion">
+/// 接待版本。
+/// </param>
+/// <param name="TargetAccountId">
+/// 同组其它账号引用。
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record TransferCommand(string RequestId, long ExpectedVersion, string TargetAccountId);
 
