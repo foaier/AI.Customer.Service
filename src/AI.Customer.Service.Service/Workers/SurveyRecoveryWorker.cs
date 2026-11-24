@@ -8,12 +8,8 @@ namespace AI.Customer.Service.Service.Workers;
 /// <summary>
 /// 每十秒恢复未完成资格评估的成功轮次，不创建或扫描用户沉默期限。
 /// </summary>
-/// <param name="scopes">
-/// 创建独立依赖和事务作用域。
-/// </param>
-/// <param name="logger">
-/// 仅记录业务引用及失败类型。
-/// </param>
+/// <param name="scopes"> 创建独立依赖和事务作用域。 </param>
+/// <param name="logger"> 仅记录业务引用及失败类型。 </param>
 public sealed class SurveyRecoveryWorker(IServiceScopeFactory scopes, ILogger<SurveyRecoveryWorker> logger) : BackgroundService
 {
     /// <summary>

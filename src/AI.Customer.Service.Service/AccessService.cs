@@ -8,18 +8,10 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 统一认证后准入，外部账号核验在事务外，本地成员权限在事务内重新读取。
 /// </summary>
-/// <param name="accounts">
-/// 用户中心只读端口。
-/// </param>
-/// <param name="configuration">
-/// 本地业务组仓储。
-/// </param>
-/// <param name="assistants">
-/// 可信助手注册表。
-/// </param>
-/// <param name="runtime">
-/// Conversation owner 的范围端口。
-/// </param>
+/// <param name="accounts"> 用户中心只读端口。 </param>
+/// <param name="configuration"> 本地业务组仓储。 </param>
+/// <param name="assistants"> 可信助手注册表。 </param>
+/// <param name="runtime"> Conversation owner 的范围端口。 </param>
 public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepository configuration, IAssistantRegistry assistants, ConversationRuntime runtime)
 {
     /// <summary>

@@ -14,21 +14,11 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// AI 会话 Adapter，提供页面接口和 SSE 响应信封。
 /// </summary>
-/// <param name="request">
-/// 正式登录身份。
-/// </param>
-/// <param name="assistants">
-/// 可信助手注册表。
-/// </param>
-/// <param name="runtime">
-/// Conversation owner。
-/// </param>
-/// <param name="conversations">
-/// 最小真实历史。
-/// </param>
-/// <param name="chat">
-/// 模型与工具编排。
-/// </param>
+/// <param name="request"> 正式登录身份 </param>
+/// <param name="assistants"> 可信助手注册表 </param>
+/// <param name="runtime"> Conversation owner </param>
+/// <param name="conversations"> 最小真实历史 </param>
+/// <param name="chat"> 模型与工具编排 </param>
 [ApiController]
 [Authorize]
 [Route("api")]

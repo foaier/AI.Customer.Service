@@ -11,9 +11,7 @@ namespace AI.Customer.Service.Infrastructure.Persistence;
 /// <summary>
 /// 两个本地业务 owner 共用的事务数据源，ORM 配置不进入领域层。
 /// </summary>
-/// <param name="options">
-/// 由数据库协议适配器创建的上下文选项。
-/// </param>
+/// <param name="options"> 由数据库协议适配器创建的上下文选项。 </param>
 public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbContext> options) : DbContext(options)
 {
     /// <summary>

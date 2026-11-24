@@ -7,15 +7,9 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 只读聊天及 AI 评价导出编排，不包含系统提示词、留言邮箱或模型请求载荷。
 /// </summary>
-/// <param name="conversations">
-/// Conversation owner。
-/// </param>
-/// <param name="surveys">
-/// 调查 owner。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
+/// <param name="conversations"> Conversation owner </param>
+/// <param name="surveys"> 调查 owner </param>
+/// <param name="clock"> UTC 时钟 </param>
 public sealed class ExportService(IConversationRepository conversations, ISurveyRepository surveys, TimeProvider clock)
 {
     /// <summary>

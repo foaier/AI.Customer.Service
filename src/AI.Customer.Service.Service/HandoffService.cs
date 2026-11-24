@@ -11,39 +11,17 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 转人工申请和建议确认的应用编排，分类在事务外、路由冻结在事务内。
 /// </summary>
-/// <param name="repository">
-/// 客服申请 owner。
-/// </param>
-/// <param name="configuration">
-/// 本地路由 owner。
-/// </param>
-/// <param name="transactions">
-/// 共享事务。
-/// </param>
-/// <param name="runtime">
-/// Conversation 回复权端口。
-/// </param>
-/// <param name="model">
-/// 主题语义分类端口。
-/// </param>
-/// <param name="conversations">
-/// 最小真实历史端口。
-/// </param>
-/// <param name="journal">
-/// 幂等回执及可靠事件。
-/// </param>
-/// <param name="waitingService">
-/// 同事务保存访客确认的联系方式。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="options">
-/// 建议有效期规则。
-/// </param>
-/// <param name="notifications">
-/// 新申请同事务登记即时通知。
-/// </param>
+/// <param name="repository"> 客服申请 owner。 </param>
+/// <param name="configuration"> 本地路由 owner。 </param>
+/// <param name="transactions"> 共享事务。 </param>
+/// <param name="runtime"> Conversation 回复权端口。 </param>
+/// <param name="model"> 主题语义分类端口。 </param>
+/// <param name="conversations"> 最小真实历史端口。 </param>
+/// <param name="journal"> 幂等回执及可靠事件。 </param>
+/// <param name="waitingService"> 同事务保存访客确认的联系方式。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
+/// <param name="options"> 建议有效期规则。 </param>
+/// <param name="notifications"> 新申请同事务登记即时通知。 </param>
 public sealed class HandoffService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, IChatModel model, IConversationRepository conversations, CommandJournal journal,
     WaitingService waitingService, TimeProvider clock, IOptions<CustomerServiceOptions> options, HandoffNotificationService notifications)

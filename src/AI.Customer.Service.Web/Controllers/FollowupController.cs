@@ -10,15 +10,9 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 当前会话等待及固定原周期留言回复 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 正式访客或客服准入。
-/// </param>
-/// <param name="waiting">
-/// 等待应用端口。
-/// </param>
-/// <param name="followups">
-/// 跟进工单应用端口。
-/// </param>
+/// <param name="request"> 正式访客或客服准入 </param>
+/// <param name="waiting"> 等待应用端口 </param>
+/// <param name="followups"> 跟进工单应用端口 </param>
 public sealed class FollowupController(RequestAccess request, WaitingService waiting, FollowupService followups) : CustomerServiceControllerBase(request)
 {
     /// <summary>

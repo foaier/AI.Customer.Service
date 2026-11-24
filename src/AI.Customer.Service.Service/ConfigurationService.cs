@@ -11,21 +11,11 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 本地业务分组及日历的配置编排，不维护用户中心账号主数据。
 /// </summary>
-/// <param name="repository">
-/// 配置 owner。
-/// </param>
-/// <param name="transactions">
-/// 共享本地事务。
-/// </param>
-/// <param name="accounts">
-/// 事务外核验账号。
-/// </param>
-/// <param name="access">
-/// 统一准入。
-/// </param>
-/// <param name="options">
-/// 部署默认规则。
-/// </param>
+/// <param name="repository"> 配置 owner。 </param>
+/// <param name="transactions"> 共享本地事务。 </param>
+/// <param name="accounts"> 事务外核验账号。 </param>
+/// <param name="access"> 统一准入。 </param>
+/// <param name="options"> 部署默认规则。 </param>
 public sealed class ConfigurationService(IConfigurationRepository repository, IUnitOfWork transactions,
     IAccountDirectory accounts, AccessService access, IOptions<CustomerServiceOptions> options)
 {

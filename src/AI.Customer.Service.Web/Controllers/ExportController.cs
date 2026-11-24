@@ -9,18 +9,10 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 聊天及评价的分页 JSON 下载和客服运行指标。
 /// </summary>
-/// <param name="request">
-/// 组织权限。
-/// </param>
-/// <param name="access">
-/// 助手归属核验。
-/// </param>
-/// <param name="exports">
-/// 安全导出应用端口。
-/// </param>
-/// <param name="metrics">
-/// 完整窗口及当前积压聚合端口。
-/// </param>
+/// <param name="request"> 组织权限 </param>
+/// <param name="access"> 助手归属核验 </param>
+/// <param name="exports"> 安全导出应用端口 </param>
+/// <param name="metrics"> 完整窗口及当前积压聚合端口 </param>
 public sealed class ExportController(RequestAccess request, AccessService access, ExportService exports, MetricsService metrics) : CustomerServiceControllerBase(request)
 {
     /// <summary>

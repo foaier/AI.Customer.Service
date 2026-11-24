@@ -11,24 +11,12 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 组织分组、正式日历及外部候选目录 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 组织设置权限。
-/// </param>
-/// <param name="configuration">
-/// 本地配置应用端口。
-/// </param>
-/// <param name="accounts">
-/// 外部账号只读目录。
-/// </param>
-/// <param name="model">
-/// 语义分类协议端口。
-/// </param>
-/// <param name="access">
-/// 可信助手范围。
-/// </param>
-/// <param name="notifications">
-/// 持久通知配置和密钥保留规则。
-/// </param>
+/// <param name="request"> 组织设置权限 </param>
+/// <param name="configuration"> 本地配置应用端口 </param>
+/// <param name="accounts"> 外部账号只读目录 </param>
+/// <param name="model"> 语义分类协议端口 </param>
+/// <param name="access"> 可信助手范围 </param>
+/// <param name="notifications"> 持久通知配置和密钥保留规则 </param>
 public sealed class ConfigurationController(RequestAccess request, ConfigurationService configuration,
     IAccountDirectory accounts, IChatModel model, AccessService access, ChatNotificationService notifications) : CustomerServiceControllerBase(request)
 {

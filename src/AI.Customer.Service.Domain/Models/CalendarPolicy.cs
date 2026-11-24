@@ -93,16 +93,8 @@ public sealed class CalendarPolicy : Aggregate
 /// <summary>
 /// 一份不可变日历快照计算的营业窗口。
 /// </summary>
-/// <param name="Open">
-/// 当前是否营业。
-/// </param>
-/// <param name="NextOpensAt">
-/// 下次开门 UTC 时间。
-/// </param>
-/// <param name="ClosesAt">
-/// 当天闭门 UTC 时间。
-/// </param>
-/// <param name="Version">
-/// 业务日历版本。
-/// </param>
+/// <param name="Open"> 当前是否营业。 </param>
+/// <param name="NextOpensAt"> 下次开门 UTC 时间。 </param>
+/// <param name="ClosesAt"> 当天闭门 UTC 时间。 </param>
+/// <param name="Version"> 业务日历版本。 </param>
 public sealed record CalendarWindow(bool Open, DateTime NextOpensAt, DateTime ClosesAt, string Version);

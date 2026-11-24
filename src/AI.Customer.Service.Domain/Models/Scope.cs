@@ -3,29 +3,17 @@ namespace AI.Customer.Service.Domain.Models;
 /// <summary>
 /// 由认证和持久会话绑定的可信业务范围，客户端不得覆盖归属。
 /// </summary>
-/// <param name="ConversationId">
-/// AI 与人工共享的会话标识。
-/// </param>
-/// <param name="AssistantConfigId">
-/// 可信助手配置引用。
-/// </param>
-/// <param name="BventId">
-/// 可空的大会引用。
-/// </param>
+/// <param name="ConversationId"> AI 与人工共享的会话标识。 </param>
+/// <param name="AssistantConfigId"> 可信助手配置引用。 </param>
+/// <param name="BventId"> 可空的大会引用。 </param>
 public sealed record Scope(string ConversationId, string AssistantConfigId, string? BventId);
 
 /// <summary>
 /// 经 JWT 和用户中心确认的请求主体，不保存令牌。
 /// </summary>
-/// <param name="AccountId">
-/// 认证账号。
-/// </param>
-/// <param name="TraceId">
-/// 当前命令的审计关联标识。
-/// </param>
-/// <param name="GuestConversationId">
-/// 匿名凭据限定的唯一会话；登录账号为空。
-/// </param>
+/// <param name="AccountId"> 认证账号。 </param>
+/// <param name="TraceId"> 当前命令的审计关联标识。 </param>
+/// <param name="GuestConversationId"> 匿名凭据限定的唯一会话；登录账号为空。 </param>
 public sealed record Actor(string AccountId, string TraceId, string? GuestConversationId = null);
 
 /// <summary>

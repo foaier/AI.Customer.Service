@@ -8,9 +8,7 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// <summary>
 /// 从服务端受控配置读取助手及其可信归属。
 /// </summary>
-/// <param name="options">
-/// 部署维护的最小运行定义。
-/// </param>
+/// <param name="options"> 部署维护的最小运行定义。 </param>
 public sealed class ConfiguredAssistantRegistry(IOptions<AssistantOptions> options) : IAssistantRegistry
 {
     /// <summary>

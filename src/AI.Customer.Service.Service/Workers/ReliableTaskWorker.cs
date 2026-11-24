@@ -7,12 +7,8 @@ namespace AI.Customer.Service.Service.Workers;
 /// <summary>
 /// 每五秒恢复可靠任务，每轮独立依赖作用域，不依赖线程本地请求上下文。
 /// </summary>
-/// <param name="scopes">
-/// 创建各轮独立事务作用域。
-/// </param>
-/// <param name="logger">
-/// 后台错误日志。
-/// </param>
+/// <param name="scopes"> 创建各轮独立事务作用域。 </param>
+/// <param name="logger"> 后台错误日志。 </param>
 public sealed class ReliableTaskWorker(IServiceScopeFactory scopes, ILogger<ReliableTaskWorker> logger) : BackgroundService
 {
     /// <summary>

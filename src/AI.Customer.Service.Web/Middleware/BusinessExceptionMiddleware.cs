@@ -7,12 +7,8 @@ namespace AI.Customer.Service.Web.Middleware;
 /// <summary>
 /// 将业务错误统一映射为客服响应信封，响应不包含内部异常、SQL 或正文。
 /// </summary>
-/// <param name="next">
-/// 后续请求管线。
-/// </param>
-/// <param name="logger">
-/// 错误类型日志。
-/// </param>
+/// <param name="next"> 后续请求管线。 </param>
+/// <param name="logger"> 错误类型日志。 </param>
 public sealed class BusinessExceptionMiddleware(RequestDelegate next, ILogger<BusinessExceptionMiddleware> logger)
 {
     /// <summary>

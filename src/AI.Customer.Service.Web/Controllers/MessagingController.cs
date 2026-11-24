@@ -8,12 +8,8 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 人工纯文本、持久序列恢复、回执及 AI 最小历史 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 访客与客服准入。
-/// </param>
-/// <param name="messages">
-/// 消息应用端口。
-/// </param>
+/// <param name="request"> 访客与客服准入 </param>
+/// <param name="messages"> 消息应用端口 </param>
 public sealed class MessagingController(RequestAccess request, MessagingService messages) : CustomerServiceControllerBase(request)
 {
     /// <summary>

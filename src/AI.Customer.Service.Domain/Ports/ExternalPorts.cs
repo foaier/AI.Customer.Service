@@ -43,24 +43,12 @@ public interface IAssistantRegistry
 /// <summary>
 /// 部署配置或助手服务维护的运行定义，不包含模型密钥。
 /// </summary>
-/// <param name="Id">
-/// 助手配置引用。
-/// </param>
-/// <param name="BventId">
-/// 大会引用。
-/// </param>
-/// <param name="Name">
-/// 助手展示名。
-/// </param>
-/// <param name="Language">
-/// 默认语言。
-/// </param>
-/// <param name="AllowAnonymous">
-/// 是否明确开放匿名咨询，默认 false。
-/// </param>
-/// <param name="ExternalIdentityRequired">
-/// 新会话是否必须先绑定第三方身份再聊天，默认 false。
-/// </param>
+/// <param name="Id"> 助手配置引用。 </param>
+/// <param name="BventId"> 大会引用。 </param>
+/// <param name="Name"> 助手展示名。 </param>
+/// <param name="Language"> 默认语言。 </param>
+/// <param name="AllowAnonymous"> 是否明确开放匿名咨询，默认 false。 </param>
+/// <param name="ExternalIdentityRequired"> 新会话是否必须先绑定第三方身份再聊天，默认 false。 </param>
 public sealed record AssistantDefinition(string Id, string? BventId = null, string Name = "智能客服", string Language = "zh-CN",
     bool AllowAnonymous = false, bool ExternalIdentityRequired = false);
 
@@ -83,35 +71,19 @@ public interface IChatModel
 /// <summary>
 /// 模型输入，可信范围单独绑定，模型不得覆盖。
 /// </summary>
-/// <param name="Scope">
-/// 完整可信范围。
-/// </param>
-/// <param name="TurnId">
-/// 服务端 AI 轮次。
-/// </param>
-/// <param name="TraceId">
-/// 跨调用追踪标识。
-/// </param>
-/// <param name="History">
-/// 最小成功历史。
-/// </param>
-/// <param name="UserInput">
-/// 当前原始用户输入。
-/// </param>
+/// <param name="Scope"> 完整可信范围。 </param>
+/// <param name="TurnId"> 服务端 AI 轮次。 </param>
+/// <param name="TraceId"> 跨调用追踪标识。 </param>
+/// <param name="History"> 最小成功历史。 </param>
+/// <param name="UserInput"> 当前原始用户输入。 </param>
 public sealed record ModelRequest(Scope Scope, string TurnId, string TraceId, IReadOnlyList<AiTurn> History, string UserInput);
 
 /// <summary>
 /// 模型的文本或受限工具候选，工具字段仍需服务端验证。
 /// </summary>
-/// <param name="Text">
-/// 可展示文本增量。
-/// </param>
-/// <param name="ToolName">
-/// 白名单工具名。
-/// </param>
-/// <param name="Arguments">
-/// 工具 JSON 参数，不含可信身份。
-/// </param>
+/// <param name="Text"> 可展示文本增量。 </param>
+/// <param name="ToolName"> 白名单工具名。 </param>
+/// <param name="Arguments"> 工具 JSON 参数，不含可信身份。 </param>
 public sealed record ModelDelta(string? Text, string? ToolName = null, string? Arguments = null);
 
 /// <summary>

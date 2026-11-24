@@ -9,12 +9,8 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 访客明确申请、最新状态及模型建议决策 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 访客准入。
-/// </param>
-/// <param name="handoff">
-/// 人工申请应用端口。
-/// </param>
+/// <param name="request"> 访客准入 </param>
+/// <param name="handoff"> 人工申请应用端口 </param>
 public sealed class HandoffController(RequestAccess request, HandoffService handoff) : CustomerServiceControllerBase(request)
 {
     /// <summary>

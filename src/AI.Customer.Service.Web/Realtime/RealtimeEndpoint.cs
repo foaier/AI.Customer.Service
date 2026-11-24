@@ -391,24 +391,12 @@ public static class RealtimeEndpoint
     /// <summary>
     /// 严格认证首帧，不接受自报 tenant、principal、组或容量。
     /// </summary>
-    /// <param name="Authorization">
-    /// 已登录 Bearer JWT。
-    /// </param>
-    /// <param name="Agent">
-    /// 是否客服订阅。
-    /// </param>
-    /// <param name="ConversationId">
-    /// 可空，客服为空时订阅队列。
-    /// </param>
-    /// <param name="AssistantConfigId">
-    /// 客服待核验助手。
-    /// </param>
-    /// <param name="AfterSeq">
-    /// 最后展示的人工持久序列。
-    /// </param>
-    /// <param name="Credential">
-    /// 匿名会话凭据，不能与登录令牌混用。
-    /// </param>
+    /// <param name="Authorization"> 已登录 Bearer JWT。 </param>
+    /// <param name="Agent"> 是否客服订阅。 </param>
+    /// <param name="ConversationId"> 可空，客服为空时订阅队列。 </param>
+    /// <param name="AssistantConfigId"> 客服待核验助手。 </param>
+    /// <param name="AfterSeq"> 最后展示的人工持久序列。 </param>
+    /// <param name="Credential"> 匿名会话凭据，不能与登录令牌混用。 </param>
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record FirstFrame(string? Authorization, bool Agent, string? ConversationId, string? AssistantConfigId, long AfterSeq, string? Credential = null);
 

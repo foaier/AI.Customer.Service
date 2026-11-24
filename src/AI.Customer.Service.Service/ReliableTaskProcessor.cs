@@ -10,30 +10,14 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 可靠任务领取、事务外投递及租约确认，崩溃重启后保持至少一次恢复。
 /// </summary>
-/// <param name="tasks">
-/// 任务 owner。
-/// </param>
-/// <param name="followups">
-/// 最终回复 owner。
-/// </param>
-/// <param name="transactions">
-/// 短事务边界。
-/// </param>
-/// <param name="notification">
-/// 出站协议端口。
-/// </param>
-/// <param name="handoff">
-/// 系统转人工应用端口。
-/// </param>
-/// <param name="conversations">
-/// 系统故障来源轮次核验。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="logger">
-/// 不记录载荷的结构化日志。
-/// </param>
+/// <param name="tasks"> 任务 owner。 </param>
+/// <param name="followups"> 最终回复 owner。 </param>
+/// <param name="transactions"> 短事务边界。 </param>
+/// <param name="notification"> 出站协议端口。 </param>
+/// <param name="handoff"> 系统转人工应用端口。 </param>
+/// <param name="conversations"> 系统故障来源轮次核验。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
+/// <param name="logger"> 不记录载荷的结构化日志。 </param>
 public sealed class ReliableTaskProcessor(ITaskRepository tasks, IFollowupRepository followups, IUnitOfWork transactions,
     INotificationPort notification, HandoffService handoff, IConversationRepository conversations, TimeProvider clock, ILogger<ReliableTaskProcessor> logger)
 {

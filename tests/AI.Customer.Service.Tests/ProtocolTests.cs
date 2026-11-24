@@ -190,9 +190,7 @@ public sealed class ProtocolTests
 /// <summary>
 /// 单次 HTTP 协议测试处理器；不注册到生产依赖容器。
 /// </summary>
-/// <param name="respond">
-/// 检查出站请求并生成替身响应。
-/// </param>
+/// <param name="respond"> 检查出站请求并生成替身响应。 </param>
 internal sealed class ProtocolHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> respond) : HttpMessageHandler
 {
     /// <summary>

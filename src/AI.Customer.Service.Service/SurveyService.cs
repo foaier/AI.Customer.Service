@@ -13,33 +13,15 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// AI 成功结束资格、单次评价和不满意后明确 opt-in 的应用编排。
 /// </summary>
-/// <param name="repository">
-/// 调查 owner。
-/// </param>
-/// <param name="conversations">
-/// 真实成功历史。
-/// </param>
-/// <param name="runtime">
-/// 回复权及会话范围。
-/// </param>
-/// <param name="handoff">
-/// 客服申请应用端口。
-/// </param>
-/// <param name="transactions">
-/// 共享事务。
-/// </param>
-/// <param name="journal">
-/// 稳定回执。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="options">
-/// 调查有效期。
-/// </param>
-/// <param name="reception">
-/// 客服历史覆盖核验，不以当前 AI owner 代替从未转人工的事实。
-/// </param>
+/// <param name="repository"> 调查 owner。 </param>
+/// <param name="conversations"> 真实成功历史。 </param>
+/// <param name="runtime"> 回复权及会话范围。 </param>
+/// <param name="handoff"> 客服申请应用端口。 </param>
+/// <param name="transactions"> 共享事务。 </param>
+/// <param name="journal"> 稳定回执。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
+/// <param name="options"> 调查有效期 </param>
+/// <param name="reception"> 客服历史覆盖核验，不以当前 AI owner 代替从未转人工的事实 </param>
 public sealed class SurveyService(ISurveyRepository repository, IConversationRepository conversations, ConversationRuntime runtime,
     HandoffService handoff, IUnitOfWork transactions, CommandJournal journal, TimeProvider clock, IOptions<CustomerServiceOptions> options,
     IReceptionRepository reception)

@@ -8,9 +8,7 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 正式客服接口共同信封及可信身份，不承担业务状态推进。
 /// </summary>
-/// <param name="request">
-/// 当前 Web 准入。
-/// </param>
+/// <param name="request"> 当前 Web 准入 </param>
 [ApiController]
 [Authorize]
 [Route("api/customer-service")]

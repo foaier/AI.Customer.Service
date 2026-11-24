@@ -8,12 +8,8 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// AI 单次满意度及不满意人工选择 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 原访客准入。
-/// </param>
-/// <param name="surveys">
-/// 调查应用端口。
-/// </param>
+/// <param name="request"> 原访客准入 </param>
+/// <param name="surveys">调查应用端口 </param>
 public sealed class SurveyController(RequestAccess request, SurveyService surveys) : CustomerServiceControllerBase(request)
 {
     /// <summary>

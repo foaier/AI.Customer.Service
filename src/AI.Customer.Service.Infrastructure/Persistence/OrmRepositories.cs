@@ -7,9 +7,7 @@ namespace AI.Customer.Service.Infrastructure.Persistence;
 /// <summary>
 /// Conversation owner 的类型化 ORM 仓储，完整隔离条件不向应用层泄露 DbSet。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class ConversationRepository(CustomerServiceDbContext db) : IConversationRepository
 {
     /// <summary>
@@ -119,9 +117,7 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
 /// <summary>
 /// Customer Service owner 的接待、建议、等待和不可变回执 ORM 仓储。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptionRepository
 {
     /// <summary>
@@ -204,9 +200,7 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
 /// <summary>
 /// 路由、日历和在线运行事实的组织隔离 ORM 仓储。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConfigurationRepository
 {
     /// <summary>
@@ -250,9 +244,7 @@ public sealed class ConfigurationRepository(CustomerServiceDbContext db) : IConf
 /// <summary>
 /// 原跟进表单及最终回复的隔离 ORM 仓储，不直接操作 Conversation 表。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupRepository
 {
     /// <summary>
@@ -309,9 +301,7 @@ public sealed class FollowupRepository(CustomerServiceDbContext db) : IFollowupR
 /// <summary>
 /// 调查 owner 的一会话一调查 ORM 仓储。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class SurveyRepository(CustomerServiceDbContext db) : ISurveyRepository
 {
     /// <summary>
@@ -338,9 +328,7 @@ public sealed class SurveyRepository(CustomerServiceDbContext db) : ISurveyRepos
 /// <summary>
 /// 可靠投递任务 ORM 仓储，领取前过滤通道并保留租户组织条件。
 /// </summary>
-/// <param name="db">
-/// 共享事务上下文。
-/// </param>
+/// <param name="db"> 共享事务上下文。 </param>
 public sealed class TaskRepository(CustomerServiceDbContext db) : ITaskRepository
 {
     /// <summary>

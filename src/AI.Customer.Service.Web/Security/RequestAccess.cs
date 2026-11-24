@@ -10,18 +10,10 @@ namespace AI.Customer.Service.Web.Security;
 /// <summary>
 /// Web 身份解析，归属只能来自已验证声明和持久会话，不读取身份自报头。
 /// </summary>
-/// <param name="accessor">
-/// 当前请求。
-/// </param>
-/// <param name="options">
-/// 认证声明映射。
-/// </param>
-/// <param name="access">
-/// 业务准入端口。
-/// </param>
-/// <param name="conversations">
-/// 会话范围只读端口。
-/// </param>
+/// <param name="accessor"> 当前请求。 </param>
+/// <param name="options"> 认证声明映射。 </param>
+/// <param name="access"> 业务准入端口。 </param>
+/// <param name="conversations"> 会话范围只读端口。 </param>
 public sealed class RequestAccess(IHttpContextAccessor accessor, IOptions<AuthenticationOptions> options,
     AccessService access, IConversationRepository conversations)
 {

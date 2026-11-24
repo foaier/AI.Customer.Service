@@ -12,30 +12,14 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 认领、结束、取消和改派短事务，先复核权限再处理幂等回执。
 /// </summary>
-/// <param name="repository">
-/// 接待 owner。
-/// </param>
-/// <param name="configuration">
-/// 组织级运行与配置 owner。
-/// </param>
-/// <param name="transactions">
-/// 跨 owner 共享事务。
-/// </param>
-/// <param name="runtime">
-/// Conversation 回复权端口。
-/// </param>
-/// <param name="access">
-/// 当前成员权限。
-/// </param>
-/// <param name="journal">
-/// 回执及审计事实。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="options">
-/// 同组织容量。
-/// </param>
+/// <param name="repository"> 接待 owner。 </param>
+/// <param name="configuration"> 组织级运行与配置 owner。 </param>
+/// <param name="transactions"> 跨 owner 共享事务。 </param>
+/// <param name="runtime"> Conversation 回复权端口。 </param>
+/// <param name="access"> 当前成员权限。 </param>
+/// <param name="journal"> 回执及审计事实。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
+/// <param name="options"> 同组织容量。 </param>
 public sealed class ReceptionService(IReceptionRepository repository, IConfigurationRepository configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, AccessService access, CommandJournal journal, TimeProvider clock, IOptions<CustomerServiceOptions> options)
 {

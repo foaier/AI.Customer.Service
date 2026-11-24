@@ -11,30 +11,14 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 留言提交、原工单认领和最终回复编排，不向未认领客服开放正文或邮箱。
 /// </summary>
-/// <param name="repository">
-/// 工单 owner。
-/// </param>
-/// <param name="reception">
-/// 原接待周期 owner。
-/// </param>
-/// <param name="waitingService">
-/// 等待状态端口。
-/// </param>
-/// <param name="transactions">
-/// 共享事务。
-/// </param>
-/// <param name="access">
-/// 当前成员准入。
-/// </param>
-/// <param name="journal">
-/// 不可变回执和可靠任务。
-/// </param>
-/// <param name="tasks">
-/// 投递状态端口。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
+/// <param name="repository"> 工单 owner。 </param>
+/// <param name="reception"> 原接待周期 owner。 </param>
+/// <param name="waitingService"> 等待状态端口。 </param>
+/// <param name="transactions"> 共享事务。 </param>
+/// <param name="access"> 当前成员准入。 </param>
+/// <param name="journal"> 不可变回执和可靠任务。 </param>
+/// <param name="tasks"> 投递状态端口。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
 public sealed class FollowupService(IFollowupRepository repository, IReceptionRepository reception, WaitingService waitingService,
     IUnitOfWork transactions, AccessService access, CommandJournal journal, ITaskRepository tasks, TimeProvider clock)
 {

@@ -8,18 +8,10 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 跨 owner 只读指标编排，固定最近 24 小时窗口且不输出高基数身份标签。
 /// </summary>
-/// <param name="reception">
-/// 客服只读聚合端口。
-/// </param>
-/// <param name="surveys">
-/// Conversation 调查只读聚合端口。
-/// </param>
-/// <param name="transactions">
-/// 组织一致性快照事务。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
+/// <param name="reception"> 客服只读聚合端口。 </param>
+/// <param name="surveys"> Conversation 调查只读聚合端口。 </param>
+/// <param name="transactions"> 组织一致性快照事务。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
 public sealed class MetricsService(IReceptionMetricsQuery reception, ISurveyMetricsQuery surveys, IUnitOfWork transactions, TimeProvider clock)
 {
     /// <summary>

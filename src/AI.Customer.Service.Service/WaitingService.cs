@@ -10,33 +10,15 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 按当前会话访问恢复等待期限，禁止全库定时扫描隐式关闭无人访问的请求。
 /// </summary>
-/// <param name="repository">
-/// 等待及周期 owner。
-/// </param>
-/// <param name="configuration">
-/// 组织日历应用端口。
-/// </param>
-/// <param name="transactions">
-/// 共享事务。
-/// </param>
-/// <param name="runtime">
-/// 回复权端口。
-/// </param>
-/// <param name="journal">
-/// 可靠提醒登记。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="followups">
-/// 同客服 owner 的正式跟进工作项。
-/// </param>
-/// <param name="tasks">
-/// 仅返回安全投递摘要。
-/// </param>
-/// <param name="access">
-/// 客服原组权限核验。
-/// </param>
+/// <param name="repository"> 等待及周期 owner </param>
+/// <param name="configuration"> 组织日历应用端口 </param>
+/// <param name="transactions"> 共享事务 </param>
+/// <param name="runtime"> 回复权端口 </param>
+/// <param name="journal"> 可靠提醒登记 </param>
+/// <param name="clock"> UTC 时钟 </param>
+/// <param name="followups"> 同客服 owner 的正式跟进工作项 </param>
+/// <param name="tasks"> 仅返回安全投递摘要 </param>
+/// <param name="access"> 客服原组权限核验 </param>
 public sealed class WaitingService(IReceptionRepository repository, ConfigurationService configuration, IUnitOfWork transactions,
     ConversationRuntime runtime, CommandJournal journal, TimeProvider clock, IFollowupRepository followups, ITaskRepository tasks, AccessService access)
 {

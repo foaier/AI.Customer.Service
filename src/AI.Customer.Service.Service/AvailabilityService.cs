@@ -9,21 +9,11 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 组织级在线展示和心跳代次，手动接单独立使用组权限及容量。
 /// </summary>
-/// <param name="repository">
-/// 运行事实 owner。
-/// </param>
-/// <param name="reception">
-/// 容量只读端口。
-/// </param>
-/// <param name="transactions">
-/// 组织级共享事务。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
-/// <param name="options">
-/// 容量规则。
-/// </param>
+/// <param name="repository"> 运行事实 owner。 </param>
+/// <param name="reception"> 容量只读端口。 </param>
+/// <param name="transactions"> 组织级共享事务。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
+/// <param name="options"> 容量规则。 </param>
 public sealed class AvailabilityService(IConfigurationRepository repository, IReceptionRepository reception,
     IUnitOfWork transactions, TimeProvider clock, IOptions<CustomerServiceOptions> options)
 {

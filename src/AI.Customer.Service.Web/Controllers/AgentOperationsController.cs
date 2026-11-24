@@ -11,27 +11,13 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 在线展示、同组改派和系统失败恢复 HTTP Adapter。
 /// </summary>
-/// <param name="request">
-/// 正式客服准入。
-/// </param>
-/// <param name="availability">
-/// 运行状态应用端口。
-/// </param>
-/// <param name="reception">
-/// 接待应用端口。
-/// </param>
-/// <param name="configuration">
-/// 成员只读端口。
-/// </param>
-/// <param name="accounts">
-/// 用户中心只读核验。
-/// </param>
-/// <param name="tasks">
-/// 任务只读 owner。
-/// </param>
-/// <param name="processor">
-/// 系统任务人工恢复。
-/// </param>
+/// <param name="request"> 正式客服准入 </param>
+/// <param name="availability"> 运行状态应用端口 </param>
+/// <param name="reception"> 接待应用端口 </param>
+/// <param name="configuration"> 成员只读端口 </param>
+/// <param name="accounts"> 用户中心只读核验 </param>
+/// <param name="tasks"> 任务只读 owner </param>
+/// <param name="processor"> 系统任务人工恢复 </param>
 public sealed class AgentOperationsController(RequestAccess request, AvailabilityService availability, ReceptionService reception,
     IConfigurationRepository configuration, IAccountDirectory accounts, ITaskRepository tasks, ReliableTaskProcessor processor) : CustomerServiceControllerBase(request)
 {

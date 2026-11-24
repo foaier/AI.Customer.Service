@@ -3,15 +3,9 @@ namespace AI.Customer.Service.Common;
 /// <summary>
 /// 可安全返回给调用方的业务错误，禁止携带聊天正文、邮箱和认证凭据。
 /// </summary>
-/// <param name="code">
-/// 稳定的前端错误码。
-/// </param>
-/// <param name="message">
-/// 不含敏感信息的中文定位说明。
-/// </param>
-/// <param name="statusCode">
-/// 对应的 HTTP 状态码。
-/// </param>
+/// <param name="code"> 稳定的前端错误码。 </param>
+/// <param name="message"> 不含敏感信息的中文定位说明。 </param>
+/// <param name="statusCode"> 对应的 HTTP 状态码。 </param>
 public sealed class BusinessException(string code, string message, int statusCode = 409)
     : Exception(message)
 {

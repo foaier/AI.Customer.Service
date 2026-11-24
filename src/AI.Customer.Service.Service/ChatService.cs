@@ -13,30 +13,14 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// AI 文本生成编排，网络调用在事务外，受限工具不得直接覆盖人工事实。
 /// </summary>
-/// <param name="runtime">
-/// 会话 owner 的轮次围栏。
-/// </param>
-/// <param name="conversations">
-/// 真实历史读取端口。
-/// </param>
-/// <param name="model">
-/// 模型协议端口。
-/// </param>
-/// <param name="handoff">
-/// 受限人工申请工具应用端口。
-/// </param>
-/// <param name="surveys">
-/// 真实结束证据门禁。
-/// </param>
-/// <param name="journal">
-/// 系统故障任务登记。
-/// </param>
-/// <param name="transactions">
-/// 短事务。
-/// </param>
-/// <param name="logger">
-/// 结构化日志。
-/// </param>
+/// <param name="runtime"> 会话 owner 的轮次围栏。 </param>
+/// <param name="conversations"> 真实历史读取端口。 </param>
+/// <param name="model"> 模型协议端口。 </param>
+/// <param name="handoff"> 受限人工申请工具应用端口。 </param>
+/// <param name="surveys"> 真实结束证据门禁。 </param>
+/// <param name="journal"> 系统故障任务登记。 </param>
+/// <param name="transactions"> 短事务。 </param>
+/// <param name="logger"> 结构化日志。 </param>
 public sealed class ChatService(ConversationRuntime runtime, IConversationRepository conversations, IChatModel model,
     HandoffService handoff, SurveyService surveys, CommandJournal journal, IUnitOfWork transactions, ILogger<ChatService> logger)
 {
@@ -240,10 +224,6 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
 /// <summary>
 /// 与传输协议无关的 AI 流事件。
 /// </summary>
-/// <param name="Event">
-/// message、card、error 或 complete。
-/// </param>
-/// <param name="Data">
-/// 由 Web SSE Adapter 序列化的业务投影。
-/// </param>
+/// <param name="Event"> message、card、error 或 complete。 </param>
+/// <param name="Data"> 由 Web SSE Adapter 序列化的业务投影。 </param>
 public sealed record ChatEvent(string Event, object Data);

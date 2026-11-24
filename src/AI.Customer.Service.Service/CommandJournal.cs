@@ -9,15 +9,9 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 客服 owner 的不可变命令回执与审计事件登记，不承担状态决策。
 /// </summary>
-/// <param name="repository">
-/// 本 owner 回执仓储。
-/// </param>
-/// <param name="tasks">
-/// 可靠事件仓储。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
+/// <param name="repository"> 本 owner 回执仓储。 </param>
+/// <param name="tasks"> 可靠事件仓储。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
 public sealed class CommandJournal(IReceptionRepository repository, ITaskRepository tasks, TimeProvider clock)
 {
     /// <summary>

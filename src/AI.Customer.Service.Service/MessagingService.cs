@@ -10,24 +10,12 @@ namespace AI.Customer.Service.Service;
 /// <summary>
 /// 人工消息和回执应用编排，正文只经 Conversation owner 单一端口保存。
 /// </summary>
-/// <param name="conversations">
-/// 会话及时间线 owner。
-/// </param>
-/// <param name="reception">
-/// 客服周期 owner。
-/// </param>
-/// <param name="transactions">
-/// 共享事务。
-/// </param>
-/// <param name="runtime">
-/// 回复权端口。
-/// </param>
-/// <param name="access">
-/// 成员准入。
-/// </param>
-/// <param name="clock">
-/// UTC 时钟。
-/// </param>
+/// <param name="conversations"> 会话及时间线 owner。 </param>
+/// <param name="reception"> 客服周期 owner。 </param>
+/// <param name="transactions"> 共享事务。 </param>
+/// <param name="runtime"> 回复权端口。 </param>
+/// <param name="access"> 成员准入。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
 public sealed class MessagingService(IConversationRepository conversations, IReceptionRepository reception, IUnitOfWork transactions,
     ConversationRuntime runtime, AccessService access, TimeProvider clock)
 {
