@@ -56,6 +56,12 @@ public sealed class ConversationRepository(CustomerServiceDbContext db) : IConve
     public Task<List<HumanMessage>> MessagesAsync(Scope scope, long afterSeq, int limit, CancellationToken ct) =>
         InScope<HumanMessage>(scope).Where(x => x.Seq > afterSeq).OrderBy(x => x.Seq).Take(limit).ToListAsync(ct);
     /// <summary>
+    /// 读取原接待周期之后的人工消息，按会话持久序列升序分页。
+    /// </summary>
+    public Task<List<HumanMessage>> EpisodeMessagesAsync(Scope scope, string episode, long afterSeq, int limit, CancellationToken ct) =>
+        InScope<HumanMessage>(scope).Where(x => x.EpisodeId == episode && x.Seq > afterSeq)
+            .OrderBy(x => x.Seq).Take(limit).ToListAsync(ct);
+    /// <summary>
     /// 读取完整会话范围内指定主体的消息回执水位。
     /// </summary>
     public Task<MessageReceipt?> ReceiptAsync(Scope scope, string actor, CancellationToken ct) =>
@@ -148,6 +154,24 @@ public sealed class ReceptionRepository(CustomerServiceDbContext db) : IReceptio
         db.Set<Episode>().AsNoTracking().Where(x => (assistant == null || x.AssistantConfigId == assistant) && groups.Contains(x.GroupId) &&
             (x.Status == EpisodeStatus.REQUESTED || ((x.Status == EpisodeStatus.CLAIMED || x.Status == EpisodeStatus.ACTIVE) && x.AgentId == actor)))
             .OrderBy(x => x.RequestedAt).ThenBy(x => x.Id).ToListAsync(ct);
+    /// <summary>
+    /// 仅查询当前仍在原接待组且由当前客服完成的周期，最新完成时间优先。
+    /// </summary>
+    public Task<List<Episode>> CompletedAsync(string assistant, IReadOnlyCollection<string> groups, string actor, int skip, int take,
+        string? email, DateTime? closedFrom, DateTime? closedBefore, CancellationToken ct)
+    {
+        var query = db.Set<Episode>().AsNoTracking().Where(x => x.AssistantConfigId == assistant && groups.Contains(x.GroupId) &&
+            x.AgentId == actor && x.Status == EpisodeStatus.RESOLVED);
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            query = query.Where(x => db.Set<Waiting>().Any(waiting => waiting.ConversationId == x.ConversationId &&
+                waiting.AssistantConfigId == x.AssistantConfigId && waiting.BventId == x.BventId &&
+                waiting.EpisodeId == x.Id && waiting.Email == email));
+        }
+        if (closedFrom is not null) query = query.Where(x => x.FinishedAt >= closedFrom);
+        if (closedBefore is not null) query = query.Where(x => x.FinishedAt < closedBefore);
+        return query.OrderByDescending(x => x.FinishedAt).ThenByDescending(x => x.Id).Skip(skip).Take(take).ToListAsync(ct);
+    }
     /// <summary>
     /// 按截止时间读取已到期的 ACTIVE 接待候选，供应用层复核并自动结单。
     /// </summary>

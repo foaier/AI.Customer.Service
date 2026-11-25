@@ -89,20 +89,29 @@ public sealed class FollowupService(IFollowupRepository repository, IReceptionRe
         var values = await repository.QueueAsync(assistant, groups, ct);
         var ids = values.Where(x => x.Origin == "FORM").Select(x => x.EpisodeId).ToArray();
         var seen = await repository.SeenEpisodeIdsAsync(ids, actor.AccountId, ct);
-        var closed = await repository.ClosedEpisodeIdsAsync(ids, ct);
-        return new { followups = values.Select(x => new
+        var allClosed = await repository.ClosedEpisodeIdsAsync(values.Select(x => x.EpisodeId).ToArray(), ct);
+        var visible = values.Where(x => (x.State == "OPEN" || x.AssignedTo == actor.AccountId) && !allClosed.Contains(x.EpisodeId)).ToArray();
+        var result = new List<object>(visible.Length);
+        foreach (var x in visible)
         {
-            x.Scope,
-            x.EpisodeId,
-            x.TicketId,
-            x.State,
-            x.Version,
-            x.AssignedTo,
-            x.SubmittedAt,
-            hasSubmittedForm = x.Origin == "FORM",
-            hasUnseen = x.Origin == "FORM" && (x.State == "OPEN" || x.AssignedTo == actor.AccountId) && !seen.Contains(x.EpisodeId) && !closed.Contains(x.EpisodeId),
-            formState = x.Origin == "FORM" ? x.State : null
-        }) };
+            var waiting = await reception.WaitingAsync(x.Scope, x.EpisodeId, ct);
+            result.Add(new
+            {
+                x.Scope,
+                x.EpisodeId,
+                x.TicketId,
+                x.State,
+                x.Version,
+                x.AssignedTo,
+                x.SubmittedAt,
+                contactEmail = waiting?.Email,
+                contactName = x.ContactName,
+                hasSubmittedForm = x.Origin == "FORM",
+                hasUnseen = x.Origin == "FORM" && !seen.Contains(x.EpisodeId),
+                formState = x.Origin == "FORM" ? x.State : null
+            });
+        }
+        return new { followups = result };
     }
 
     /// <summary>

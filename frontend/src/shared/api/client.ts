@@ -43,6 +43,29 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     return body as T;
 }
 
+export async function requestFile(path: string): Promise<{ blob: Blob; headers: Headers }> {
+    const token = await getAccessToken();
+    const response = await fetch(`${apiBase}/api${path}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/octet-stream" },
+        credentials: "same-origin",
+        cache: "no-store",
+    });
+    if (!response.ok) {
+        const raw = await response.text();
+        let message = raw;
+        try {
+            const body = JSON.parse(raw) as Record<string, unknown>;
+            message = String(body.message || body.businessMessage || body.code || raw);
+        } catch {
+            /*
+             * 下载错误响应也可能返回纯文本。
+             */
+        }
+        throw new ApiError(message || `文件下载失败（${response.status}）`, response.status);
+    }
+    return { blob: await response.blob(), headers: response.headers };
+}
+
 export function post<T>(path: string, body: unknown): Promise<T> {
     return request<T>(path, { method: "POST", body: JSON.stringify(body) });
 }

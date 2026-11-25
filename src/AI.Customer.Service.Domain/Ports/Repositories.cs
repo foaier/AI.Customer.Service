@@ -55,6 +55,10 @@ public interface IConversationRepository
     /// </summary>
     Task<List<HumanMessage>> MessagesAsync(Scope scope, long afterSeq, int limit, CancellationToken ct);
     /// <summary>
+    /// 按固定接待周期分页读取人工消息，不推进任何回执水位。
+    /// </summary>
+    Task<List<HumanMessage>> EpisodeMessagesAsync(Scope scope, string episode, long afterSeq, int limit, CancellationToken ct);
+    /// <summary>
     /// 读取当前主体的回执水位。
     /// </summary>
     Task<MessageReceipt?> ReceiptAsync(Scope scope, string actor, CancellationToken ct);
@@ -97,6 +101,11 @@ public interface IReceptionRepository
     /// 完整授权范围的收件箱接待投影，不分页。
     /// </summary>
     Task<List<Episode>> InboxEpisodesAsync(string? assistant, IReadOnlyCollection<string> groups, string actor, CancellationToken ct);
+    /// <summary>
+    /// 分页读取当前成员本人已完成的接待周期。
+    /// </summary>
+    Task<List<Episode>> CompletedAsync(string assistant, IReadOnlyCollection<string> groups, string actor, int skip, int take,
+        string? email, DateTime? closedFrom, DateTime? closedBefore, CancellationToken ct);
     /// <summary>
     /// 恢复到期的在线接待自动结单候选。
     /// </summary>

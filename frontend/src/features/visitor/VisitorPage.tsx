@@ -20,6 +20,7 @@ import type { Assistant, Episode, HumanMessage, Proposal, Waiting } from "@/shar
 
 type ChatMessage = { id: string; role: "user" | "assistant" | "agent" | "system"; text: string; pending?: boolean };
 type FollowupForm = {
+    requestId?: string;
     episodeId?: string;
     ticketId?: string;
     origin?: string;
@@ -35,6 +36,20 @@ type Survey = {
     handoffChoice: "PENDING" | "OPTED_IN" | "DECLINED" | "NOT_APPLICABLE";
     version: number;
     expiresAt: string;
+};
+type DirectHandoffCard = {
+    requestId: string;
+    category?: string;
+    nextOpensAt?: string | null;
+    timeZone?: string;
+    serviceHours?: { opens: string; closes: string; workingDays: number[] } | null;
+};
+type OfflineHandoffSubmission = DirectHandoffCard & {
+    followupRequestId: string;
+    email: string;
+    contactName: string | null;
+    content: string;
+    expectedVersion?: number;
 };
 
 const openStatuses = ["REQUESTED", "CLAIMED", "ACTIVE"];
@@ -60,6 +75,9 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     const [showFollowup, setShowFollowup] = useState(false);
     const [showHandoffForm, setShowHandoffForm] = useState(false);
     const [handoffProposal, setHandoffProposal] = useState<Proposal | null>(null);
+    const [directHandoffCard, setDirectHandoffCard] = useState<DirectHandoffCard | null>(null);
+    const [offlineHandoff, setOfflineHandoff] = useState<DirectHandoffCard | null>(null);
+    const [offlineSubmissionSaved, setOfflineSubmissionSaved] = useState(false);
     const [pageVisible, setPageVisible] = useState(() => document.visibilityState === "visible");
     const listRef = useRef<HTMLDivElement>(null);
     const sequence = useRef(0);
@@ -106,6 +124,25 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             setWaiting(waitState);
             const submittedForm = followupState.form || followupState;
             setFollowup(Object.keys(submittedForm).length ? submittedForm : null);
+            const pendingKey = `cs.handoff.payload.${assistantId}.${id}`;
+            const saved = sessionStorage.getItem(pendingKey);
+            if (saved) {
+                const pending = JSON.parse(saved) as OfflineHandoffSubmission;
+                if (submittedForm.requestId === pending.followupRequestId) {
+                    sessionStorage.removeItem(pendingKey);
+                    sessionStorage.removeItem(`cs.handoff.${assistantId}.${id}`);
+                    setOfflineSubmissionSaved(false);
+                    setOfflineHandoff(null);
+                    setShowHandoffForm(false);
+                } else {
+                    setOfflineSubmissionSaved(true);
+                    setOfflineHandoff(pending);
+                    setShowHandoffForm(true);
+                    setEmail(pending.email);
+                    setContactName(pending.contactName || "");
+                    setFormContent(pending.content);
+                }
+            }
             setSurvey(surveyState.survey);
             if (current && openStatuses.includes(current.status)) {
                 const timeline = await request<{ messages: HumanMessage[] }>(
@@ -114,7 +151,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                 addHumanMessages(timeline.messages || []);
             }
         },
-        [addHumanMessages],
+        [addHumanMessages, assistantId],
     );
 
     const initialize = useCallback(async () => {
@@ -239,6 +276,11 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
         setSurvey(null);
         setShowHandoffForm(false);
         setHandoffProposal(null);
+        setOfflineHandoff(null);
+        setDirectHandoffCard(null);
+        setOfflineSubmissionSaved(false);
+        setShowFollowup(false);
+        setFormContent("");
         setNotice("");
         setError("");
         sequence.current = 0;
@@ -305,7 +347,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                     (card) => {
                         const value = card as {
                             status?: string;
-                            data?: Proposal & Survey;
+                            data?: Proposal & Survey & DirectHandoffCard;
                             cardType?: string;
                             content?: { data?: Survey };
                         };
@@ -317,8 +359,21 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                             );
                         if (value.status === "handoff.email_required") {
                             setHandoffProposal(null);
+                            setDirectHandoffCard(value.data?.requestId ? value.data : null);
+                            setOfflineHandoff(null);
                             setShowHandoffForm(true);
                             setNotice("请先填写联系邮箱，再提交人工申请。");
+                        }
+                        if (value.status === "handoff.offline_followup_required" && value.data?.requestId) {
+                            setHandoffProposal(null);
+                            setDirectHandoffCard(value.data);
+                            setOfflineHandoff(value.data);
+                            setShowHandoffForm(true);
+                            setNotice(
+                                value.data.nextOpensAt
+                                    ? `当前为非营业时间，客服下次营业时间：${new Date(value.data.nextOpensAt).toLocaleString("zh-CN", { timeZone: value.data.timeZone || "Asia/Shanghai" })}。`
+                                    : "当前为非营业时间，请留下联系邮箱和问题描述。客服将在工作时间内跟进。",
+                            );
                         }
                         const surveyCard =
                             value.status === "ai-survey"
@@ -354,22 +409,70 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
         }
     };
 
-    const requestAgent = async (contactEmail: string) => {
+    const requestAgent = async (contactEmail: string, offlineContent = "") => {
         if (!conversationId || sending) return;
         setSending(true);
         setError("");
         const storageKey = `cs.handoff.${assistantId}.${conversationId}`;
-        const key = sessionStorage.getItem(storageKey) || `handoff_${crypto.randomUUID().replaceAll("-", "")}`;
-        sessionStorage.setItem(storageKey, key);
+        const offlineStorageKey = `cs.handoff.payload.${assistantId}.${conversationId}`;
         try {
+            const savedOffline = offlineHandoff ? sessionStorage.getItem(offlineStorageKey) : null;
+            const pendingOffline: OfflineHandoffSubmission | null = offlineHandoff
+                ? savedOffline
+                    ? (JSON.parse(savedOffline) as OfflineHandoffSubmission)
+                    : {
+                          ...offlineHandoff,
+                          followupRequestId: `form_${crypto.randomUUID().replaceAll("-", "")}`,
+                          email: contactEmail.trim(),
+                          contactName: contactName.trim() || null,
+                          content: offlineContent.trim(),
+                      }
+                : null;
+            const key =
+                pendingOffline?.requestId ||
+                directHandoffCard?.requestId ||
+                sessionStorage.getItem(storageKey) ||
+                `handoff_${crypto.randomUUID().replaceAll("-", "")}`;
+            if (pendingOffline) sessionStorage.setItem(offlineStorageKey, JSON.stringify(pendingOffline));
+            if (pendingOffline) setOfflineSubmissionSaved(true);
+            sessionStorage.setItem(storageKey, key);
             const result = await post<Episode>(
                 `/customer-service/conversations/${encodeURIComponent(conversationId)}/handoffs`,
-                { requestId: key, email: contactEmail.trim() },
+                {
+                    requestId: key,
+                    email: pendingOffline?.email || contactEmail.trim(),
+                    category: pendingOffline?.category || directHandoffCard?.category,
+                },
             );
-            sessionStorage.removeItem(storageKey);
+            if (pendingOffline) {
+                if (pendingOffline.expectedVersion === undefined) {
+                    const waiting = await request<Waiting>(
+                        `/customer-service/conversations/${encodeURIComponent(conversationId)}/waiting`,
+                    );
+                    pendingOffline.expectedVersion = waiting.version;
+                    sessionStorage.setItem(offlineStorageKey, JSON.stringify(pendingOffline));
+                }
+                await post(`/customer-service/conversations/${encodeURIComponent(conversationId)}/followup-form`, {
+                    requestId: pendingOffline.followupRequestId,
+                    email: pendingOffline.email,
+                    contactName: pendingOffline.contactName,
+                    content: pendingOffline.content,
+                    expectedVersion: pendingOffline.expectedVersion,
+                });
+                sessionStorage.removeItem(offlineStorageKey);
+                setOfflineSubmissionSaved(false);
+                setFormContent("");
+            }
             setEpisode(result);
+            sessionStorage.removeItem(storageKey);
             setShowHandoffForm(false);
-            setNotice("人工申请已登记。等待期间你可以继续补充信息。");
+            setOfflineHandoff(null);
+            setDirectHandoffCard(null);
+            setNotice(
+                offlineHandoff
+                    ? "留言已提交。客服将在工作时间内按你留下的邮箱跟进。"
+                    : "人工申请已登记。等待期间你可以继续补充信息。",
+            );
             await loadEpisode(conversationId);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : "申请失败");
@@ -401,6 +504,8 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             setProposals((current) => current.filter((item) => item.proposalId !== proposal.proposalId));
             setShowHandoffForm(false);
             setHandoffProposal(null);
+            setOfflineHandoff(null);
+            setDirectHandoffCard(null);
             if (decision === "CONFIRM") setEpisode(result);
             setNotice(decision === "CONFIRM" ? "已确认人工协助申请。" : "已关闭这条人工建议。");
             await loadEpisode(conversationId);
@@ -412,7 +517,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
     const submitHandoff = (event: FormEvent) => {
         event.preventDefault();
         if (handoffProposal) void decideProposal(handoffProposal, "CONFIRM", email);
-        else void requestAgent(email);
+        else void requestAgent(email, formContent);
     };
 
     const answerSurvey = async (answer: "SATISFIED" | "DISSATISFIED") => {
@@ -759,7 +864,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                 <span>与现场服务团队联系</span>
                             </div>
                         </div>
-                        {isHuman ? (
+                        {isHuman && !offlineHandoff ? (
                             <>
                                 <div className="handoff-state">
                                     <span className="state-dot" />
@@ -792,7 +897,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                     </button>
                                 )}
                             </>
-                        ) : waiting?.state === "FOLLOW_UP" ? (
+                        ) : waiting?.state === "FOLLOW_UP" && !offlineHandoff ? (
                             <div className="handoff-state">
                                 <span className="state-dot" />
                                 <div>
@@ -805,6 +910,39 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                 <p className="rail-copy">联系在线客服，继续处理需要人工协助的问题。</p>
                                 {showHandoffForm ? (
                                     <form className="handoff-email-form" onSubmit={submitHandoff}>
+                                        {offlineHandoff && (
+                                            <p className="offline-handoff-note">
+                                                客服当前休息中，请留下联系邮箱和问题描述。
+                                                {offlineHandoff.nextOpensAt && (
+                                                    <>
+                                                        下次营业时间：
+                                                        {new Date(offlineHandoff.nextOpensAt).toLocaleString("zh-CN", {
+                                                            timeZone: offlineHandoff.timeZone || "Asia/Shanghai",
+                                                        })}
+                                                        。
+                                                    </>
+                                                )}
+                                                {formatServiceHours(
+                                                    offlineHandoff.serviceHours,
+                                                    offlineHandoff.timeZone,
+                                                ) && (
+                                                    <>
+                                                        <br />
+                                                        常规服务时间：
+                                                        {formatServiceHours(
+                                                            offlineHandoff.serviceHours,
+                                                            offlineHandoff.timeZone,
+                                                        )}
+                                                        。 具体日期以客服下次开门时间为准。
+                                                    </>
+                                                )}
+                                            </p>
+                                        )}
+                                        {offlineSubmissionSaved && (
+                                            <p className="offline-handoff-note">
+                                                已保留首次提交内容；重试将继续使用原邮箱和问题描述。
+                                            </p>
+                                        )}
                                         <label htmlFor="handoff-contact-email">联系邮箱</label>
                                         <input
                                             id="handoff-contact-email"
@@ -814,26 +952,51 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                             value={email}
                                             onChange={(event) => setEmail(event.target.value)}
                                             placeholder="name@example.com"
-                                            disabled={sending}
+                                            disabled={sending || offlineSubmissionSaved}
                                         />
+                                        {offlineHandoff && (
+                                            <>
+                                                <label htmlFor="handoff-offline-content">问题描述</label>
+                                                <textarea
+                                                    id="handoff-offline-content"
+                                                    rows={4}
+                                                    maxLength={4000}
+                                                    required
+                                                    value={formContent}
+                                                    onChange={(event) => setFormContent(event.target.value)}
+                                                    placeholder="请描述你需要客服协助的问题"
+                                                    disabled={sending || offlineSubmissionSaved}
+                                                />
+                                            </>
+                                        )}
                                         <button
                                             className="button button--primary button--full"
                                             type="submit"
-                                            disabled={sending || loading}
+                                            disabled={
+                                                sending || loading || Boolean(offlineHandoff && !formContent.trim())
+                                            }
                                         >
                                             <Headphones size={16} />{" "}
-                                            {handoffProposal ? "确认并联系人工" : "提交并联系人工"}
+                                            {offlineHandoff
+                                                ? "提交留言"
+                                                : handoffProposal
+                                                  ? "确认并联系人工"
+                                                  : "提交并联系人工"}
                                         </button>
-                                        <button
-                                            className="link-button"
-                                            type="button"
-                                            onClick={() => {
-                                                setShowHandoffForm(false);
-                                                setHandoffProposal(null);
-                                            }}
-                                        >
-                                            取消
-                                        </button>
+                                        {!offlineSubmissionSaved && (
+                                            <button
+                                                className="link-button"
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowHandoffForm(false);
+                                                    setHandoffProposal(null);
+                                                    setOfflineHandoff(null);
+                                                    setDirectHandoffCard(null);
+                                                }}
+                                            >
+                                                取消
+                                            </button>
+                                        )}
                                     </form>
                                 ) : (
                                     <button
@@ -988,4 +1151,29 @@ function formatDateTime(value: string) {
         hour: "2-digit",
         minute: "2-digit",
     }).format(new Date(value));
+}
+
+function formatServiceHours(serviceHours: DirectHandoffCard["serviceHours"], timeZone?: string): string {
+    if (!serviceHours?.opens || !serviceHours.closes || !Array.isArray(serviceHours.workingDays)) return "";
+    const names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+    const days = [...new Set(serviceHours.workingDays)]
+        .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+        .sort((left, right) => left - right);
+    if (!days.length) return "";
+    const ranges: string[] = [];
+    for (let index = 0; index < days.length;) {
+        let end = index;
+        while (end + 1 < days.length && days[end + 1] === days[end] + 1) end++;
+        ranges.push(
+            end - index >= 2
+                ? `${names[days[index] - 1]}至${names[days[end] - 1]}`
+                : days
+                      .slice(index, end + 1)
+                      .map((day) => names[day - 1])
+                      .join("、"),
+        );
+        index = end + 1;
+    }
+    const zone = timeZone ? `（${timeZone}）` : "";
+    return `${ranges.join("、")} ${serviceHours.opens}–${serviceHours.closes}${zone}`;
 }

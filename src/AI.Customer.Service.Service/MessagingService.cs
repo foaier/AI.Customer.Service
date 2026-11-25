@@ -112,6 +112,27 @@ public sealed class MessagingService(IConversationRepository conversations, IRec
         }, ct);
 
     /// <summary>
+    /// 只读原已完成接待周期的消息，不访问当前周期，也不推进已读水位。
+    /// </summary>
+    public Task<object> CompletedTimelineAsync(Actor actor, Scope scope, string episodeId, long afterSeq, int limit, CancellationToken ct) =>
+        transactions.ExecuteAsync<object>(async () =>
+        {
+            if (afterSeq < 0 || limit is < 1 or > 100)
+            {
+                throw BusinessException.Invalid("消息游标或页大小无效");
+            }
+            var episode = await reception.EpisodeAsync(scope, episodeId, ct);
+            if (episode is null || episode.Status != EpisodeStatus.RESOLVED)
+            {
+                throw BusinessException.Forbidden("已完成接待不存在或不可访问");
+            }
+            await access.RequireGroupAsync(actor, episode, ct);
+            ReceptionRules.RequireAssignee(episode, actor.AccountId);
+            var messages = await conversations.EpisodeMessagesAsync(scope, episodeId, afterSeq, limit + 1, ct);
+            return new { messages = messages.Take(limit).Select(View), hasMore = messages.Count > limit };
+        }, ct);
+
+    /// <summary>
     /// 只推进认证主体水位，READ 同时推进 DELIVERED，拒绝确认未来消息。
     /// </summary>
     public Task<object> ReceiptAsync(Actor actor, Scope scope, bool agent, ReceiptCommand command, CancellationToken ct) =>

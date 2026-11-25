@@ -205,6 +205,130 @@ public sealed partial class WorkflowTests
     }
 
     /// <summary>
+    /// 验证已完成接待固定原周期读取及全量 XLSX 包结构。
+    /// </summary>
+    [TestMethod]
+    public async Task CompletedReceptionAndConversationXlsxAreAvailable()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        using var agent = application.Client("agent-a");
+        var id = await SessionAsync(visitor);
+        await RequestAsync(visitor, id);
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "claim-history", expectedVersion = 1 });
+        var visitorSent = await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/messages", new { clientMsgId = "visitor-history", content = "历史\u0001消息正文" });
+        var sent = await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/messages", new { clientMsgId = "agent-history", content = "已完成接待回复" });
+        var current = await GetAsync(agent, AgentPath(id) + "/reception");
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/resolve", new
+        {
+            requestId = "resolve-history",
+            expectedVersion = current.GetProperty("version").GetInt64()
+        });
+
+        var completed = await GetAsync(agent, "/api/customer-service/agents/receptions/completed?assistantConfigId=assistant-a&page=1&size=10");
+        var episode = completed.GetProperty("episodes").EnumerateArray().Single();
+        var episodeId = episode.GetProperty("episodeId").GetString()!;
+        Assert.AreEqual("RESOLVED", episode.GetProperty("status").GetString());
+        var historical = await GetAsync(agent, AgentPath(id) + $"/episodes/{episodeId}/messages?afterSeq={visitorSent.GetProperty("seq").GetInt64()}&limit=1");
+        Assert.AreEqual(sent.GetProperty("messageId").GetString(), historical.GetProperty("messages")[0].GetProperty("messageId").GetString());
+        Assert.IsFalse(historical.GetProperty("hasMore").GetBoolean());
+
+        using var otherAgent = application.Client("agent-b");
+        var otherHistory = await GetAsync(otherAgent, "/api/customer-service/agents/receptions/completed?assistantConfigId=assistant-a");
+        Assert.AreEqual(0, otherHistory.GetProperty("episodes").GetArrayLength());
+        await GetAsync(otherAgent, AgentPath(id) + $"/episodes/{episodeId}/reception", HttpStatusCode.Forbidden);
+        await GetAsync(otherAgent, AgentPath(id) + $"/episodes/{episodeId}/messages", HttpStatusCode.Forbidden);
+        await GetAsync(agent, "/api/customer-service/agents/receptions/completed?assistantConfigId=assistant-a&email=missing@example.com");
+
+        using var anonymous = application.CreateClient();
+        Assert.AreEqual(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/customer-service/exports/conversations?assistantConfigId=assistant-a&format=xlsx")).StatusCode);
+        using var unlistedAccount = application.Client("unlisted");
+        await GetAsync(unlistedAccount, "/api/customer-service/exports/conversations?assistantConfigId=assistant-a&format=xlsx", HttpStatusCode.Forbidden);
+
+        var response = await agent.GetAsync("/api/customer-service/exports/conversations?assistantConfigId=assistant-a&format=xlsx&all=true");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.AreEqual("false", response.Headers.GetValues("X-Has-More").Single());
+        await using var stream = await response.Content.ReadAsStreamAsync();
+        using var archive = new System.IO.Compression.ZipArchive(stream, System.IO.Compression.ZipArchiveMode.Read);
+        var workbookEntry = archive.GetEntry("xl/workbook.xml");
+        Assert.IsNotNull(workbookEntry);
+        using var workbookStream = workbookEntry.Open();
+        var workbookXml = await System.Xml.Linq.XDocument.LoadAsync(workbookStream, System.Xml.Linq.LoadOptions.None, CancellationToken.None);
+        Assert.AreEqual(3, workbookXml.Root!.Element(System.Xml.Linq.XName.Get("sheets", "http://schemas.openxmlformats.org/spreadsheetml/2006/main"))!.Elements().Count());
+        Assert.IsTrue(archive.Entries.Any(entry => entry.FullName == "xl/worksheets/sheet1.xml"));
+        using var transcriptStream = archive.GetEntry("xl/worksheets/sheet2.xml")!.Open();
+        var transcriptXml = await System.Xml.Linq.XDocument.LoadAsync(transcriptStream, System.Xml.Linq.LoadOptions.None, CancellationToken.None);
+        StringAssert.Contains(transcriptXml.ToString(), "历史消息正文");
+
+        await RequestAsync(visitor, id);
+        var oldTimeline = await GetAsync(agent, AgentPath(id) + $"/episodes/{episodeId}/messages");
+        Assert.AreEqual(2, oldTimeline.GetProperty("messages").GetArrayLength());
+        Assert.IsTrue(oldTimeline.GetProperty("messages").EnumerateArray().All(message => message.GetProperty("episodeId").GetString() == episodeId));
+    }
+
+    /// <summary>
+    /// 非营业时明确转人工只返回带下次营业时间的留言卡，不预先创建接待周期。
+    /// </summary>
+    [TestMethod]
+    public async Task ExplicitHandoffDuringClosedHoursReturnsOfflineFollowupCard()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        using var manager = application.Client("agent-a");
+        var id = await SessionAsync(visitor);
+        var calendar = await GetAsync(manager, "/api/customer-service/configuration/calendar");
+        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration/calendar", new
+        {
+            version = calendar.GetProperty("version").GetInt64(),
+            calendarVersion = "closed-hours-test",
+            zone = "Asia/Shanghai",
+            opens = "08:00",
+            closes = "10:00",
+            overrides = new Dictionary<string, bool>()
+        });
+
+        var stream = await ChatAsync(visitor, id, "请转人工客服");
+        StringAssert.Contains(stream, "handoff.offline_followup_required");
+        StringAssert.Contains(stream, "nextOpensAt");
+        StringAssert.Contains(stream, "serviceHours");
+        StringAssert.Contains(stream, "workingDays");
+        await using var scope = application.Services.CreateAsyncScope();
+        Assert.AreEqual(0, await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().CountAsync());
+    }
+
+    /// <summary>
+    /// 邮箱卡提交复用首次分类，避免重复模型判断改变冻结路由。
+    /// </summary>
+    [TestMethod]
+    public async Task DirectHandoffSubmissionUsesTheCategoryReturnedByItsCard()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        var id = await SessionAsync(visitor);
+        var stream = await ChatAsync(visitor, id, "请转人工客服");
+        var cardLine = stream.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Single(line => line.StartsWith("data:", StringComparison.Ordinal) && line.Contains("handoff.email_required", StringComparison.Ordinal));
+        using var card = JsonDocument.Parse(cardLine["data:".Length..].Trim());
+        var cardData = card.RootElement.GetProperty("data");
+        var category = cardData.GetProperty("category").GetString();
+        Assert.IsNotNull(category);
+        var classifications = application.Model.ClassificationCalls;
+
+        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new
+        {
+            requestId = cardData.GetProperty("requestId").GetString(),
+            email = "visitor@example.com",
+            category
+        });
+
+        Assert.AreEqual(classifications, application.Model.ClassificationCalls);
+        await using var scope = application.Services.CreateAsyncScope();
+        var episode = await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().SingleAsync();
+        Assert.AreEqual(Enum.Parse<Category>(category), episode.Category);
+        Assert.AreEqual("CARD", episode.ClassificationSource);
+    }
+
+    /// <summary>
     /// 改派需目标在线，成功后旧客服不能读取历史或正文；原键重放仍恢复首次回执。
     /// </summary>
     [TestMethod]

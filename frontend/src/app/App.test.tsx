@@ -11,6 +11,12 @@ vi.mock("@/features/visitor/VisitorPage", () => ({ default: () => <main>访客�
 vi.mock("@/features/agent-inbox/AgentInboxPage", () => ({ default: () => <main>在线接待测试页面</main> }));
 vi.mock("@/features/followups/FollowupsPage", () => ({ default: () => <main>邮件跟进测试页面</main> }));
 vi.mock("@/features/settings/SettingsPage", () => ({ default: () => <main>客服设置测试页面</main> }));
+vi.mock("@/features/reception-history/ReceptionHistoryPage", () => ({
+    default: () => <main>已完成接待测试页面</main>,
+}));
+vi.mock("@/features/conversation-records/ConversationRecordsPage", () => ({
+    default: () => <main>会话记录测试页面</main>,
+}));
 
 const assistants = [
     {
@@ -48,5 +54,19 @@ describe("application routing and session setup", () => {
 
         expect(await screen.findByText("访客咨询测试页面")).toBeInTheDocument();
         await waitFor(() => expect(screen.getByText("在线咨询")).toBeInTheDocument());
+    });
+
+    it("opens the completed reception history route", async () => {
+        renderApp("/b/history");
+
+        expect(await screen.findByText("已完成接待测试页面")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: /已完成接待/ })).toHaveAttribute("aria-current", "page");
+    });
+
+    it("opens the conversation records route", async () => {
+        renderApp("/b/records");
+
+        expect(await screen.findByText("会话记录测试页面")).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: /会话记录/ })).toHaveAttribute("aria-current", "page");
     });
 });

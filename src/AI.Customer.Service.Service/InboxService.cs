@@ -61,11 +61,14 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
         var episodes = await reception.QueueAsync(assistant, groups, actor.AccountId, ct);
         var stats = (await conversations.InboxMessageStatsAsync(assistant, groups, actor.AccountId, ct))
             .ToDictionary(x => x.EpisodeId, StringComparer.Ordinal);
-        var queue = episodes.Select(x =>
+        var queue = new List<object>(episodes.Count);
+        foreach (var x in episodes)
         {
             var canRead = x.AgentId == actor.AccountId && x.Status is EpisodeStatus.CLAIMED or EpisodeStatus.ACTIVE;
             stats.TryGetValue(x.Id, out var current);
-            return new
+            var waiting = await reception.WaitingAsync(x.Scope, x.Id, ct);
+            var form = await followups.FindAsync(x.Scope, x.Id, ct);
+            queue.Add(new
             {
                 x.Scope,
                 episodeId = x.Id,
@@ -79,12 +82,14 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
                 x.ReasonCode,
                 x.AutoCloseAt,
                 x.ResolutionReason,
+                contactEmail = waiting?.Email,
+                contactName = form?.ContactName,
                 unreadCount = canRead ? current?.UnreadCount ?? 0 : (int?)null,
                 lastVisitorSeq = canRead ? current?.LastVisitorSeq ?? 0 : (long?)null,
                 readSeq = canRead ? current?.ReadSeq ?? 0 : (long?)null,
                 lastVisitorMessageAt = canRead ? current?.LastVisitorMessageAt : null
-            };
-        });
+            });
+        }
         return new { groupId = (string?)null, episodes = queue };
     }
 }

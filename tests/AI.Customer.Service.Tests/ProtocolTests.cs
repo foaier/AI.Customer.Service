@@ -153,7 +153,7 @@ public sealed class ProtocolTests
         config.AddChatNotification(new ChatNotificationConfiguration { Id = "chat", Enabled = true });
         await scope.ServiceProvider.GetRequiredService<AI.Customer.Service.Infrastructure.Persistence.CustomerServiceDbContext>().SaveChangesAsync();
         var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions { Endpoint = "https://gateway.invalid" }),
-            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>(), application.Clock);
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>());
         var task = new ReliableTask { Kind = "EMAIL", EventKey = "followup:ticket-a", Payload = "{}" };
         await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         accepted = true;
@@ -166,7 +166,7 @@ public sealed class ProtocolTests
     [TestMethod]
     public void ExplicitHandoffRequiresOriginalConsent()
     {
-        foreach (var input in new[] { "转人工", "请直接转人工", "我要人工客服", "可以转人工吗？", "麻烦帮我转接人工客服，谢谢", "还是没解决，请直接转人工", "你好，我要人工客服" })
+        foreach (var input in new[] { "转人工", "请直接转人工", "我要人工客服", "可以转人工吗？", "麻烦帮我转接人工客服，谢谢", "还是帮我转真人吧", "帮我转专人，谢谢", "那就帮我转接真人客服", "我想找专人客服", "还是没解决，请直接转人工", "你好，我要人工客服" })
         {
             Assert.IsTrue(ExplicitHandoffIntent.Matches(input), input);
         }

@@ -135,7 +135,7 @@ public sealed partial class WorkflowTests
             return new HttpResponseMessage(status) { Content = new StringContent(receipt, Encoding.UTF8, "application/json") };
         }));
         var adapter = new NotificationHttpAdapter(http, Options.Create(new NotificationOptions()),
-            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), cipher, application.Clock);
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), cipher);
         await adapter.SendAsync(task, default);
         Assert.AreEqual("request_123:ok", task.ProviderRequestId);
         foreach (var bad in new[] { "{}", "{\"success\":true}", "{\"success\":false,\"request_id\":\"ok\"}", "{\"success\":true,\"request_id\":\"bad id\"}" })
@@ -165,12 +165,32 @@ public sealed partial class WorkflowTests
         var task = new ReliableTask { AssistantConfigId = "assistant-a", ConversationId = "conversation-a" };
         var text = HandoffNotificationText.Render(task, new("WECOM_ROBOT", "FINANCE", null,
             "https://hub.adsaleinfo.com/open-api", "https://support.example.com", DateTime.UtcNow.AddMinutes(-3), "zh-CN",
-            string.Concat(Enumerable.Repeat("发票😀", 1000)), new string('答', 2000)), DateTime.UtcNow);
+            string.Concat(Enumerable.Repeat("发票😀", 1000)), new string('答', 2000)));
+        Assert.IsFalse(text.Contains("已等待"));
         Assert.IsTrue(Encoding.UTF8.GetByteCount(text) <= 2048);
         Assert.IsFalse(text.Contains('\uFFFD'));
         StringAssert.Contains(text, "FINANCE");
         StringAssert.Contains(text, "😀");
         Assert.AreEqual(2, text.Split("https://support.example.com/b/inbox?assistantConfigId=assistant-a&conversationId=conversation-a").Length - 1);
+    }
+
+    /// <summary>
+    /// EMP 分类、已填写联系邮箱和企微链接按安全文本展示。
+    /// </summary>
+    [TestMethod]
+    public void NotificationTextShowsContactAndEscapesMarkdown()
+    {
+        var task = new ReliableTask { AssistantConfigId = "assistant-a", ConversationId = "conversation-a" };
+        var snapshot = new HandoffNotificationSnapshot("WECOM_ROBOT", "EMP", null,
+            "https://hub.adsaleinfo.com/open-api", "https://support.example.com", DateTime.UtcNow, "zh-CN", "问题摘要", null,
+            "person_[a]@example.com");
+
+        var text = HandoffNotificationText.Render(task, snapshot);
+
+        StringAssert.Contains(text, "其他客服（EMP）");
+        StringAssert.Contains(text, "person\\_\\[a\\]@example.com");
+        StringAssert.Contains(text, "[接手对话](https://support.example.com/b/inbox?");
+        Assert.IsFalse(snapshot.ToString().Contains("person_[a]@example.com", StringComparison.Ordinal));
     }
 
     /// <summary>

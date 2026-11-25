@@ -279,6 +279,10 @@ public sealed class TestDirectory : IAccountDirectory
 public sealed class TestModel : IChatModel
 {
     /// <summary>
+    /// 记录语义分类调用次数，验证邮箱卡提交时复用卡片分类。
+    /// </summary>
+    public int ClassificationCalls { get; private set; }
+    /// <summary>
     /// 模拟生成失败，禁止被视作真实模型验收。
     /// </summary>
     public bool Fail { get; set; }
@@ -309,8 +313,11 @@ public sealed class TestModel : IChatModel
     /// <summary>
     /// 固定返回 OTHER 和 TEST_FALLBACK 分类，用于确定性的业务回归。
     /// </summary>
-    public Task<Classification> ClassifyAsync(Scope scope, string context, CancellationToken ct) =>
-        Task.FromResult(new Classification(Category.OTHER, 0, "TEST_FALLBACK"));
+    public Task<Classification> ClassifyAsync(Scope scope, string context, CancellationToken ct)
+    {
+        ClassificationCalls++;
+        return Task.FromResult(new Classification(Category.OTHER, 0, "TEST_FALLBACK"));
+    }
 }
 
 /// <summary>

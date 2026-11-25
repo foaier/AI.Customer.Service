@@ -320,6 +320,11 @@ export default function Followups({ assistant }: { assistant: Assistant }) {
                                     <span className="followup-row-copy">
                                         <strong>{item.ticketId}</strong>
                                         <span>{item.scope.conversationId.slice(-10)}</span>
+                                        {(item.contactName || item.contactEmail) && (
+                                            <span className="followup-contact-preview">
+                                                {[item.contactName, item.contactEmail].filter(Boolean).join(" · ")}
+                                            </span>
+                                        )}
                                     </span>
                                     <span className={`status-label status-label--${item.state.toLowerCase()}`}>
                                         {followupState(item.state)}

@@ -24,7 +24,7 @@ public sealed class HandoffController(RequestAccess request, HandoffService hand
         {
             code = "REQUESTED",
             data = await handoff.RequestAsync(Actor, scope, command.RequestId,
-            TriggerSource.VISITOR_DIRECT_REQUEST, ReasonCode.USER_REQUEST, ct, email: command.Email),
+            TriggerSource.VISITOR_DIRECT_REQUEST, ReasonCode.USER_REQUEST, ct, email: command.Email, category: command.Category),
             requestId = command.RequestId,
             retryable = false,
             serverTime = DateTime.UtcNow

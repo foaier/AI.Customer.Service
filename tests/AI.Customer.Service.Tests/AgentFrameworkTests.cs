@@ -63,6 +63,30 @@ public sealed class AgentFrameworkTests
     }
 
     /// <summary>
+    /// 具体退款诉求通过人工建议工具返回，保持访客确认后才申请的边界。
+    /// </summary>
+    [TestMethod]
+    public async Task ActionableRefundUsesRecommendationRatherThanDirectApplication()
+    {
+        var requests = 0;
+        using var http = new HttpClient(new ProtocolHandler(async request =>
+        {
+            using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
+            var messages = body.RootElement.GetProperty("messages").ToString();
+            StringAssert.Contains(messages, "具体退款/退票");
+            StringAssert.Contains(messages, "仅询问一般退款政策时不触发");
+            StringAssert.Contains(messages, "必须等待用户确认建议卡");
+            return ++requests == 1
+                ? ToolResponse("proposeHandoff", """{"reasonCode":"REQUIRES_HUMAN_JUDGMENT","confidence":0.9,"userFacingReason":"退款进度需人工核实订单"}""")
+                : Answer();
+        }));
+        var deltas = await CollectAsync(Model(http), Input() with { UserInput = "请查一下我的退款进度" });
+        Assert.AreEqual(2, requests);
+        Assert.AreEqual("proposeHandoff", deltas[^1].ToolName);
+        StringAssert.Contains(deltas[^1].Arguments, "REQUIRES_HUMAN_JUDGMENT");
+    }
+
+    /// <summary>
     /// 工具已在内存执行但续轮失败时不输出任何候选，确保失败轮次无法触发业务状态。
     /// </summary>
     [TestMethod]
@@ -184,6 +208,7 @@ public sealed class AgentFrameworkTests
             Assert.AreEqual("session-a", request.Headers.GetValues("X-Session-Id").Single());
             using var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
             Assert.AreEqual("json_object", body.RootElement.GetProperty("response_format").GetProperty("type").GetString());
+            StringAssert.Contains(body.RootElement.GetProperty("messages").ToString(), "FINANCE 处理付款、退款、退票、发票和账单");
             return ClassificationResponse(content);
         }));
         var result = await Model(http).ClassifyAsync(Input().Scope, "展位咨询", default);

@@ -37,6 +37,42 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
         await repository.QueueAsync(assistant, await access.GroupsAsync(actor, ct), actor.AccountId, ct);
 
     /// <summary>
+    /// 当前客服按完成时间倒序查询本人仍有组权限的历史接待。
+    /// </summary>
+    public async Task<CompletedReceptionPage> CompletedAsync(Actor actor, string assistant, int page, int size,
+        string? email, DateTime? closedFrom, DateTime? closedBefore, CancellationToken ct)
+    {
+        if (page is < 1 or > 100000 || size is < 1 or > 100)
+        {
+            throw BusinessException.Invalid("历史页码或页大小无效");
+        }
+        if (closedFrom is not null && closedBefore is not null && closedFrom >= closedBefore)
+        {
+            throw BusinessException.Invalid("完成时间范围必须为左闭右开区间");
+        }
+        if (email is { Length: > 254 }) throw BusinessException.Invalid("邮箱筛选超出长度限制");
+
+        var groups = await access.GroupsAsync(actor, ct);
+        var rows = await repository.CompletedAsync(assistant, groups, actor.AccountId, (page - 1) * size, size + 1,
+            string.IsNullOrWhiteSpace(email) ? null : email.Trim(), closedFrom, closedBefore, ct);
+        return new CompletedReceptionPage(page, size, rows.Count > size, rows.Take(size).ToArray());
+    }
+
+    /// <summary>
+    /// 历史详情仅向原认领客服和当前仍有组权限的成员开放。
+    /// </summary>
+    public async Task<Episode> RequireCompletedAsync(Actor actor, Scope scope, string episodeId, CancellationToken ct)
+    {
+        var episode = await repository.EpisodeAsync(scope, episodeId, ct);
+        if (episode is null || episode.Status != EpisodeStatus.RESOLVED || episode.AgentId != actor.AccountId)
+        {
+            throw BusinessException.Forbidden("已完成接待不存在或不可访问");
+        }
+        await access.RequireGroupAsync(actor, episode, ct);
+        return episode;
+    }
+
+    /// <summary>
     /// 同版本并发认领只有一人成功，默认离线和过期心跳均不阻止手动接单。
     /// </summary>
     public Task<object> ClaimAsync(Actor actor, Scope scope, StateCommand command, CancellationToken ct) =>
@@ -174,7 +210,7 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
         }
         if (await repository.ActiveCountAsync(actor.AccountId, ct) >= options.Value.Capacity)
         {
-            throw BusinessException.Conflict("客服同组织接待容量已满");
+            throw BusinessException.CapacityExceeded();
         }
     }
 
@@ -194,3 +230,12 @@ public sealed class ReceptionService(IReceptionRepository repository, IConfigura
     private static object Result(Episode episode, string request) =>
         new { requestId = request, episodeId = episode.Id, status = episode.Status, version = episode.Version, replayed = false };
 }
+
+/// <summary>
+/// 本人已完成接待的安全分页结果。
+/// </summary>
+/// <param name="Page"> 当前页码。 </param>
+/// <param name="Size"> 每页数量。 </param>
+/// <param name="HasMore"> 是否还有下一页。 </param>
+/// <param name="Episodes"> 当前页接待周期。 </param>
+public sealed record CompletedReceptionPage(int Page, int Size, bool HasMore, IReadOnlyList<Episode> Episodes);

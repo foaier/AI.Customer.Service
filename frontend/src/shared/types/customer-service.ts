@@ -30,8 +30,11 @@ export type Episode = {
     version: number;
     principalId?: string;
     agentId?: string | null;
+    contactEmail?: string | null;
+    contactName?: string | null;
     groupId?: string;
     requestedAt: string;
+    finishedAt?: string | null;
     triggerSource?: string;
     reasonCode?: string;
     autoCloseAt?: string | null;
@@ -106,6 +109,8 @@ export type Followup = {
     version: number;
     assignedTo?: string | null;
     submittedAt: string;
+    contactEmail?: string | null;
+    contactName?: string | null;
     hasSubmittedForm?: boolean;
     hasUnseen?: boolean;
     formState?: "OPEN" | "CLAIMED" | null;

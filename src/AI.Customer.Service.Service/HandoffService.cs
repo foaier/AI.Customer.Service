@@ -30,13 +30,17 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
     /// 访客明确申请不经过建议二次确认；同键重放不重复切换回复权。
     /// </summary>
     public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
-        CancellationToken ct, string? failedTurnId = null, string? email = null)
+        CancellationToken ct, string? failedTurnId = null, string? email = null, Category? category = null)
     {
         var contactEmail = source == TriggerSource.SYSTEM_POLICY || email is null ? null : Guard.Email(email);
-        var classification = await PrepareAsync(scope, ct);
+        var classification = category is { } cardCategory
+            ? new Classification(cardCategory, 0, "CARD")
+            : await PrepareAsync(scope, ct);
         return await transactions.ExecuteAsync(async () =>
         {
-            var input = new { requestId = request, source, reason, email = contactEmail };
+            object input = category is null
+                ? new { requestId = request, source, reason, email = contactEmail }
+                : new { requestId = request, source, reason, email = contactEmail, category = (Category?)classification.Category };
             var prior = await journal.ReplayAsync(scope, actor, "REQUEST", request, input, ct);
             if (prior is not null)
             {

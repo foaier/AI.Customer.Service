@@ -13,7 +13,7 @@ namespace AI.Customer.Service.Infrastructure.Adapters;
 /// 官方企微、雅式及邮件网关的独立协议适配，通知开关只读取共享持久配置。
 /// </summary>
 public sealed class NotificationHttpAdapter(HttpClient http, IOptions<NotificationOptions> options,
-    IConfigurationRepository configuration, IReceptionRepository reception, ISecretCipher cipher, TimeProvider clock) : INotificationPort
+    IConfigurationRepository configuration, IReceptionRepository reception, ISecretCipher cipher) : INotificationPort
 {
     /// <summary>
     /// 启用按组织持久通知配置筛选任务，未启用组织不领取邮件和群通知任务。
@@ -69,7 +69,7 @@ public sealed class NotificationHttpAdapter(HttpClient http, IOptions<Notificati
             snapshot = new(settings.ActiveProvider, category, settings.ChatGroup.GetValueOrDefault(category), settings.BaseUrl,
                 settings.PublicBaseUrl, episode.RequestedAt, null, null, null);
         }
-        var text = HandoffNotificationText.Render(task, snapshot, clock.GetUtcNow().UtcDateTime);
+        var text = HandoffNotificationText.Render(task, snapshot);
         if (snapshot.Provider == "WECOM_ROBOT")
         {
             if (!settings.ChatGroup.TryGetValue(snapshot.NotificationCategory, out var hook) || !Regex.IsMatch(hook, "\\A[A-Za-z0-9_-]{10,200}\\z"))

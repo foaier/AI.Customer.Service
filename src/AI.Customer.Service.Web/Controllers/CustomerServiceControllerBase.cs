@@ -61,6 +61,7 @@ public abstract class CustomerServiceControllerBase(RequestAccess request) : Con
         episode.TriggerSource,
         episode.ReasonCode,
         episode.AutoCloseAt,
-        episode.ResolutionReason
+        episode.ResolutionReason,
+        episode.FinishedAt
     };
 }

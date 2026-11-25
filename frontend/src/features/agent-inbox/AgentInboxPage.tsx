@@ -724,6 +724,16 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                                     <div>
                                         <strong>访客 {selected.principalId || "会话"}</strong>
                                         <span>会话 · {selected.scope.conversationId}</span>
+                                        {(selected.contactName || selected.contactEmail) && (
+                                            <span className="contact-profile-line">
+                                                {selected.contactName && <strong>{selected.contactName}</strong>}
+                                                {selected.contactEmail && (
+                                                    <a href={`mailto:${selected.contactEmail}`}>
+                                                        {selected.contactEmail}
+                                                    </a>
+                                                )}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="conversation-header-actions">

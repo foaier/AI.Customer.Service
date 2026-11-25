@@ -25,6 +25,11 @@ public sealed class BusinessException(string code, string message, int statusCod
     public static BusinessException Conflict(string message) => new("STATE_CONFLICT", message);
 
     /// <summary>
+    /// 创建可由客服端单独识别的容量限制错误。
+    /// </summary>
+    public static BusinessException CapacityExceeded() => new("CAPACITY_LIMIT", "客服接待名额已满，请先结束已有接待后再操作");
+
+    /// <summary>
     /// 创建归属、成员或认领权限不足错误
     /// </summary>
     public static BusinessException Forbidden(string message = "无权访问当前业务范围") => new("FORBIDDEN", message, 403);

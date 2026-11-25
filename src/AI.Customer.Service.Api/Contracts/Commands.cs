@@ -8,8 +8,9 @@ namespace AI.Customer.Service.Api.Contracts;
 /// </summary>
 /// <param name="RequestId"> 首次提交键，网络重试原样复用。 </param>
 /// <param name="Email"> 访客明确确认的有效联系邮箱。 </param>
+/// <param name="Category"> 邮箱卡返回的主题分类，提交时固定并参与幂等校验。 </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record HandoffCommand(string RequestId, string? Email = null);
+public sealed record HandoffCommand(string RequestId, string? Email = null, Category? Category = null);
 
 /// <summary>
 /// 带聚合版本的状态命令。

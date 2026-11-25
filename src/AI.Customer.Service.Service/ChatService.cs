@@ -21,8 +21,11 @@ namespace AI.Customer.Service.Service;
 /// <param name="journal"> 系统故障任务登记。 </param>
 /// <param name="transactions"> 短事务。 </param>
 /// <param name="logger"> 结构化日志。 </param>
+/// <param name="configuration"> 组织客服营业日历。 </param>
+/// <param name="clock"> UTC 时钟。 </param>
 public sealed class ChatService(ConversationRuntime runtime, IConversationRepository conversations, IChatModel model,
-    HandoffService handoff, SurveyService surveys, CommandJournal journal, IUnitOfWork transactions, ILogger<ChatService> logger)
+    HandoffService handoff, SurveyService surveys, CommandJournal journal, IUnitOfWork transactions, ILogger<ChatService> logger,
+    IConfigurationRepository configuration, TimeProvider clock)
 {
     /// <summary>
     /// 同会话生成 AI SSE 事件，失败有明确事件及可靠系统恢复，不写入迟到正文。
@@ -32,10 +35,24 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         await runtime.RequireChatIdentityAsync(scope, ct);
         if (ExplicitHandoffIntent.Matches(input))
         {
+            var category = await handoff.PrepareAsync(scope, ct);
+            var calendar = await configuration.CalendarAsync(ct) ?? new CalendarPolicy();
+            var window = calendar.Evaluate(clock.GetUtcNow().UtcDateTime);
+            var offline = !window.Open;
             yield return new("card", new
             {
-                status = "handoff.email_required",
-                data = new { message = "请填写联系邮箱后提交人工申请" }
+                status = offline ? "handoff.offline_followup_required" : "handoff.email_required",
+                description = offline ? "人工客服当前休息中，请填写邮箱和问题描述，客服将在工作时间内跟进" : "请填写联系邮箱后申请人工客服",
+                data = new
+                {
+                    requestId = Guard.Id("handoff"),
+                    conversationId = scope.ConversationId,
+                    status = offline ? "OFFLINE_FOLLOWUP_REQUIRED" : "EMAIL_REQUIRED",
+                    category = category.Category.ToString(),
+                    nextOpensAt = offline ? window.NextOpensAt : (DateTime?)null,
+                    timeZone = calendar.Zone,
+                    serviceHours = offline ? new { opens = calendar.Opens, closes = calendar.Closes, workingDays = new[] { 1, 2, 3, 4, 5 } } : null
+                }
             });
             yield break;
         }

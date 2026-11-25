@@ -105,7 +105,7 @@ public sealed partial class WorkflowTests
         }));
         var options = new NotificationOptions { Authorization = "must-not-leak" };
         var adapter = new NotificationHttpAdapter(http, Options.Create(options),
-            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>(), application.Clock);
+            scope.ServiceProvider.GetRequiredService<IConfigurationRepository>(), scope.ServiceProvider.GetRequiredService<IReceptionRepository>(), scope.ServiceProvider.GetRequiredService<ISecretCipher>());
         await Assert.ThrowsExactlyAsync<NotificationDeliveryException>(() => adapter.SendAsync(task, default));
         accepted = true;
         await adapter.SendAsync(task, default);

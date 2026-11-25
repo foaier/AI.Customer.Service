@@ -12,7 +12,9 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <param name="reception"> 接待应用端口 </param>
 /// <param name="access"> 本地冻结组核验 </param>
 /// <param name="inbox"> 收件箱提醒投影 </param>
-public sealed class ReceptionController(RequestAccess request, ReceptionService reception, AccessService access, InboxService inbox) : CustomerServiceControllerBase(request)
+/// <param name="messages"> 人工消息读取应用端口 </param>
+public sealed class ReceptionController(RequestAccess request, ReceptionService reception, AccessService access, InboxService inbox,
+    MessagingService messages) : CustomerServiceControllerBase(request)
 {
     /// <summary>
     /// 查询有资格组的待接单和本人接待。
@@ -22,6 +24,24 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
     {
         await RequestAccess.AgentListAsync(assistantConfigId, ct);
         return Success(await inbox.QueueAsync(Actor, assistantConfigId, ct));
+    }
+
+    /// <summary>
+    /// 分页查询当前客服本人且仍具备接待组权限的已完成历史。
+    /// </summary>
+    [HttpGet("agents/receptions/completed")]
+    public async Task<object> Completed(string assistantConfigId, CancellationToken ct, int page = 1, int size = 50,
+        string? email = null, DateTime? closedFrom = null, DateTime? closedBefore = null)
+    {
+        await RequestAccess.AgentListAsync(assistantConfigId, ct);
+        var result = await reception.CompletedAsync(Actor, assistantConfigId, page, size, email, closedFrom, closedBefore, ct);
+        return Success(new
+        {
+            episodes = result.Episodes.Select(ReceptionView),
+            result.Page,
+            result.Size,
+            result.HasMore
+        });
     }
 
     /// <summary>
@@ -40,6 +60,26 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
         var episode = await reception.RequireAsync(await RequestAccess.AgentAsync(id, ct), null, ct);
         await access.RequireGroupAsync(Actor, episode, ct);
         return Success(ReceptionView(episode));
+    }
+
+    /// <summary>
+    /// 读取本人已完成的原周期摘要，授权范围不随当前最新周期变化。
+    /// </summary>
+    [HttpGet("agents/conversations/{id}/episodes/{episode}/reception")]
+    public async Task<object> CompletedReception(string id, string episode, CancellationToken ct)
+    {
+        var scope = await RequestAccess.AgentAsync(id, ct);
+        return Success(ReceptionView(await reception.RequireCompletedAsync(Actor, scope, episode, ct)));
+    }
+
+    /// <summary>
+    /// 读取本人已完成的原周期人工消息，不推进当前会话回执。
+    /// </summary>
+    [HttpGet("agents/conversations/{id}/episodes/{episode}/messages")]
+    public async Task<object> CompletedMessages(string id, string episode, CancellationToken ct, long afterSeq = 0, int limit = 100)
+    {
+        var scope = await RequestAccess.AgentAsync(id, ct);
+        return Success(await messages.CompletedTimelineAsync(Actor, scope, episode, afterSeq, limit, ct));
     }
 
     /// <summary>

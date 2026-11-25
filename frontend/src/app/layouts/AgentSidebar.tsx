@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, Headset, MessageCircle, Settings2, UsersRound } from "lucide-react";
+import { ArrowRight, Bot, FileSpreadsheet, Headset, History, MessageCircle, Settings2, UsersRound } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 export function AgentSidebar() {
@@ -21,12 +21,20 @@ export function AgentSidebar() {
                     <MessageCircle size={17} />
                     <span>邮件跟进</span>
                 </NavLink>
+                <NavLink to="/b/history">
+                    <History size={17} />
+                    <span>已完成接待</span>
+                </NavLink>
             </nav>
             <div className="sidebar-section-label sidebar-section-label--spaced">管理</div>
             <nav className="sidebar-nav" aria-label="客服工作台管理">
                 <NavLink to="/b/settings">
                     <Settings2 size={17} />
                     <span>分组与营业时间</span>
+                </NavLink>
+                <NavLink to="/b/records">
+                    <FileSpreadsheet size={17} />
+                    <span>会话记录</span>
                 </NavLink>
             </nav>
             <div className="sidebar-bottom">

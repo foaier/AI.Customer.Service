@@ -106,7 +106,11 @@ public enum ReasonCode
     /// <summary>
     /// 调查不满意并明确选择人工。
     /// </summary>
-    SURVEY_DISSATISFIED
+    SURVEY_DISSATISFIED,
+    /// <summary>
+    /// 需要人工判断订单、例外条件或其他个案。
+    /// </summary>
+    REQUIRES_HUMAN_JUDGMENT
 }
 
 /// <summary>
