@@ -56,6 +56,8 @@ public sealed class CustomerServiceDbContext(DbContextOptions<CustomerServiceDbC
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Groups));
         Json(model.Entity<RoutingConfiguration>().Property(x => x.Routes));
         Json(model.Entity<CalendarPolicy>().Property(x => x.Overrides));
+        Json(model.Entity<CalendarPolicy>().Property(x => x.WorkingDays));
+        Json(model.Entity<CalendarPolicy>().Property(x => x.Slots));
         model.Entity<Conversation>().HasIndex(x => x.Id).IsUnique();
         model.Entity<RoutingConfiguration>().HasIndex(x => x.Id).IsUnique();
         model.Entity<CalendarPolicy>().HasIndex(x => x.Id).IsUnique();

@@ -2454,19 +2454,54 @@ svg {
     display: flex;
     gap: 4px;
 }
-.weekday-summary > div > span {
+.weekday-summary > div > span,
+.weekday-picker button {
     width: 20px;
     height: 20px;
     display: grid;
     place-items: center;
+    padding: 0;
     color: #a0aaa4;
+    border: 0;
     border-radius: 50%;
     background: #f0f3f1;
     font-size: 8px;
 }
-.weekday-summary > div > span.weekday-on {
+.weekday-summary > div > span.weekday-on,
+.weekday-picker button.weekday-on {
     color: #347a64;
     background: #e6f3eb;
+}
+.weekday-picker button:hover {
+    box-shadow: inset 0 0 0 1px #9fc6b7;
+}
+.calendar-slots {
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+}
+.calendar-slot-row {
+    display: grid;
+    grid-template-columns: minmax(58px, 0.6fr) minmax(100px, 1fr) minmax(100px, 1fr) 34px;
+    align-items: end;
+    gap: 10px;
+}
+.calendar-slot-row > strong {
+    padding-bottom: 9px;
+    color: #637069;
+    font-size: 10px;
+}
+.calendar-slot-row label {
+    display: grid;
+    gap: 5px;
+    color: #7b8780;
+    font-size: 9px;
+}
+.calendar-slot-row input {
+    min-height: 33px;
+}
+.calendar-slots > .button {
+    justify-self: start;
 }
 .weekday-summary small {
     margin-left: auto;
@@ -2995,6 +3030,10 @@ svg {
     }
     .calendar-fields {
         gap: 8px;
+    }
+    .calendar-slot-row {
+        grid-template-columns: minmax(42px, 0.45fr) minmax(85px, 1fr) minmax(85px, 1fr) 34px;
+        gap: 6px;
     }
     .calendar-controls input[type="date"] {
         min-width: 100%;

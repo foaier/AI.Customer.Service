@@ -57,6 +57,44 @@ public sealed class AccessService(IAccountDirectory accounts, IConfigurationRepo
     }
 
     /// <summary>
+    /// 仅在认领或接待中的周期，按原业务组返回已核验成员的公开展示名。
+    /// </summary>
+    public async Task<string?> AgentDisplayNameAsync(Episode episode, CancellationToken ct)
+    {
+        var names = await AgentDisplayNamesAsync([episode], ct);
+        return names.GetValueOrDefault(episode.Id);
+    }
+
+    /// <summary>
+    /// 批量读取当前业务组内接待客服的公开展示名，不返回客服账号引用。
+    /// </summary>
+    public async Task<IReadOnlyDictionary<string, string>> AgentDisplayNamesAsync(IReadOnlyCollection<Episode> episodes, CancellationToken ct)
+    {
+        var assigned = episodes.Where(episode => episode.Status is EpisodeStatus.CLAIMED or EpisodeStatus.ACTIVE &&
+            !string.IsNullOrWhiteSpace(episode.AgentId)).ToArray();
+        if (assigned.Length == 0)
+        {
+            return new Dictionary<string, string>();
+        }
+        var current = await configuration.RoutingAsync(ct);
+        if (current is null)
+        {
+            return new Dictionary<string, string>();
+        }
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var episode in assigned)
+        {
+            var member = current.Groups.SingleOrDefault(group => group.Id == episode.GroupId)?.Members
+                .SingleOrDefault(candidate => candidate.AccountId == episode.AgentId);
+            if (!string.IsNullOrWhiteSpace(member?.DisplayName))
+            {
+                result[episode.Id] = member.DisplayName.Trim();
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
     /// 校验助手的可信租户和目标组织，不信任 URL 中的组织字段。
     /// </summary>
     public AssistantDefinition RequireAssistant(Actor actor, string assistant)

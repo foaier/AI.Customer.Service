@@ -670,6 +670,7 @@ export default function AgentInbox({ assistant }: { assistant: Assistant }) {
                                                 >
                                                     {statusName(item.status)}
                                                 </span>
+                                                {item.agentDisplayName && <span>客服：{item.agentDisplayName}</span>}
                                                 <span className="queue-session">
                                                     {item.scope.conversationId.slice(-8)}
                                                 </span>

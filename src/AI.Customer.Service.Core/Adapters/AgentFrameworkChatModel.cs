@@ -41,10 +41,12 @@ public sealed class AgentFrameworkChatModel(HttpClient http, IOptions<ModelOptio
             Description = "同一客服会话的文本答复与受限业务建议。",
             ChatOptions = new()
             {
-                Instructions = options.Value.SystemPrompt + "\n工具仅记录建议，不能代表已转人工、已关闭或已评价。工具返回后继续向访客说明实际结果。" +
+                Instructions = options.Value.SystemPrompt + "\n工具仅记录候选，不能代表已转人工、已关闭或已评价。工具返回后继续向访客说明实际结果。" +
+                    "\n判断本轮访客原话是否清楚表达希望人工客服接手，不要求命中固定关键词。只有意图明确时调用 requestHandoff；工具只会在本轮完整成功后发送邮箱采集卡或非营业留言卡，不会创建接待。访客提交有效邮箱前，不得声称申请已创建或已进入队列。" +
+                    "不满、投诉、问题复杂或尚未解决本身不代表访客授权；意图不明确时使用 proposeHandoff 发送确认卡。" +
                     "\n用户要求为本人处理具体退款/退票、查询已付款项退款进度或申请退款例外时，在说明有依据的公开政策后调用 proposeHandoff，" +
                     "reasonCode 使用 REQUIRES_HUMAN_JUDGMENT，confidence 至少 0.9，让人工核实订单或例外条件。仅询问一般退款政策时不触发。" +
-                    "退款诉求不能视为转人工授权，必须等待用户确认建议卡，不得调用 requestHandoff 或声称已创建人工申请。",
+                    "退款诉求本身不能视为转人工授权；若访客同时清楚要求人工接手，仍按明确意图调用 requestHandoff。",
                 Tools = candidates.CreateTools(),
                 AllowMultipleToolCalls = false
             }

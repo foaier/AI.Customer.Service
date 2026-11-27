@@ -57,7 +57,13 @@ describe("offline handoff recovery", () => {
                     category: "VISITOR",
                     nextOpensAt: "2026-11-26T01:00:00Z",
                     timeZone: "Asia/Shanghai",
-                    serviceHours: { opens: "10:00", closes: "17:00", workingDays: [1, 2, 3, 4, 5] },
+                    serviceHours: {
+                        workingDays: [2, 3, 4],
+                        slots: [
+                            { opens: "09:00", closes: "12:00" },
+                            { opens: "13:00", closes: "17:00" },
+                        ],
+                    },
                 },
             });
         });
@@ -85,7 +91,9 @@ describe("offline handoff recovery", () => {
             screen.getByText(
                 (_, element) =>
                     element?.tagName === "P" &&
-                    element.textContent?.includes("常规服务时间：周一至周五 10:00–17:00（Asia/Shanghai）") === true,
+                    element.textContent?.includes(
+                        "常规服务时间：周二至周四 09:00–12:00、13:00–17:00（Asia/Shanghai）",
+                    ) === true,
             ),
         ).toBeInTheDocument();
         await user.click(screen.getByRole("button", { name: "提交留言" }));

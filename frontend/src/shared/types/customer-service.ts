@@ -30,6 +30,7 @@ export type Episode = {
     version: number;
     principalId?: string;
     agentId?: string | null;
+    agentDisplayName?: string | null;
     contactEmail?: string | null;
     contactName?: string | null;
     groupId?: string;
@@ -69,13 +70,20 @@ export type Route = {
 
 export type Routing = { version: number; groups: Group[]; routes: Route[] };
 
+export type CalendarSlot = {
+    opens: string;
+    closes: string;
+};
+
 export type Calendar = {
     version: number;
     calendarVersion: string;
     zone: string;
-    opens: string;
-    closes: string;
+    opens: string | null;
+    closes: string | null;
     overrides: Record<string, boolean>;
+    workingDays: number[];
+    slots: CalendarSlot[];
 };
 
 export type AgentSnapshot = {

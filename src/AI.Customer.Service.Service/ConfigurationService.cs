@@ -92,6 +92,8 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
             }
             if (current is not null && current.CalendarVersion == draft.CalendarVersion &&
                 (current.Zone != draft.Zone || current.Opens != draft.Opens || current.Closes != draft.Closes ||
+                 !current.EffectiveWorkingDays().SequenceEqual(draft.EffectiveWorkingDays()) ||
+                 !current.EffectiveSlots().SequenceEqual(draft.EffectiveSlots()) ||
                  !current.Overrides.OrderBy(x => x.Key).SequenceEqual(draft.Overrides.OrderBy(x => x.Key))))
             {
                 throw BusinessException.Invalid("更改营业规则必须升级 calendarVersion");
@@ -103,8 +105,10 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
             }
             current.CalendarVersion = draft.CalendarVersion;
             current.Zone = draft.Zone;
-            current.Opens = draft.Opens;
-            current.Closes = draft.Closes;
+            current.WorkingDays = draft.EffectiveWorkingDays().ToList();
+            current.Slots = draft.EffectiveSlots().ToList();
+            current.Opens = current.Slots[0].Opens;
+            current.Closes = current.Slots[^1].Closes;
             current.Overrides = draft.Overrides;
             current.Version++;
             return current;
@@ -114,8 +118,28 @@ public sealed class ConfigurationService(IConfigurationRepository repository, IU
     /// <summary>
     /// 把严格 HTTP 草稿映射到独立日历规则，不读取身份字段。
     /// </summary>
-    public static CalendarPolicy ToCalendar(CalendarCommand command) =>
-        new() { CalendarVersion = command.CalendarVersion, Zone = command.Zone, Opens = command.Opens, Closes = command.Closes, Overrides = command.Overrides };
+    public static CalendarPolicy ToCalendar(CalendarCommand command)
+    {
+        var suppliedSlots = command.Slots;
+        var opens = suppliedSlots is { Count: > 0 } ? suppliedSlots[0].Opens : command.Opens ?? "";
+        var closes = suppliedSlots is { Count: > 0 } ? suppliedSlots[^1].Closes : command.Closes ?? "";
+        var calendar = new CalendarPolicy
+        {
+            CalendarVersion = command.CalendarVersion,
+            Zone = command.Zone,
+            Opens = opens,
+            Closes = closes,
+            Overrides = command.Overrides ?? [],
+            WorkingDays = command.WorkingDays,
+            Slots = suppliedSlots?.Select(slot => new CalendarTimeSlot(slot.Opens, slot.Closes)).ToList()
+        };
+        calendar.Validate();
+        calendar.WorkingDays = calendar.EffectiveWorkingDays().ToList();
+        calendar.Slots = calendar.EffectiveSlots().ToList();
+        calendar.Opens = calendar.Slots[0].Opens;
+        calendar.Closes = calendar.Slots[^1].Closes;
+        return calendar;
+    }
 
     /// <summary>
     /// 创建同组织稳定默认组，读操作无数据库副作用。

@@ -23,7 +23,7 @@ internal sealed class AgentProposalTools
     [
         AIFunctionFactory.Create(ProposeHandoff, "proposeHandoff", "建议人工，需要访客明确确认，工具不会申请人工。"),
         AIFunctionFactory.Create(ProposeResolution, "proposeResolution", "记录可能解决的候选，不能关闭会话或代替用户评价。"),
-        AIFunctionFactory.Create(RequestHandoff, "requestHandoff", "检查转人工授权边界；模型不能代替访客授权，明确请求由业务入口处理。")
+        AIFunctionFactory.Create(RequestHandoff, "requestHandoff", "访客本轮明确要求人工接手时生成邮箱采集卡；工具不创建接待，必须由访客提交邮箱。")
     ];
 
     /// <summary>
@@ -59,9 +59,16 @@ internal sealed class AgentProposalTools
     }
 
     /// <summary>
-    /// 明确拒绝模型自行申请人工；原话授权和按钮申请由应用入口独立处理
+    /// 只记录本轮明确人工意图，邮箱卡必须在完整回答成功后由应用层发送。
     /// </summary>
-    private static string RequestHandoff() => "USER_CONSENT_REQUIRED: 模型无权创建人工申请。请访客使用转人工按钮或明确提出请求。";
+    private string RequestHandoff()
+    {
+        if (!Candidates.Any(candidate => candidate.ToolName == "requestHandoff"))
+        {
+            Candidates.Add(new(null, "requestHandoff", "{}"));
+        }
+        return "EMAIL_COLLECTION_ONLY: 已记录本轮明确的人工接手意图；完整回答成功后将发送邮箱采集卡，当前尚未创建申请或接待。";
+    }
 
     /// <summary>
     /// 置信度只接受有限的0到1数值，阈值由业务 owner 再次判定

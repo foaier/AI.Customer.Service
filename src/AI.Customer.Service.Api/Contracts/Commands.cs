@@ -7,7 +7,9 @@ namespace AI.Customer.Service.Api.Contracts;
 /// 客户端稳定命令键，不接受自报身份及组织。
 /// </summary>
 /// <param name="RequestId"> 首次提交键，网络重试原样复用。 </param>
-/// <param name="Email"> 访客明确确认的有效联系邮箱。 </param>
+/// <param name="Email">
+/// 访客提交的有效联系邮箱，申请人工时必填。
+/// </param>
 /// <param name="Category"> 邮箱卡返回的主题分类，提交时固定并参与幂等校验。 </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record HandoffCommand(string RequestId, string? Email = null, Category? Category = null);
@@ -148,14 +150,45 @@ public sealed record ChatNotificationCommand(long Version, Dictionary<string, st
 /// <summary>
 /// 正式组织日历完整 CAS 保存。
 /// </summary>
-/// <param name="Version"> 未保存为 0。 </param>
-/// <param name="CalendarVersion"> 业务日历版本。 </param>
-/// <param name="Zone"> 合法时区。 </param>
-/// <param name="Opens"> 同日开门时间。 </param>
-/// <param name="Closes"> 同日闭门时间。 </param>
-/// <param name="Overrides"> ISO 日期覆盖。 </param>
+/// <param name="Version">
+/// 未保存为 0。
+/// </param>
+/// <param name="CalendarVersion">
+/// 业务日历版本。
+/// </param>
+/// <param name="Zone">
+/// 合法时区。
+/// </param>
+/// <param name="Opens">
+/// 旧版单时段开门时间，新版可为空。
+/// </param>
+/// <param name="Closes">
+/// 旧版单时段闭门时间，新版可为空。
+/// </param>
+/// <param name="Overrides">
+/// ISO 日期营业覆盖。
+/// </param>
+/// <param name="WorkingDays">
+/// ISO 星期数字 1 至 7；省略时默认为周一至周五。
+/// </param>
+/// <param name="Slots">
+/// 每周共用的 1 至 8 个当地营业时段；省略时使用旧版开闭时间。
+/// </param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record CalendarCommand(long Version, string CalendarVersion, string Zone, string Opens, string Closes, Dictionary<string, bool> Overrides);
+public sealed record CalendarCommand(long Version, string CalendarVersion, string Zone, string? Opens, string? Closes,
+    Dictionary<string, bool> Overrides, List<int>? WorkingDays = null, List<CalendarSlotCommand>? Slots = null);
+
+/// <summary>
+/// 组织营业日历中的单个当地服务时段。
+/// </summary>
+/// <param name="Opens">
+/// 包含边界的开门时刻。
+/// </param>
+/// <param name="Closes">
+/// 不包含边界的闭门时刻。
+/// </param>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record CalendarSlotCommand(string Opens, string Closes);
 
 /// <summary>
 /// 日历草稿预览，不保存且不修改服务器时间。

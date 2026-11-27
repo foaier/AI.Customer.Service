@@ -22,10 +22,10 @@ namespace AI.Customer.Service.Tests;
 public sealed class AgentFrameworkTests
 {
     /// <summary>
-    /// 模型申请工具实际执行拒绝结果，不能生成业务申请或冒充用户同意。
+    /// 模型转人工工具只在成功续轮后释放邮箱卡候选，不创建人工申请。
     /// </summary>
     [TestMethod]
-    public async Task ModelCannotAuthorizeHandoff()
+    public async Task ModelHandoffIntentCreatesOnlyEmailCardCandidate()
     {
         var requests = 0;
         using var http = new HttpClient(new ProtocolHandler(async request =>
@@ -38,12 +38,12 @@ public sealed class AgentFrameworkTests
             }
             Assert.AreEqual(2, requests);
             var tool = body.RootElement.GetProperty("messages").EnumerateArray().Single(x => x.GetProperty("role").GetString() == "tool");
-            StringAssert.Contains(tool.GetProperty("content").GetString(), "USER_CONSENT_REQUIRED");
+            StringAssert.Contains(tool.GetProperty("content").GetString(), "EMAIL_COLLECTION_ONLY");
             return Answer();
         }));
         var deltas = await CollectAsync(Model(http), Input());
         Assert.AreEqual(2, requests);
-        Assert.IsTrue(deltas.All(x => x.ToolName is null));
+        Assert.AreEqual("requestHandoff", deltas[^1].ToolName);
         Assert.AreEqual("完整答复", string.Concat(deltas.Select(x => x.Text)));
     }
 
@@ -75,7 +75,7 @@ public sealed class AgentFrameworkTests
             var messages = body.RootElement.GetProperty("messages").ToString();
             StringAssert.Contains(messages, "具体退款/退票");
             StringAssert.Contains(messages, "仅询问一般退款政策时不触发");
-            StringAssert.Contains(messages, "必须等待用户确认建议卡");
+            StringAssert.Contains(messages, "退款诉求本身不能视为转人工授权");
             return ++requests == 1
                 ? ToolResponse("proposeHandoff", """{"reasonCode":"REQUIRES_HUMAN_JUDGMENT","confidence":0.9,"userFacingReason":"退款进度需人工核实订单"}""")
                 : Answer();

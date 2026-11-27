@@ -350,6 +350,9 @@
     async function requestHandoff() {
         if (!state.conversationId) await createSession();
         const conversationId = ensureConversation();
+        const email = el("followup-email").value.trim();
+        if (!email || (el("followup-email").checkValidity && !el("followup-email").checkValidity()))
+            throw new Error("请输入有效邮箱");
         const version = state.conversationVersion;
         const id = requestId("handoff");
         const result = await request(
@@ -357,7 +360,7 @@
             {
                 method: "POST",
                 headers: await authHeaders({ "X-Request-Id": id }),
-                body: JSON.stringify({ requestId: id }),
+                body: JSON.stringify({ requestId: id, email }),
             },
         );
         if (version !== state.conversationVersion || conversationId !== state.conversationId) return;

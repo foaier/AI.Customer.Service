@@ -59,6 +59,7 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
     {
         var groups = await access.GroupsAsync(actor, ct);
         var episodes = await reception.QueueAsync(assistant, groups, actor.AccountId, ct);
+        var agentNames = await access.AgentDisplayNamesAsync(episodes, ct);
         var stats = (await conversations.InboxMessageStatsAsync(assistant, groups, actor.AccountId, ct))
             .ToDictionary(x => x.EpisodeId, StringComparer.Ordinal);
         var queue = new List<object>(episodes.Count);
@@ -76,6 +77,7 @@ public sealed class InboxService(AccessService access, IReceptionRepository rece
                 x.Version,
                 x.PrincipalId,
                 x.AgentId,
+                agentDisplayName = agentNames.GetValueOrDefault(x.Id),
                 x.GroupId,
                 x.RequestedAt,
                 x.TriggerSource,

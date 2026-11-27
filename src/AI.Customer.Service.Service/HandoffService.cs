@@ -32,7 +32,7 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
     public async Task<object> RequestAsync(Actor actor, Scope scope, string request, TriggerSource source, ReasonCode reason,
         CancellationToken ct, string? failedTurnId = null, string? email = null, Category? category = null)
     {
-        var contactEmail = source == TriggerSource.SYSTEM_POLICY || email is null ? null : Guard.Email(email);
+        var contactEmail = source == TriggerSource.SYSTEM_POLICY ? null : RequireContactEmail(email);
         var classification = category is { } cardCategory
             ? new Classification(cardCategory, 0, "CARD")
             : await PrepareAsync(scope, ct);
@@ -206,5 +206,17 @@ public sealed class HandoffService(IReceptionRepository repository, IConfigurati
         return string.IsNullOrWhiteSpace(context)
             ? new(Category.OTHER, 0, "CONTEXT_MISSING")
             : await model.ClassifyAsync(scope, context.Length > 16000 ? context[^16000..] : context, ct);
+    }
+
+    /// <summary>
+    /// 访客主动或确认人工时必须提交可回复邮箱，系统故障转人工不采集访客资料。
+    /// </summary>
+    private static string RequireContactEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new BusinessException("EMAIL_REQUIRED", "提交人工申请前必须填写联系邮箱", 400);
+        }
+        return Guard.Email(email);
     }
 }

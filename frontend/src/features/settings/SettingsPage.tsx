@@ -13,7 +13,7 @@ import {
     UsersRound,
 } from "lucide-react";
 import { post, put, request } from "@/shared/api/client";
-import type { Assistant, Calendar, Group, Routing } from "@/shared/types/customer-service";
+import type { Assistant, Calendar, CalendarSlot, Group, Routing } from "@/shared/types/customer-service";
 import ChatNotifications from "@/features/settings/components/ChatNotifications";
 
 const categories = [
@@ -58,7 +58,13 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                         : group,
                 ),
             });
-            setCalendar(calendarState);
+            setCalendar({
+                ...calendarState,
+                workingDays: calendarState.workingDays?.length ? calendarState.workingDays : [1, 2, 3, 4, 5],
+                slots: calendarState.slots?.length
+                    ? calendarState.slots
+                    : [{ opens: calendarState.opens || "10:00", closes: calendarState.closes || "17:00" }],
+            });
             const existing = routingState.routes.find((item) => item.assistantConfigId === assistantId);
             setRouteDraft(
                 Object.fromEntries(
@@ -170,7 +176,7 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         setSaving(true);
         setError("");
         try {
-            const result = await put<Calendar>(`/customer-service/configuration/calendar`, calendar);
+            const result = await post<Calendar>(`/customer-service/configuration/calendar`, calendar);
             setCalendar(result);
             setNotice("营业日历已保存，新等待周期将使用此规则。");
         } catch (reason) {
@@ -184,6 +190,52 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
         if (!calendar || !overrideDate) return;
         setCalendar({ ...calendar, overrides: { ...calendar.overrides, [overrideDate]: overrideOpen } });
         setOverrideDate("");
+    };
+
+    const toggleWorkingDay = (day: number) => {
+        if (!calendar) return;
+        const workingDays = calendar.workingDays.includes(day)
+            ? calendar.workingDays.filter((value) => value !== day)
+            : [...calendar.workingDays, day].sort((left, right) => left - right);
+        setCalendar({ ...calendar, workingDays });
+    };
+
+    const updateSlot = (index: number, patch: Partial<CalendarSlot>) => {
+        if (!calendar) return;
+        setCalendar({
+            ...calendar,
+            slots: calendar.slots.map((slot, slotIndex) => (slotIndex === index ? { ...slot, ...patch } : slot)),
+        });
+    };
+
+    const addSlot = () => {
+        if (!calendar || calendar.slots.length >= 8) return;
+        const toMinutes = (value: string) => {
+            const [hours, minutes] = value.split(":").map(Number);
+            return hours * 60 + minutes;
+        };
+        const formatTime = (value: number) =>
+            `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+        const slots = [...calendar.slots].sort((left, right) => toMinutes(left.opens) - toMinutes(right.opens));
+        let cursor = 0;
+        let next: CalendarSlot | null = null;
+        for (const slot of slots) {
+            const opens = toMinutes(slot.opens);
+            if (opens - cursor >= 60) {
+                next = { opens: formatTime(cursor), closes: formatTime(cursor + 60) };
+                break;
+            }
+            cursor = Math.max(cursor, toMinutes(slot.closes));
+        }
+        if (!next && 1440 - cursor >= 60) {
+            next = { opens: formatTime(cursor), closes: formatTime(cursor + 60) };
+        }
+        if (!next) {
+            setError("现有营业时段之间没有可添加的一小时时段，请先调整已有时段。");
+            return;
+        }
+        setError("");
+        setCalendar({ ...calendar, slots: [...calendar.slots, next] });
     };
 
     const preview = async () => {
@@ -489,36 +541,82 @@ export default function Settings({ assistant }: { assistant: Assistant }) {
                                     <option value="UTC">协调世界时 · UTC</option>
                                 </select>
                             </label>
-                            <label>
-                                开始接待
-                                <input
-                                    type="time"
-                                    value={calendar.opens.slice(0, 5)}
-                                    onChange={(event) => setCalendar({ ...calendar, opens: event.target.value })}
-                                />
-                            </label>
-                            <label>
-                                结束接待
-                                <input
-                                    type="time"
-                                    value={calendar.closes.slice(0, 5)}
-                                    onChange={(event) => setCalendar({ ...calendar, closes: event.target.value })}
-                                />
-                            </label>
                         </div>
                         <div className="weekday-summary">
                             <span>
                                 <Clock3 size={14} />
                                 默认营业日
                             </span>
-                            <div>
-                                {["一", "二", "三", "四", "五", "六", "日"].map((day, index) => (
-                                    <span key={day} className={index < 5 ? "weekday-on" : ""}>
-                                        {day}
-                                    </span>
-                                ))}
+                            <div className="weekday-picker" role="group" aria-label="每周营业日">
+                                {["一", "二", "三", "四", "五", "六", "日"].map((day, index) => {
+                                    const value = index + 1;
+                                    const selected = calendar.workingDays.includes(value);
+                                    return (
+                                        <button
+                                            key={day}
+                                            className={selected ? "weekday-on" : ""}
+                                            type="button"
+                                            aria-pressed={selected}
+                                            onClick={() => toggleWorkingDay(value)}
+                                        >
+                                            {day}
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <small>周一至周五</small>
+                            <small>至少选择一个营业日</small>
+                        </div>
+                        <div className="calendar-slots">
+                            <div className="calendar-overrides-head">
+                                <strong>每周营业时段</strong>
+                                <span>可配置 1 至 8 段，不重叠</span>
+                            </div>
+                            {calendar.slots.map((slot, index) => (
+                                <div className="calendar-slot-row" key={`slot-${index}`}>
+                                    <strong>时段 {index + 1}</strong>
+                                    <label>
+                                        开始
+                                        <input
+                                            type="time"
+                                            aria-label={`时段 ${index + 1} 开始`}
+                                            value={slot.opens.slice(0, 5)}
+                                            onChange={(event) => updateSlot(index, { opens: event.target.value })}
+                                        />
+                                    </label>
+                                    <label>
+                                        结束
+                                        <input
+                                            type="time"
+                                            aria-label={`时段 ${index + 1} 结束`}
+                                            value={slot.closes.slice(0, 5)}
+                                            onChange={(event) => updateSlot(index, { closes: event.target.value })}
+                                        />
+                                    </label>
+                                    <button
+                                        type="button"
+                                        className="icon-button"
+                                        aria-label={`移除时段 ${index + 1}`}
+                                        disabled={calendar.slots.length <= 1}
+                                        onClick={() =>
+                                            setCalendar({
+                                                ...calendar,
+                                                slots: calendar.slots.filter((_, slotIndex) => slotIndex !== index),
+                                            })
+                                        }
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            <button
+                                className="button button--quiet button--small"
+                                type="button"
+                                disabled={calendar.slots.length >= 8}
+                                onClick={addSlot}
+                            >
+                                <Plus size={14} />
+                                添加时段
+                            </button>
                         </div>
                         <div className="calendar-overrides">
                             <div className="calendar-overrides-head">

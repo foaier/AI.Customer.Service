@@ -196,7 +196,7 @@ try {
         month: "2-digit",
         day: "2-digit",
     }).format(new Date());
-    await api("/api/customer-service/configuration/calendar", "PUT", {
+    await api("/api/customer-service/configuration/calendar", "POST", {
         version: 0,
         calendarVersion: "browser-v1",
         zone: "Asia/Shanghai",
@@ -233,6 +233,7 @@ try {
         .getByText("请携带有效证件前往服务台办理。还有其他问题需要帮助吗？", { exact: true })
         .waitFor();
     checks.push("访客登录、可信助手配置及真实 SSE 文本渲染");
+    await visitor.locator("#followup-email").fill("visitor@example.com");
     await visitor.locator("#request-handoff").click();
     await visitor.getByText("正在等待客服接单", { exact: true }).waitFor();
     const id = await visitor.locator("#conversation-id").textContent();
@@ -246,6 +247,8 @@ try {
     await visitor.locator("#user-input").fill("请帮我核实办证时间。");
     await visitor.locator("#send-message").click();
     await agent.getByText("请帮我核实办证时间。", { exact: true }).waitFor();
+    await agent.locator("#agent-queue").click();
+    await agent.locator("#agent-queue-list button").first().click();
     await Promise.all([
         agent.waitForResponse((response) => response.url().includes("/resolve") && response.request().method() === "POST"),
         agent.locator("#agent-resolve").click(),
@@ -255,6 +258,7 @@ try {
     const emailVisitor = await pageFor("email-visitor");
     await emailVisitor.goto(base + "/customer-service/visitor.html?assistantConfigId=assistant-a");
     await emailVisitor.getByText("服务已就绪", { exact: true }).waitFor();
+    await emailVisitor.locator("#followup-email").fill("visitor@example.com");
     await emailVisitor.locator("#request-handoff").click();
     await emailVisitor.locator("#followup-email").fill("visitor@example.com");
     await emailVisitor.locator("#email-followup").click();

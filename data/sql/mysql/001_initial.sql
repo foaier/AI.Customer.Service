@@ -258,10 +258,12 @@
 
 -- 表 cs_reception_calendar：组织级营业日历，只影响新等待周期，既有 UTC 期限保持冻结；数据 owner：CustomerService；仅该 owner 写入，其他模块经应用端口读取。
 -- 字段 cs_reception_calendar.id：owner 内唯一业务标识。；非空，业务必需。
--- 字段 cs_reception_calendar.calendar_version：业务规则版本，改变时区、时间或日期覆盖时必须升级；非空，业务必需。
+-- 字段 cs_reception_calendar.calendar_version：业务规则版本，改变营业日、时段、时区或日期覆盖时必须升级；非空，业务必需。
 -- 字段 cs_reception_calendar.closes：同日营业结束，不含边界，默认 17:00；非空，业务必需。
 -- 字段 cs_reception_calendar.opens：同日营业开始，含边界，默认 10:00；非空，业务必需。
 -- 字段 cs_reception_calendar.overrides：ISO 日期到开闭班覆盖，最多 1000 项，优先于工作日规则；非空，业务必需。
+-- 字段 cs_reception_calendar.working_days：每周营业日的 ISO 星期数字 JSON 数组，空值按周一至周五读取；可空以兼容旧数据。
+-- 字段 cs_reception_calendar.slots：每周营业时段 JSON 数组，空值时按 opens 和 closes 读取旧单时段；可空以兼容旧数据。
 -- 字段 cs_reception_calendar.version：从一递增的乐观并发版本，幂等重放不得递增。；非空，业务必需。
 -- 字段 cs_reception_calendar.zone：IANA 时区，默认中国标准时间；非空，业务必需。
 -- 唯一索引 IX_cs_reception_calendar_id：id；用于同归属业务键去重。
@@ -375,6 +377,8 @@ CREATE TABLE `cs_reception_calendar` (
     `opens` varchar(128) NOT NULL,
     `closes` varchar(128) NOT NULL,
     `overrides` longtext NOT NULL,
+    `working_days` longtext NULL,
+    `slots` longtext NULL,
     `version` bigint NOT NULL,
     PRIMARY KEY (`id`),
     CONSTRAINT `ck_cs_reception_calendar_scope` CHECK (id <> '' AND version >= 1)

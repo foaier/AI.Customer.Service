@@ -31,7 +31,7 @@
     /** 草稿整体保存，保存前必须先读取版本。 */
     async function save() {
         if (!version) throw new Error("请先读取工作时间");
-        const c = await api("configuration/calendar", "PUT", {
+        const c = await api("configuration/calendar", "POST", {
             version: version.value,
             calendarVersion: el("calendar-version").value.trim(),
             zone: el("calendar-zone").value.trim(),

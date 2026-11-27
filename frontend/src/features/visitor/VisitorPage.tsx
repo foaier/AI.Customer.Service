@@ -42,7 +42,12 @@ type DirectHandoffCard = {
     category?: string;
     nextOpensAt?: string | null;
     timeZone?: string;
-    serviceHours?: { opens: string; closes: string; workingDays: number[] } | null;
+    serviceHours?: {
+        opens?: string | null;
+        closes?: string | null;
+        workingDays: number[];
+        slots?: { opens: string; closes: string }[] | null;
+    } | null;
 };
 type OfflineHandoffSubmission = DirectHandoffCard & {
     followupRequestId: string;
@@ -471,7 +476,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
             setNotice(
                 offlineHandoff
                     ? "留言已提交。客服将在工作时间内按你留下的邮箱跟进。"
-                    : "人工申请已登记。等待期间你可以继续补充信息。",
+                    : "人工申请已登记，最多等待10分钟。等待期间你可以继续补充信息。",
             );
             await loadEpisode(conversationId);
         } catch (reason) {
@@ -540,7 +545,7 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                 `/customer-service/conversations/${encodeURIComponent(conversationId)}/survey/${encodeURIComponent(survey.surveyId)}/handoff-choice`,
                 { expectedVersion: survey.version, choice, email: choice === "OPTED_IN" ? email.trim() : null },
             );
-            if (choice === "OPTED_IN") setNotice("人工申请已提交，正在等待客服接单。");
+            if (choice === "OPTED_IN") setNotice("人工申请已提交，最多等待10分钟。等待期间你可以继续补充信息。");
             await loadEpisode(conversationId);
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : "人工选择未完成");
@@ -873,7 +878,9 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                         <span>
                                             {episode?.status === "REQUESTED"
                                                 ? "接入后会在这里同步消息"
-                                                : "本会话已开启实时消息"}
+                                                : episode?.agentDisplayName
+                                                  ? `${episode.agentDisplayName} 已接入，本会话已开启实时消息`
+                                                  : "本会话已开启实时消息"}
                                         </span>
                                     </div>
                                 </div>
@@ -882,9 +889,27 @@ export default function Visitor({ assistant }: { assistant: Assistant }) {
                                         <Clock3 size={14} />
                                         <span>
                                             {waiting.state === "BUSY"
-                                                ? "当前等待较久，客服会尽快接入"
+                                                ? "已等待10分钟，你可以继续等待或留下邮箱留言"
                                                 : "申请已进入接待队列"}
                                         </span>
+                                    </div>
+                                )}
+                                {waiting?.state === "BUSY" && (
+                                    <div className="contact-actions">
+                                        <button
+                                            className="button button--quiet button--small"
+                                            type="button"
+                                            onClick={() => void chooseWaiting("CONTINUE")}
+                                        >
+                                            继续等待
+                                        </button>
+                                        <button
+                                            className="button button--quiet button--small"
+                                            type="button"
+                                            onClick={() => setShowFollowup(true)}
+                                        >
+                                            留下邮箱留言
+                                        </button>
                                     </div>
                                 )}
                                 {episode?.status === "REQUESTED" && (
@@ -1154,7 +1179,14 @@ function formatDateTime(value: string) {
 }
 
 function formatServiceHours(serviceHours: DirectHandoffCard["serviceHours"], timeZone?: string): string {
-    if (!serviceHours?.opens || !serviceHours.closes || !Array.isArray(serviceHours.workingDays)) return "";
+    if (!serviceHours || !Array.isArray(serviceHours.workingDays)) return "";
+    const slots = serviceHours.slots?.length
+        ? serviceHours.slots
+        : serviceHours.opens && serviceHours.closes
+          ? [{ opens: serviceHours.opens, closes: serviceHours.closes }]
+          : [];
+    const validSlots = slots.filter((slot) => slot.opens && slot.closes && slot.opens < slot.closes);
+    if (!validSlots.length) return "";
     const names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
     const days = [...new Set(serviceHours.workingDays)]
         .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
@@ -1175,5 +1207,6 @@ function formatServiceHours(serviceHours: DirectHandoffCard["serviceHours"], tim
         index = end + 1;
     }
     const zone = timeZone ? `（${timeZone}）` : "";
-    return `${ranges.join("、")} ${serviceHours.opens}–${serviceHours.closes}${zone}`;
+    const hours = validSlots.map((slot) => `${slot.opens}–${slot.closes}`).join("、");
+    return `${ranges.join("、")} ${hours}${zone}`;
 }

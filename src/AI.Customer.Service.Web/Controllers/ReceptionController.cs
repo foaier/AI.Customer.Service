@@ -48,8 +48,12 @@ public sealed class ReceptionController(RequestAccess request, ReceptionService 
     /// 访客读取安全接待状态。
     /// </summary>
     [HttpGet("conversations/{id}/reception")]
-    public async Task<object> VisitorReception(string id, CancellationToken ct) =>
-        Success(VisitorEpisode(await reception.RequireAsync(await RequestAccess.VisitorAsync(id, ct), null, ct)));
+    public async Task<object> VisitorReception(string id, CancellationToken ct)
+    {
+        var scope = await RequestAccess.VisitorAsync(id, ct);
+        var episode = await reception.RequireAsync(scope, null, ct);
+        return Success(VisitorEpisode(episode, await access.AgentDisplayNameAsync(episode, ct)));
+    }
 
     /// <summary>
     /// 客服读取冻结组内接待摘要。

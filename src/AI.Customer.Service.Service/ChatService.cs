@@ -35,25 +35,7 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
         await runtime.RequireChatIdentityAsync(scope, ct);
         if (ExplicitHandoffIntent.Matches(input))
         {
-            var category = await handoff.PrepareAsync(scope, ct);
-            var calendar = await configuration.CalendarAsync(ct) ?? new CalendarPolicy();
-            var window = calendar.Evaluate(clock.GetUtcNow().UtcDateTime);
-            var offline = !window.Open;
-            yield return new("card", new
-            {
-                status = offline ? "handoff.offline_followup_required" : "handoff.email_required",
-                description = offline ? "人工客服当前休息中，请填写邮箱和问题描述，客服将在工作时间内跟进" : "请填写联系邮箱后申请人工客服",
-                data = new
-                {
-                    requestId = Guard.Id("handoff"),
-                    conversationId = scope.ConversationId,
-                    status = offline ? "OFFLINE_FOLLOWUP_REQUIRED" : "EMAIL_REQUIRED",
-                    category = category.Category.ToString(),
-                    nextOpensAt = offline ? window.NextOpensAt : (DateTime?)null,
-                    timeZone = calendar.Zone,
-                    serviceHours = offline ? new { opens = calendar.Opens, closes = calendar.Closes, workingDays = new[] { 1, 2, 3, 4, 5 } } : null
-                }
-            });
+            yield return await DirectHandoffCardAsync(scope, ct);
             yield break;
         }
         var turn = await runtime.BeginAsync(actor, scope, input, ct);
@@ -125,6 +107,11 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
             }
             foreach (var tool in tools)
             {
+                if (tool.ToolName is "requestHandoff" or "request_handoff")
+                {
+                    yield return await DirectHandoffCardAsync(scope, cleanup.Token);
+                    continue;
+                }
                 var proposal = await ApplyToolAsync(scope, turn, tool, cleanup.Token);
                 if (proposal is not null)
                 {
@@ -149,6 +136,32 @@ public sealed class ChatService(ConversationRuntime runtime, IConversationReposi
                 await AbandonTurnAsync(actor, scope, turn);
             }
         }
+    }
+
+    /// <summary>
+    /// 根据已确认的人工意图生成邮箱卡或非营业留言卡，不创建人工周期。
+    /// </summary>
+    private async Task<ChatEvent> DirectHandoffCardAsync(Scope scope, CancellationToken ct)
+    {
+        var category = await handoff.PrepareAsync(scope, ct);
+        var calendar = await configuration.CalendarAsync(ct) ?? new CalendarPolicy();
+        var window = calendar.Evaluate(clock.GetUtcNow().UtcDateTime);
+        var offline = !window.Open;
+        return new("card", new
+        {
+            status = offline ? "handoff.offline_followup_required" : "handoff.email_required",
+            description = offline ? "人工客服当前休息中，请填写邮箱和问题描述，客服将在工作时间内跟进" : "请填写联系邮箱后申请人工客服",
+            data = new
+            {
+                requestId = Guard.Id("handoff"),
+                conversationId = scope.ConversationId,
+                status = offline ? "OFFLINE_FOLLOWUP_REQUIRED" : "EMAIL_REQUIRED",
+                category = category.Category.ToString(),
+                nextOpensAt = offline ? window.NextOpensAt : (DateTime?)null,
+                timeZone = calendar.Zone,
+                serviceHours = offline ? new { workingDays = calendar.EffectiveWorkingDays(), slots = calendar.EffectiveSlots() } : null
+            }
+        });
     }
 
     /// <summary>

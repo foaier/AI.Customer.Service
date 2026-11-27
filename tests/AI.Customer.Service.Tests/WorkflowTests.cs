@@ -98,6 +98,8 @@ public sealed partial class WorkflowTests
         Assert.AreEqual(TriggerSource.VISITOR_DIRECT_REQUEST, (await db.Set<Episode>().SingleAsync()).TriggerSource);
         Assert.AreEqual("visitor@example.com", (await db.Set<Waiting>().SingleAsync()).Email);
         await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "spoof", forgedField = "forged" }, HttpStatusCode.BadRequest);
+        await SendAsync(visitor, HttpMethod.Post, VisitorPath(id) + "/handoffs", new { requestId = "missing-email" }, HttpStatusCode.BadRequest);
+        Assert.AreEqual(1, await db.Set<Episode>().CountAsync(), "缺少邮箱时不得创建接待周期");
     }
 
     /// <summary>
@@ -122,6 +124,25 @@ public sealed partial class WorkflowTests
         }
         await using var scope = application.Services.CreateAsyncScope();
         Assert.AreEqual(1, await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().CountAsync(x => x.Status == EpisodeStatus.CLAIMED));
+    }
+
+    /// <summary>
+    /// 访客读取已认领周期时只看到原组已核验客服的展示名，不会得到账号标识。
+    /// </summary>
+    [TestMethod]
+    public async Task VisitorReceptionShowsAssignedAgentNameWithoutAccountId()
+    {
+        await application.ConfigureAsync();
+        using var visitor = application.Client();
+        using var agent = application.Client("agent-a");
+        var id = await SessionAsync(visitor);
+        await RequestAsync(visitor, id);
+        await SendAsync(agent, HttpMethod.Post, AgentPath(id) + "/claim", new { requestId = "claim-name", expectedVersion = 1 });
+
+        var latest = await GetAsync(visitor, VisitorPath(id) + "/handoffs/latest");
+        var episode = latest.GetProperty("episode");
+        Assert.AreEqual("权威名称-agent-a", episode.GetProperty("agentDisplayName").GetString());
+        Assert.IsFalse(episode.TryGetProperty("agentId", out _));
     }
 
     /// <summary>
@@ -277,7 +298,7 @@ public sealed partial class WorkflowTests
         using var manager = application.Client("agent-a");
         var id = await SessionAsync(visitor);
         var calendar = await GetAsync(manager, "/api/customer-service/configuration/calendar");
-        await SendAsync(manager, HttpMethod.Put, "/api/customer-service/configuration/calendar", new
+        await SendAsync(manager, HttpMethod.Post, "/api/customer-service/configuration/calendar", new
         {
             version = calendar.GetProperty("version").GetInt64(),
             calendarVersion = "closed-hours-test",
@@ -294,6 +315,71 @@ public sealed partial class WorkflowTests
         StringAssert.Contains(stream, "workingDays");
         await using var scope = application.Services.CreateAsyncScope();
         Assert.AreEqual(0, await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<Episode>().CountAsync());
+    }
+
+    /// <summary>
+    /// 配置接口保存并返回自定义工作日及多个营业时段。
+    /// </summary>
+    [TestMethod]
+    public async Task CalendarSettingsPersistMultipleWeeklySlots()
+    {
+        await application.ConfigureAsync();
+        using var manager = application.Client("agent-a");
+        var current = await GetAsync(manager, "/api/customer-service/configuration/calendar");
+
+        using var legacyPut = await manager.PutAsJsonAsync("/api/customer-service/configuration/calendar", new
+        {
+            version = current.GetProperty("version").GetInt64(),
+            calendarVersion = "legacy-put",
+            zone = "Asia/Shanghai",
+            opens = "09:00",
+            closes = "17:00",
+            overrides = new Dictionary<string, bool>()
+        });
+        Assert.AreEqual(HttpStatusCode.MethodNotAllowed, legacyPut.StatusCode);
+
+        var saved = await SendAsync(manager, HttpMethod.Post, "/api/customer-service/configuration/calendar", new
+        {
+            version = current.GetProperty("version").GetInt64(),
+            calendarVersion = "weekly-hours-v2",
+            zone = "Asia/Shanghai",
+            opens = (string?)null,
+            closes = (string?)null,
+            overrides = new Dictionary<string, bool>(),
+            workingDays = new[] { 1, 2, 3, 4, 5, 6 },
+            slots = new[] { new { opens = "09:00", closes = "12:00" }, new { opens = "13:00", closes = "17:00" } }
+        });
+
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 5, 6 }, saved.GetProperty("workingDays").EnumerateArray().Select(x => x.GetInt32()).ToArray());
+        Assert.AreEqual(JsonValueKind.Null, saved.GetProperty("opens").ValueKind);
+        Assert.AreEqual("09:00", saved.GetProperty("slots")[0].GetProperty("opens").GetString());
+        Assert.AreEqual("17:00", saved.GetProperty("slots")[1].GetProperty("closes").GetString());
+
+        await using var scope = application.Services.CreateAsyncScope();
+        var stored = await scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>().Set<CalendarPolicy>().SingleAsync();
+        Assert.AreEqual(2, stored.EffectiveSlots().Count);
+        CollectionAssert.AreEqual(new[] { 1, 2, 3, 4, 5, 6 }, stored.EffectiveWorkingDays().ToArray());
+    }
+
+    /// <summary>
+    /// 模型识别的明确人工意图发送邮箱采集卡，访客提交前不创建接待周期。
+    /// </summary>
+    [TestMethod]
+    public async Task ModelRecognizedHandoffIntentReturnsEmailCardWithoutCreatingEpisode()
+    {
+        await application.ConfigureAsync();
+        application.Model.Tool = new(null, "requestHandoff", "{}");
+        using var visitor = application.Client();
+        var id = await SessionAsync(visitor);
+
+        var stream = await ChatAsync(visitor, id, "我还没解决这个问题，想请真人客服帮忙核实一下。");
+
+        StringAssert.Contains(stream, "handoff.email_required");
+        StringAssert.Contains(stream, "event: complete");
+        await using var scope = application.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<CustomerServiceDbContext>();
+        Assert.AreEqual(0, await db.Set<Episode>().CountAsync());
+        Assert.AreEqual("SUCCEEDED", (await db.Set<AiTurn>().SingleAsync()).Status);
     }
 
     /// <summary>

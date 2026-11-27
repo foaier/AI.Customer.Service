@@ -112,7 +112,7 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// <summary>
     /// 保存正式日历，不影响已冻结等待周期。
     /// </summary>
-    [HttpPut("configuration/calendar")]
+    [HttpPost("configuration/calendar")]
     public async Task<object> SaveCalendar(CalendarCommand command, CancellationToken ct)
     {
         await RequestAccess.ManagerAsync(ct);
@@ -137,5 +137,20 @@ public sealed class ConfigurationController(RequestAccess request, Configuration
     /// <summary>
     /// 日历不返回数据库主键和内部归属副本。
     /// </summary>
-    private static object CalendarView(CalendarPolicy value) => new { value.Version, value.CalendarVersion, value.Zone, value.Opens, value.Closes, value.Overrides };
+    private static object CalendarView(CalendarPolicy value)
+    {
+        value.Validate();
+        var slots = value.EffectiveSlots();
+        return new
+        {
+            value.Version,
+            value.CalendarVersion,
+            value.Zone,
+            opens = slots.Count == 1 ? slots[0].Opens : null,
+            closes = slots.Count == 1 ? slots[0].Closes : null,
+            workingDays = value.EffectiveWorkingDays(),
+            slots,
+            value.Overrides
+        };
+    }
 }

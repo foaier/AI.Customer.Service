@@ -330,6 +330,7 @@ public static class RealtimeEndpoint
         var episode = await handoff.LatestAsync(visitorScope, ct);
         var waiting = await provider.GetRequiredService<WaitingService>().GetAsync(actor, visitorScope, ct);
         var latest = await handoff.LatestAsync(visitorScope, ct);
+        var agentDisplayName = latest is null ? null : await access.AgentDisplayNameAsync(latest, ct);
         return new
         {
             episode = latest is null ? null : new
@@ -339,6 +340,7 @@ public static class RealtimeEndpoint
                 latest.Version,
                 latest.TriggerSource,
                 latest.ReasonCode,
+                agentDisplayName,
                 latest.RequestedAt,
                 latest.AutoCloseAt,
                 latest.ResolutionReason

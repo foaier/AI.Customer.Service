@@ -9,9 +9,16 @@ namespace AI.Customer.Service.Web.Controllers;
 /// <summary>
 /// 访客明确申请、最新状态及模型建议决策 HTTP Adapter。
 /// </summary>
-/// <param name="request"> 访客准入 </param>
-/// <param name="handoff"> 人工申请应用端口 </param>
-public sealed class HandoffController(RequestAccess request, HandoffService handoff) : CustomerServiceControllerBase(request)
+/// <param name="request">
+/// 访客准入。
+/// </param>
+/// <param name="handoff">
+/// 人工申请应用端口。
+/// </param>
+/// <param name="access">
+/// 冻结业务组内客服展示名查询。
+/// </param>
+public sealed class HandoffController(RequestAccess request, HandoffService handoff, AccessService access) : CustomerServiceControllerBase(request)
 {
     /// <summary>
     /// 主动申请，无需第二次确认。
@@ -37,8 +44,10 @@ public sealed class HandoffController(RequestAccess request, HandoffService hand
     [HttpGet("conversations/{id}/handoffs/latest")]
     public async Task<object> Latest(string id, CancellationToken ct)
     {
-        var episode = await handoff.LatestAsync(await RequestAccess.VisitorAsync(id, ct), ct);
-        return Success(new { episode = episode is null ? null : VisitorEpisode(episode) });
+        var scope = await RequestAccess.VisitorAsync(id, ct);
+        var episode = await handoff.LatestAsync(scope, ct);
+        var name = episode is null ? null : await access.AgentDisplayNameAsync(episode, ct);
+        return Success(new { episode = episode is null ? null : VisitorEpisode(episode, name) });
     }
 
     /// <summary>

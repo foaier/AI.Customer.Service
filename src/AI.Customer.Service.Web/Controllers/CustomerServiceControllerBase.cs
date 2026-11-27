@@ -33,13 +33,14 @@ public abstract class CustomerServiceControllerBase(RequestAccess request) : Con
     /// <summary>
     /// 访客可见最新申请不暴露内部路由、客服账号和追踪号。
     /// </summary>
-    protected static object VisitorEpisode(Episode episode) => new
+    protected static object VisitorEpisode(Episode episode, string? agentDisplayName = null) => new
     {
         episodeId = episode.Id,
         episode.TriggerSource,
         episode.ReasonCode,
         episode.Status,
         episode.Version,
+        agentDisplayName,
         episode.RequestedAt,
         episode.AutoCloseAt,
         episode.ResolutionReason
